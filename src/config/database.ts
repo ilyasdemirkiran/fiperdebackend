@@ -62,6 +62,35 @@ export function getDatabaseForCompany(companyId: string): Db {
 }
 
 /**
+ * Get global vendor database (shared across all companies)
+ */
+export function getGlobalVendorDatabase(): Db {
+    if (!client) {
+        throw new Error("Database not connected. Call connectDatabase() first.");
+    }
+
+    const dbName = "vendors_global";
+
+    // Check cache first
+    let db = dbCache.get(dbName);
+    if (db) {
+        return db;
+    }
+
+    // Create new db reference and cache it
+    db = client.db(dbName);
+    dbCache.set(dbName, db);
+
+    // Schedule index creation (non-blocking)
+    createVendorIndexes(db).catch((err) => {
+        console.error(`⚠️ Vendor index creation warning:`, err);
+    });
+
+    return db;
+}
+
+
+/**
  * Create indexes for a company's database
  */
 async function createIndexesForCompany(database: Db) {
@@ -92,6 +121,38 @@ async function createIndexesForCompany(database: Db) {
     await salesCollection.createIndex({ createdAt: -1 });
 
     console.log(`✅ Indexes created for ${database.databaseName}`);
+}
+
+/**
+ * Create indexes for global vendor database
+ */
+async function createVendorIndexes(database: Db) {
+    const vendorsCollection = database.collection("vendors");
+    const productsCollection = database.collection("products");
+    const attachmentsCollection = database.collection("vendor_attachments");
+    const permissionsCollection = database.collection("vendor_permissions");
+
+    // Vendor indexes
+    await vendorsCollection.createIndex({ id: 1 }, { unique: true });
+    await vendorsCollection.createIndex({ name: 1 });
+
+    // Product indexes
+    await productsCollection.createIndex({ id: 1 }, { unique: true });
+    await productsCollection.createIndex({ vendorId: 1 });
+    await productsCollection.createIndex({ name: 1 });
+
+    // Attachment indexes
+    await attachmentsCollection.createIndex({ id: 1 }, { unique: true });
+    await attachmentsCollection.createIndex({ vendorId: 1 });
+
+    // Permission indexes (KEY for performance)
+    await permissionsCollection.createIndex(
+        { companyId: 1, vendorId: 1 },
+        { unique: true }
+    );
+    await permissionsCollection.createIndex({ vendorId: 1 });
+
+    console.log(`✅ Vendor indexes created for ${database.databaseName}`);
 }
 
 /**
