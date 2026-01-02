@@ -1,0 +1,39 @@
+# Git
+.git
+.gitignore
+
+# Dependencies
+node_modules
+bun.lockb
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Firebase
+firebase-service-account.json
+
+# Logs
+logs
+*.log
+
+# Build
+dist
+build
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+README.md
+*.md
+
+# Artifacts
+.gemini
