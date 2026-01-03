@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { timestampSchema } from '@/types/timestamp';
+import { ObjectId } from 'mongodb';
 
 export const vendorPermissionSchema = z.object({
-  id: z.string(),
+  _id: z.custom<ObjectId>().optional(),
   vendorId: z.string(),
   companyId: z.string(),
   createdAt: timestampSchema,

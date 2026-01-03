@@ -42,12 +42,12 @@ export const authMiddleware = createMiddleware<Env>(async (c, next) => {
         // Validate and parse user data
         const userData = userDoc.data();
         const user = fiUserSchema.parse({
-            id: userDoc.id,
+            _id: userDoc.id,
             ...userData,
         });
 
         logger.debug("User authenticated", {
-            userId: user.id,
+            userId: user._id,
             companyId: user.companyId,
             role: user.role,
         });

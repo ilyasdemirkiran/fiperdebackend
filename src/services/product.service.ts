@@ -52,10 +52,8 @@ export class ProductService {
       throw new AppError(404, "Vendor not found", "VENDOR_NOT_FOUND");
     }
 
-    const id = crypto.randomUUID();
-
-    const product: Product = {
-      id,
+    // Omit _id - MongoDB will auto-generate ObjectId
+    const product: Omit<Product, "_id"> = {
       name: data.name,
       code: data.code,
       price: data.price,

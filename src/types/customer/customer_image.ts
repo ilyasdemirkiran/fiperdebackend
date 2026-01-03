@@ -1,10 +1,10 @@
 import { z } from 'zod';
 import { timestampSchema } from '@/types/timestamp';
-import { Binary } from 'mongodb';
+import { Binary, ObjectId } from 'mongodb';
 
 export const customerImageSchema = z
   .object({
-    id: z.string(),
+    _id: z.custom<ObjectId>().optional(),
     customerId: z.string(),
     title: z.string(),
     description: z.string().default(""),

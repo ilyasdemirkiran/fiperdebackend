@@ -2,11 +2,12 @@ import { z } from "zod";
 import { currencySchema } from "@/types/currency";
 import { paymentLogSchema } from "@/types/customer/sale/payment_log";
 import { timestampSchema } from "@/types/timestamp";
+import { ObjectId } from "mongodb";
 
 export const saleStatusSchema = z.enum(["pending", "completed", "deleted"]);
 
 export const saleSchema = z.object({
-  id: z.string(),
+  _id: z.custom<ObjectId>().optional(),
   customerId: z
     .string({ message: "Müşteri ID'si zorunludur" })
     .min(1, "Müşteri ID'si boş olamaz"),
@@ -24,7 +25,6 @@ export const saleSchema = z.object({
   currency: currencySchema,
   status: saleStatusSchema,
   description: z.string().optional(),
-  // date: z.date(),
   createdAt: timestampSchema,
   updatedAt: timestampSchema.optional(),
   logs: z.array(paymentLogSchema),
@@ -54,7 +54,7 @@ export const updateSaleSchema = saleSchema.pick({
 });
 export type UpdateSale = z.infer<typeof updateSaleSchema>;
 
-export type DeleteSale = Pick<Sale, "id">;
+export type DeleteSale = Pick<Sale, "_id">;
 
 export const addPaymentLogSchema = paymentLogSchema.pick({
   amount: true,
@@ -65,7 +65,7 @@ export const addPaymentLogSchema = paymentLogSchema.pick({
 export type AddPaymentLog = z.infer<typeof addPaymentLogSchema>;
 
 export const updatePaymentLogSchema = paymentLogSchema.pick({
-  id: true,
+  _id: true,
   amount: true,
   currency: true,
   paymentType: true,
@@ -74,6 +74,6 @@ export const updatePaymentLogSchema = paymentLogSchema.pick({
 export type UpdatePaymentLog = z.infer<typeof updatePaymentLogSchema>;
 
 export const deletePaymentLogSchema = paymentLogSchema.pick({
-  id: true,
+  _id: true,
 });
 export type DeletePaymentLog = z.infer<typeof deletePaymentLogSchema>;

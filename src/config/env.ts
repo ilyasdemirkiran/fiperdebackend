@@ -3,8 +3,8 @@ import { z } from "zod";
 const envSchema = z.object({
     PORT: z.string().default("3000").transform(Number),
     NODE_ENV: z.enum(["development", "production", "test"]).default("production"),
-    MONGODB_URI: z.string().url(),
-    MONGODB_TEST_URI: z.string().url().optional(),
+    MONGODB_URI: z.url(),
+    MONGODB_TEST_URI: z.url().optional(),
     FIREBASE_SERVICE_ACCOUNT_PATH: z.string(),
     DB_NAME: z.string().default("fiperde"),
     DB_TEST_NAME: z.string().default("fiperde-test"),

@@ -13,7 +13,7 @@ export class VendorRepository {
     try {
       const collection = this.getCollection();
       await collection.insertOne(vendor as any);
-      logger.info("Vendor created", { vendorId: vendor.id });
+      logger.info("Vendor created", { vendorId: vendor._id });
       return vendor;
     } catch (error) {
       logger.error("Failed to create vendor", error);
@@ -24,7 +24,7 @@ export class VendorRepository {
   async findById(id: string): Promise<Vendor | null> {
     try {
       const collection = this.getCollection();
-      return await collection.findOne({ id } as any, { projection: { _id: 0 } });
+      return await collection.findOne({ _id: id } as any, { projection: { _id: 0 } });
     } catch (error) {
       logger.error("Failed to find vendor by ID", error);
       throw error;
@@ -48,7 +48,7 @@ export class VendorRepository {
     try {
       const collection = this.getCollection();
       return await collection
-        .find({ id: { $in: ids } } as any, { projection: { _id: 0 } })
+        .find({ _id: { $in: ids } } as any, { projection: { _id: 0 } })
         .sort({ name: 1 })
         .toArray();
     } catch (error) {
@@ -61,7 +61,7 @@ export class VendorRepository {
     try {
       const collection = this.getCollection();
       return await collection.findOneAndUpdate(
-        { id } as any,
+        { _id: id } as any,
         { $set: updates },
         { returnDocument: "after", projection: { _id: 0 } }
       );
@@ -74,7 +74,7 @@ export class VendorRepository {
   async delete(id: string): Promise<boolean> {
     try {
       const collection = this.getCollection();
-      const result = await collection.deleteOne({ id } as any);
+      const result = await collection.deleteOne({ _id: id } as any);
       const deleted = result.deletedCount > 0;
 
       if (deleted) {
@@ -91,7 +91,7 @@ export class VendorRepository {
   async exists(id: string): Promise<boolean> {
     try {
       const collection = this.getCollection();
-      const count = await collection.countDocuments({ id } as any);
+      const count = await collection.countDocuments({ _id: id } as any);
       return count > 0;
     } catch (error) {
       logger.error("Failed to check vendor existence", error);

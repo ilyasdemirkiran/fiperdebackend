@@ -17,14 +17,14 @@ export class AppError extends Error {
 export const errorHandler: ErrorHandler = (error, c) => {
     // Zod validation errors
     if (error instanceof ZodError) {
-        logger.warn("Validation error", { errors: error.errors });
+        logger.warn("Validation error", { errors: error.issues });
         return c.json(
             {
                 success: false,
                 error: {
                     message: "Validation failed",
                     code: "VALIDATION_ERROR",
-                    details: error.errors,
+                    details: error.issues,
                 },
             },
             400

@@ -18,7 +18,7 @@ export class CustomerImageLabelRepository {
     try {
       const collection = this.getCollection(companyId);
       await collection.insertOne(label as any);
-      logger.info("Label created", { labelId: label.id, companyId });
+      logger.info("Label created", { labelId: label._id, companyId });
       return label;
     } catch (error) {
       logger.error("Failed to create label", error);
@@ -29,7 +29,7 @@ export class CustomerImageLabelRepository {
   async findById(companyId: string, id: string): Promise<CustomerImageLabel | null> {
     try {
       const collection = this.getCollection(companyId);
-      return await collection.findOne({ id } as any, { projection: { _id: 0 } });
+      return await collection.findOne({ _id: id } as any, { projection: { _id: 0 } });
     } catch (error) {
       logger.error("Failed to find label by ID", error);
       throw error;
@@ -54,7 +54,7 @@ export class CustomerImageLabelRepository {
     try {
       const collection = this.getCollection(companyId);
       const result = await collection.findOneAndUpdate(
-        { id } as any,
+        { _id: id } as any,
         { $set: updates },
         { returnDocument: "after", projection: { _id: 0 } }
       );
@@ -73,7 +73,7 @@ export class CustomerImageLabelRepository {
   async delete(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const result = await collection.deleteOne({ id } as any);
+      const result = await collection.deleteOne({ _id: id } as any);
       const deleted = result.deletedCount > 0;
 
       if (deleted) {
@@ -103,7 +103,7 @@ export class CustomerImageLabelRepository {
 
         // Delete the label
         const deleteResult = await labelsCollection.deleteOne(
-          { id: labelId } as any,
+          { _id: labelId } as any,
           { session }
         );
 
@@ -134,7 +134,7 @@ export class CustomerImageLabelRepository {
   async exists(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const count = await collection.countDocuments({ id } as any);
+      const count = await collection.countDocuments({ _id: id } as any);
       return count > 0;
     } catch (error) {
       logger.error("Failed to check label existence", error);

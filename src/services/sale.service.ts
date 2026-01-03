@@ -5,6 +5,7 @@ import { AppError } from "@/middleware/error-handler";
 import { logger } from "@/utils/logger";
 import { Timestamp } from "firebase-admin/firestore";
 import { UserRole } from "@/types/user/fi_user";
+import { ObjectId } from "mongodb";
 
 export class SaleService {
   private repository: SaleRepository;
@@ -29,14 +30,13 @@ export class SaleService {
     this.assertAdmin(role);
 
     const validatedInput = addSaleSchema.parse(input);
-    const id = crypto.randomUUID();
 
     // Calculate initial status
     const totalPaidAmount = validatedInput.logs?.reduce((sum, log) => sum + log.amount, 0) || 0;
     const status = totalPaidAmount >= validatedInput.totalAmount ? "completed" : "pending";
 
-    const sale: Sale = {
-      id,
+    // Omit _id - MongoDB will auto-generate ObjectId
+    const sale: Omit<Sale, "_id"> = {
       customerId: validatedInput.customerId,
       createdByUserId: userId,
       createdByUserName: userName,
@@ -128,10 +128,9 @@ export class SaleService {
     }
 
     const validatedInput = addPaymentLogSchema.parse(input);
-    const logId = crypto.randomUUID();
 
-    const paymentLog: PaymentLog = {
-      id: logId,
+    // Omit _id - MongoDB will auto-generate ObjectId
+    const paymentLog: Omit<PaymentLog, "_id"> = {
       saleId,
       customerId: sale.customerId,
       createdByUserId: userId,
@@ -150,7 +149,7 @@ export class SaleService {
       throw new AppError(500, "Failed to add payment log", "UPDATE_FAILED");
     }
 
-    logger.info("Payment log added", { logId, saleId, companyId });
+    logger.info("Payment log added", { saleId, companyId });
     return updated;
   }
 
@@ -168,7 +167,7 @@ export class SaleService {
       throw new AppError(404, "Sale not found", "SALE_NOT_FOUND");
     }
 
-    const log = sale.logs.find((l) => l.id === logId);
+    const log = sale.logs.find((l) => l._id?.toString() === logId);
     if (!log) {
       throw new AppError(404, "Payment log not found", "PAYMENT_LOG_NOT_FOUND");
     }
@@ -196,7 +195,7 @@ export class SaleService {
       throw new AppError(404, "Sale not found", "SALE_NOT_FOUND");
     }
 
-    const log = sale.logs.find((l) => l.id === logId);
+    const log = sale.logs.find((l) => l._id?.toString() === logId);
     if (!log) {
       throw new AppError(404, "Payment log not found", "PAYMENT_LOG_NOT_FOUND");
     }

@@ -95,7 +95,7 @@ customerImageRoutes.post("/:customerId/images", async (c) => {
     const image = await getService().uploadImage(
       user.companyId!,
       customerId,
-      user.id,
+      user._id?.toHexString()!,
       uploads[0]
     );
     return c.json(successResponse(image), 201);
@@ -103,7 +103,7 @@ customerImageRoutes.post("/:customerId/images", async (c) => {
     const images = await getService().uploadMultipleImages(
       user.companyId!,
       customerId,
-      user.id,
+      user._id?.toHexString()!,
       uploads
     );
     return c.json(successResponse(images), 201);

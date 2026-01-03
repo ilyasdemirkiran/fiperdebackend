@@ -13,7 +13,7 @@ export class CustomerRepository {
     try {
       const collection = this.getCollection(companyId);
       await collection.insertOne(customer as any);
-      logger.info("Customer created", { customerId: customer.id, companyId });
+      logger.info("Customer created", { customerId: customer._id, companyId });
       return customer;
     } catch (error) {
       logger.error("Failed to create customer", error);
@@ -25,7 +25,7 @@ export class CustomerRepository {
     try {
       const collection = this.getCollection(companyId);
       const customer = await collection.findOne(
-        { id } as any,
+        { _id: id } as any,
         { projection: { _id: 0 } }
       );
       return customer;
@@ -91,7 +91,7 @@ export class CustomerRepository {
     try {
       const collection = this.getCollection(companyId);
       const result = await collection.findOneAndUpdate(
-        { id } as any,
+        { _id: id } as any,
         { $set: { ...updates, updatedAt: new Date() } },
         { returnDocument: "after", projection: { _id: 0 } }
       );
@@ -110,7 +110,7 @@ export class CustomerRepository {
   async delete(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const result = await collection.deleteOne({ id } as any);
+      const result = await collection.deleteOne({ _id: id } as any);
       const deleted = result.deletedCount > 0;
 
       if (deleted) {
@@ -127,7 +127,7 @@ export class CustomerRepository {
   async exists(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const count = await collection.countDocuments({ id } as any);
+      const count = await collection.countDocuments({ _id: id } as any);
       return count > 0;
     } catch (error) {
       logger.error("Failed to check customer existence", error);

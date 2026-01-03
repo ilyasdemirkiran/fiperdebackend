@@ -1,11 +1,12 @@
 import { z } from 'zod';
 import { timestampSchema } from '@/types/timestamp';
 import { phoneNumberSchema } from '@/types/phone_number';
+import { ObjectId } from 'mongodb';
 
 export const userRoleSchema = z.enum(['sudo', 'admin', 'user']);
 
 export const fiUserSchema = z.object({
-  id: z.string(),
+  _id: z.custom<ObjectId>().optional(),
   phoneNumber: phoneNumberSchema,
   name: z.string().min(3, "En az 3 karakter gereklidir."),
   surname: z.string().min(2, "En az 2 karakter gereklidir."),

@@ -13,18 +13,17 @@ export class VendorPermissionRepository {
   async addPermission(vendorId: string, companyId: string): Promise<VendorPermission> {
     try {
       const collection = this.getCollection();
-      const id = crypto.randomUUID();
 
-      const permission: VendorPermission = {
-        id,
+      // Omit _id - MongoDB will auto-generate ObjectId
+      const permission: Omit<VendorPermission, "_id"> = {
         vendorId,
         companyId,
         createdAt: Timestamp.now(),
       };
 
-      await collection.insertOne(permission as any);
+      const result = await collection.insertOne(permission as any);
       logger.info("Vendor permission added", { vendorId, companyId });
-      return permission;
+      return { ...permission, _id: result.insertedId } as VendorPermission;
     } catch (error) {
       logger.error("Failed to add vendor permission", error);
       throw error;

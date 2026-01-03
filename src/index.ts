@@ -8,6 +8,7 @@ import { customerImageRoutes } from "@/routes/customer-image.routes";
 import { saleRoutes } from "@/routes/sale.routes";
 import { vendorRoutes } from "@/routes/vendor.routes";
 import { productRoutes } from "@/routes/product.routes";
+import { vendorAttachmentRoutes } from "@/routes/vendor-attachment.routes";
 import { errorHandler } from "@/middleware/error-handler";
 import { logger } from "@/utils/logger";
 import { successResponse } from "@/utils/response";
@@ -55,6 +56,7 @@ app.route("/api/labels", labelRoutes);
 app.route("/api/customers", customerImageRoutes);
 app.route("/api/customers", saleRoutes);
 app.route("/api/vendors", vendorRoutes);
+app.route("/api/vendors", vendorAttachmentRoutes);
 app.route("/api/products", productRoutes);
 
 // Initialize services

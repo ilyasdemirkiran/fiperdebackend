@@ -33,10 +33,8 @@ export class VendorService {
   ): Promise<Vendor> {
     this.assertSudo(role);
 
-    const id = crypto.randomUUID();
-
-    const vendor: Vendor = {
-      id,
+    // Omit _id - MongoDB will auto-generate ObjectId
+    const vendor: Omit<Vendor, "_id"> = {
       name: data.name,
       phone: data.phone,
       city: data.city,

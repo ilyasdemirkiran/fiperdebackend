@@ -1,6 +1,7 @@
 import { currencySchema } from "@/types/currency";
 import { timestampSchema } from "@/types/timestamp";
 import { z } from "zod";
+import { ObjectId } from "mongodb";
 
 export const paymentTypeSchema = z.enum([
   "cash",
@@ -11,7 +12,7 @@ export const paymentTypeSchema = z.enum([
 ]);
 
 export const paymentLogSchema = z.object({
-  id: z.string(),
+  _id: z.custom<ObjectId>().optional(),
   saleId: z
     .string({ message: "Satış ID'si zorunludur" })
     .min(1, "Satış ID'si boş olamaz"),

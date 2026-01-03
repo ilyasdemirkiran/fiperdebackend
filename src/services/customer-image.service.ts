@@ -27,10 +27,8 @@ export class CustomerImageService {
     uploaderId: string,
     input: UploadImageInput
   ): Promise<CustomerImageMetadata> {
-    const id = crypto.randomUUID();
-
-    const image: CustomerImage = {
-      id,
+    // Omit _id - MongoDB will auto-generate ObjectId
+    const image: Omit<CustomerImage, "_id"> = {
       customerId,
       title: input.title,
       description: input.description || "",
@@ -52,8 +50,8 @@ export class CustomerImageService {
     uploaderId: string,
     inputs: UploadImageInput[]
   ): Promise<CustomerImageMetadata[]> {
-    const images: CustomerImage[] = inputs.map((input) => ({
-      id: crypto.randomUUID(),
+    // Omit _id - MongoDB will auto-generate ObjectId for each
+    const images: Omit<CustomerImage, "_id">[] = inputs.map((input) => ({
       customerId,
       title: input.title,
       description: input.description || "",

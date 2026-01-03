@@ -13,7 +13,7 @@ export class ProductRepository {
     try {
       const collection = this.getCollection();
       await collection.insertOne(product as any);
-      logger.info("Product created", { productId: product.id, vendorId: product.vendorId });
+      logger.info("Product created", { productId: product._id, vendorId: product.vendorId });
       return product;
     } catch (error) {
       logger.error("Failed to create product", error);
@@ -24,7 +24,7 @@ export class ProductRepository {
   async findById(id: string): Promise<Product | null> {
     try {
       const collection = this.getCollection();
-      return await collection.findOne({ id } as any, { projection: { _id: 0 } });
+      return await collection.findOne({ _id: id } as any, { projection: { _id: 0 } });
     } catch (error) {
       logger.error("Failed to find product by ID", error);
       throw error;
@@ -78,7 +78,7 @@ export class ProductRepository {
     try {
       const collection = this.getCollection();
       return await collection.findOneAndUpdate(
-        { id } as any,
+        { _id: id } as any,
         { $set: updates },
         { returnDocument: "after", projection: { _id: 0 } }
       );
@@ -91,7 +91,7 @@ export class ProductRepository {
   async delete(id: string): Promise<boolean> {
     try {
       const collection = this.getCollection();
-      const result = await collection.deleteOne({ id } as any);
+      const result = await collection.deleteOne({ _id: id } as any);
       const deleted = result.deletedCount > 0;
 
       if (deleted) {
@@ -120,7 +120,7 @@ export class ProductRepository {
   async exists(id: string): Promise<boolean> {
     try {
       const collection = this.getCollection();
-      const count = await collection.countDocuments({ id } as any);
+      const count = await collection.countDocuments({ _id: id } as any);
       return count > 0;
     } catch (error) {
       logger.error("Failed to check product existence", error);

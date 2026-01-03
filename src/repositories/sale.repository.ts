@@ -1,4 +1,4 @@
-import { Collection } from "mongodb";
+import { Collection, ObjectId } from "mongodb";
 import { getDatabaseForCompany } from "@/config/database";
 import { Sale, SaleStatus } from "@/types/customer/sale/sale";
 import PaymentLog from "@/types/customer/sale/payment_log";
@@ -15,7 +15,7 @@ export class SaleRepository {
     try {
       const collection = this.getCollection(companyId);
       await collection.insertOne(sale as any);
-      logger.info("Sale created", { saleId: sale.id, customerId: sale.customerId, companyId });
+      logger.info("Sale created", { saleId: sale._id, customerId: sale.customerId, companyId });
       return sale;
     } catch (error) {
       logger.error("Failed to create sale", error);
@@ -26,7 +26,7 @@ export class SaleRepository {
   async findById(companyId: string, id: string): Promise<Sale | null> {
     try {
       const collection = this.getCollection(companyId);
-      return await collection.findOne({ id } as any, { projection: { _id: 0 } });
+      return await collection.findOne({ _id: id } as any, { projection: { _id: 0 } });
     } catch (error) {
       logger.error("Failed to find sale by ID", error);
       throw error;
@@ -54,7 +54,7 @@ export class SaleRepository {
     try {
       const collection = this.getCollection(companyId);
       return await collection.findOneAndUpdate(
-        { id } as any,
+        { _id: id } as any,
         { $set: { ...updates, updatedAt: Timestamp.now() } },
         { returnDocument: "after", projection: { _id: 0 } }
       );
@@ -67,7 +67,7 @@ export class SaleRepository {
   async delete(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const result = await collection.deleteOne({ id } as any);
+      const result = await collection.deleteOne({ _id: id } as any);
       const deleted = result.deletedCount > 0;
 
       if (deleted) {
@@ -102,7 +102,7 @@ export class SaleRepository {
 
       // Update sale with new log and recalculated values
       return await collection.findOneAndUpdate(
-        { id: saleId } as any,
+        { _id: saleId } as any,
         {
           $push: { logs: paymentLog } as any,
           $set: {
@@ -136,7 +136,7 @@ export class SaleRepository {
       if (!sale) return null;
 
       // Find and update the log
-      const logIndex = sale.logs.findIndex((log) => log.id === logId);
+      const logIndex = sale.logs.findIndex((log) => log._id?.toString() === logId);
       if (logIndex === -1) return null;
 
       const oldAmount = sale.logs[logIndex].amount;
@@ -151,7 +151,7 @@ export class SaleRepository {
       const newStatus: SaleStatus = newTotalPaid >= sale.totalAmount ? "completed" : "pending";
 
       return await collection.findOneAndUpdate(
-        { id: saleId } as any,
+        { _id: saleId } as any,
         {
           $set: {
             logs: updatedLogs,
@@ -184,7 +184,7 @@ export class SaleRepository {
       if (!sale) return null;
 
       // Find the log to delete
-      const log = sale.logs.find((l) => l.id === logId);
+      const log = sale.logs.find((l) => l._id?.toString() === logId);
       if (!log) return null;
 
       // Recalculate totalPaidAmount
@@ -192,9 +192,9 @@ export class SaleRepository {
       const newStatus: SaleStatus = newTotalPaid >= sale.totalAmount ? "completed" : "pending";
 
       return await collection.findOneAndUpdate(
-        { id: saleId } as any,
+        { _id: saleId } as any,
         {
-          $pull: { logs: { id: logId } } as any,
+          $pull: { logs: { _id: log._id } } as any,
           $set: {
             totalPaidAmount: Math.round(newTotalPaid * 100) / 100,
             status: newStatus,
@@ -212,7 +212,7 @@ export class SaleRepository {
   async exists(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const count = await collection.countDocuments({ id } as any);
+      const count = await collection.countDocuments({ _id: id } as any);
       return count > 0;
     } catch (error) {
       logger.error("Failed to check sale existence", error);

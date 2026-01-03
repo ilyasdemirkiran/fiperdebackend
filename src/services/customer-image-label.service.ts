@@ -11,10 +11,8 @@ export class CustomerImageLabelService {
   }
 
   async createLabel(companyId: string, name: string): Promise<CustomerImageLabel> {
-    const id = crypto.randomUUID();
-
-    const label: CustomerImageLabel = {
-      id,
+    // Omit _id - MongoDB will auto-generate ObjectId
+    const label: Omit<CustomerImageLabel, "_id"> = {
       name,
     };
 

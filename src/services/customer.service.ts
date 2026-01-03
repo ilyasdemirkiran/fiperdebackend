@@ -9,6 +9,7 @@ import {
 import { AppError } from "@/middleware/error-handler";
 import { logger } from "@/utils/logger";
 import { FIUser, UserRole } from "@/types/user/fi_user";
+import { Timestamp } from "firebase-admin/firestore";
 
 export class CustomerService {
     private repository: CustomerRepository;
@@ -23,17 +24,13 @@ export class CustomerService {
     ): Promise<CustomerDb> {
         // Validate input
         const validatedInput = createCustomerSchema.parse(input);
-
-        // Generate unique ID
-        const id = crypto.randomUUID();
-
-        const customer: CustomerDb = {
-            id,
+        // Omit _id - MongoDB will auto-generate ObjectId
+        const customer: Omit<CustomerDb, "_id"> = {
             ...validatedInput,
             status: validatedInput.status || "active",
             address: validatedInput.address || "",
             imageCount: 0,
-            createdAt: new Date(),
+            createdAt: Timestamp.now(),
         };
 
         return await this.repository.create(companyId, customer);
@@ -60,6 +57,7 @@ export class CustomerService {
     ): Promise<{ customers: CustomerDb[]; total: number }> {
         return await this.repository.findAll(companyId, options);
     }
+
 
     async updateCustomer(
         companyId: string,

@@ -13,7 +13,7 @@ export class VendorAttachmentRepository {
     try {
       const collection = this.getCollection();
       await collection.insertOne(attachment as any);
-      logger.info("Vendor attachment created", { attachmentId: attachment.id, vendorId: attachment.vendorId });
+      logger.info("Vendor attachment created", { attachmentId: attachment._id, vendorId: attachment.vendorId });
       return attachment;
     } catch (error) {
       logger.error("Failed to create vendor attachment", error);
@@ -24,7 +24,7 @@ export class VendorAttachmentRepository {
   async findById(id: string): Promise<VendorAttachment | null> {
     try {
       const collection = this.getCollection();
-      return await collection.findOne({ id } as any, { projection: { _id: 0 } });
+      return await collection.findOne({ _id: id } as any, { projection: { _id: 0 } });
     } catch (error) {
       logger.error("Failed to find attachment by ID", error);
       throw error;
@@ -48,7 +48,7 @@ export class VendorAttachmentRepository {
     try {
       const collection = this.getCollection();
       return await collection.findOneAndUpdate(
-        { id } as any,
+        { _id: id } as any,
         { $set: updates },
         { returnDocument: "after", projection: { _id: 0 } }
       );
@@ -61,7 +61,7 @@ export class VendorAttachmentRepository {
   async delete(id: string): Promise<boolean> {
     try {
       const collection = this.getCollection();
-      const result = await collection.deleteOne({ id } as any);
+      const result = await collection.deleteOne({ _id: id } as any);
       const deleted = result.deletedCount > 0;
 
       if (deleted) {
@@ -90,7 +90,7 @@ export class VendorAttachmentRepository {
   async exists(id: string): Promise<boolean> {
     try {
       const collection = this.getCollection();
-      const count = await collection.countDocuments({ id } as any);
+      const count = await collection.countDocuments({ _id: id } as any);
       return count > 0;
     } catch (error) {
       logger.error("Failed to check attachment existence", error);

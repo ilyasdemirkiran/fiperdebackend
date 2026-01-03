@@ -35,14 +35,14 @@ export class CustomerImageRepository {
 
         // Increment customer imageCount
         await customersCollection.updateOne(
-          { id: customerId } as any,
+          { _id: customerId } as any,
           { $inc: { imageCount: 1 } },
           { session }
         );
       });
 
       logger.info("Image created with transaction", {
-        imageId: image.id,
+        imageId: image._id,
         customerId,
         companyId,
       });
@@ -79,7 +79,7 @@ export class CustomerImageRepository {
 
         // Increment customer imageCount by number of images
         await customersCollection.updateOne(
-          { id: customerId } as any,
+          { _id: customerId } as any,
           { $inc: { imageCount: images.length } },
           { session }
         );
@@ -104,7 +104,7 @@ export class CustomerImageRepository {
   async findById(companyId: string, id: string): Promise<CustomerImage | null> {
     try {
       const collection = this.getCollection(companyId);
-      return await collection.findOne({ id } as any, { projection: { _id: 0 } });
+      return await collection.findOne({ _id: id } as any, { projection: { _id: 0 } });
     } catch (error) {
       logger.error("Failed to find image by ID", error);
       throw error;
@@ -115,7 +115,7 @@ export class CustomerImageRepository {
     try {
       const collection = this.getCollection(companyId);
       return await collection.findOne(
-        { id } as any,
+        { _id: id } as any,
         { projection: { _id: 0, data: 0 } }
       ) as CustomerImageMetadata | null;
     } catch (error) {
@@ -145,7 +145,7 @@ export class CustomerImageRepository {
     try {
       const collection = this.getCollection(companyId);
       const result = await collection.findOneAndUpdate(
-        { id } as any,
+        { _id: id } as any,
         { $set: updates },
         { returnDocument: "after", projection: { _id: 0, data: 0 } }
       );
@@ -176,7 +176,7 @@ export class CustomerImageRepository {
 
         // Delete the image
         const deleteResult = await imagesCollection.deleteOne(
-          { id: imageId } as any,
+          { _id: imageId } as any,
           { session }
         );
 
@@ -186,7 +186,7 @@ export class CustomerImageRepository {
 
         // Decrement customer imageCount
         await customersCollection.updateOne(
-          { id: customerId } as any,
+          { _id: customerId } as any,
           { $inc: { imageCount: -1 } },
           { session }
         );
@@ -207,7 +207,7 @@ export class CustomerImageRepository {
   async exists(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const count = await collection.countDocuments({ id } as any);
+      const count = await collection.countDocuments({ _id: id } as any);
       return count > 0;
     } catch (error) {
       logger.error("Failed to check image existence", error);

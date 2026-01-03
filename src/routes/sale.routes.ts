@@ -81,12 +81,12 @@ saleRoutes.post("/:customerId/sales", async (c) => {
 
   const sale = await getService().createSale(
     user.companyId!,
-    user.id,
+    user._id?.toHexString()!,
     `${user.name} ${user.surname}`,
     user.role,
     {
       customerId,
-      createdByUserId: user.id,
+      createdByUserId: user._id?.toHexString()!,
       createdByUserName: `${user.name} ${user.surname}`,
       totalAmount: input.totalAmount,
       currency: input.currency,
@@ -135,7 +135,7 @@ saleRoutes.post("/:customerId/sales/:saleId/payments", async (c) => {
   const sale = await getService().addPaymentLog(
     user.companyId!,
     saleId,
-    user.id,
+    user._id?.toHexString()!,
     `${user.name} ${user.surname}`,
     user.role,
     input
