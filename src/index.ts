@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { env } from "@/config/env";
 import { connectDatabase } from "@/config/database";
 import { initializeFirebase } from "@/config/firebase";
@@ -17,6 +18,9 @@ const app = new Hono();
 
 // Global error handler
 app.onError(errorHandler);
+
+// CORS
+app.use("/*", cors());
 
 // Request logging middleware
 app.use("*", async (c, next) => {
