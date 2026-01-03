@@ -1,4 +1,4 @@
-import { Collection, ObjectId } from "mongodb";
+import { Collection, ObjectId, ClientSession } from "mongodb";
 import { getDatabaseForCompany } from "@/config/database";
 import { CustomerDb } from "@/types/customer/customer";
 import { logger } from "@/utils/logger";
@@ -119,10 +119,10 @@ export class CustomerRepository {
     }
   }
 
-  async delete(companyId: string, id: string): Promise<boolean> {
+  async delete(companyId: string, id: string, session?: ClientSession): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const result = await collection.deleteOne({ _id: new ObjectId(id) } as any);
+      const result = await collection.deleteOne({ _id: new ObjectId(id) } as any, { session });
       const deleted = result.deletedCount > 0;
 
       if (deleted) {

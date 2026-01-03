@@ -1,4 +1,4 @@
-import { Collection, Binary } from "mongodb";
+import { Collection, Binary, ClientSession } from "mongodb";
 import { getDatabaseForCompany, getClient } from "@/config/database";
 import { CustomerImage, CustomerImageMetadata } from "@/types/customer/customer_image";
 import { logger } from "@/utils/logger";
@@ -211,6 +211,17 @@ export class CustomerImageRepository {
       return count > 0;
     } catch (error) {
       logger.error("Failed to check image existence", error);
+      throw error;
+    }
+  }
+
+  async deleteAllByCustomerId(companyId: string, customerId: string, session: ClientSession): Promise<number> {
+    try {
+      const collection = this.getCollection(companyId);
+      const result = await collection.deleteMany({ customerId } as any, { session });
+      return result.deletedCount;
+    } catch (error) {
+      logger.error("Failed to delete customer images", error);
       throw error;
     }
   }

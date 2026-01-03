@@ -100,22 +100,18 @@ async function createIndexesForCompany(database: Db) {
     const salesCollection = database.collection("sales");
 
     // Customer indexes
-    await customersCollection.createIndex({ _id: 1 }, { unique: true });
     await customersCollection.createIndex({ status: 1 });
     await customersCollection.createIndex({ createdAt: -1 });
     await customersCollection.createIndex({ name: 1, surname: 1 });
 
     // Label indexes
-    await labelsCollection.createIndex({ _id: 1 }, { unique: true });
     await labelsCollection.createIndex({ name: 1 });
 
     // CustomerImage indexes
-    await customerImagesCollection.createIndex({ _id: 1 }, { unique: true });
     await customerImagesCollection.createIndex({ customerId: 1 });
     await customerImagesCollection.createIndex({ uploadedAt: -1 });
 
     // Sale indexes
-    await salesCollection.createIndex({ _id: 1 }, { unique: true });
     await salesCollection.createIndex({ customerId: 1 });
     await salesCollection.createIndex({ status: 1 });
     await salesCollection.createIndex({ createdAt: -1 });
@@ -133,16 +129,13 @@ async function createVendorIndexes(database: Db) {
     const permissionsCollection = database.collection("vendor_permissions");
 
     // Vendor indexes
-    await vendorsCollection.createIndex({ _id: 1 }, { unique: true });
     await vendorsCollection.createIndex({ name: 1 });
 
     // Product indexes
-    await productsCollection.createIndex({ _id: 1 }, { unique: true });
     await productsCollection.createIndex({ vendorId: 1 });
     await productsCollection.createIndex({ name: 1 });
 
     // Attachment indexes
-    await attachmentsCollection.createIndex({ _id: 1 }, { unique: true });
     await attachmentsCollection.createIndex({ vendorId: 1 });
 
     // Permission indexes (KEY for performance)

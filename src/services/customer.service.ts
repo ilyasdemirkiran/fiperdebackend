@@ -1,4 +1,6 @@
 import { CustomerRepository } from "@/repositories/customer.repository";
+import { CustomerImageRepository } from "@/repositories/customer-image.repository";
+import { getClient } from "@/config/database";
 import {
     CreateCustomerInput,
     UpdateCustomerInput,
@@ -109,14 +111,33 @@ export class CustomerService {
 
             logger.info("Customer deactivated (soft delete)", { id, companyId, userRole });
         } else {
-            // Hard delete: permanently remove from database
-            const deleted = await this.repository.delete(companyId, id);
+            // Hard delete: permanently remove from database with transaction
+            const client = getClient();
+            const session = client.startSession();
 
-            if (!deleted) {
-                throw new AppError(500, "Failed to delete customer", "DELETE_FAILED");
+            try {
+                await session.withTransaction(async () => {
+                    // Delete customer
+                    const deleted = await this.repository.delete(companyId, id, session);
+
+                    if (!deleted) {
+                        throw new AppError(500, "Failed to delete customer", "DELETE_FAILED");
+                    }
+
+                    // Delete associated images
+                    const imageRepo = new CustomerImageRepository();
+                    const deletedImagesCount = await imageRepo.deleteAllByCustomerId(companyId, id, session);
+
+                    logger.info(`Deleted ${deletedImagesCount} images for customer ${id}`, { companyId });
+                });
+
+                logger.info("Customer and associated images permanently deleted (hard delete)", { id, companyId, userRole });
+            } catch (error) {
+                logger.error("Failed to delete customer with transaction", error);
+                throw error;
+            } finally {
+                await session.endSession();
             }
-
-            logger.info("Customer permanently deleted (hard delete)", { id, companyId, userRole });
         }
     }
 }
