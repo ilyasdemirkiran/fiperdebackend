@@ -11,7 +11,7 @@ import { vendorRoutes } from "@/routes/vendor.routes";
 import { productRoutes } from "@/routes/product.routes";
 import { vendorAttachmentRoutes } from "@/routes/vendor-attachment.routes";
 import { errorHandler } from "@/middleware/error-handler";
-import { logger } from "@/utils/logger";
+import { logger, runWithContext } from "@/utils/logger";
 import { successResponse } from "@/utils/response";
 
 const app = new Hono();
@@ -24,13 +24,15 @@ app.use("/*", cors());
 
 // Request logging middleware
 app.use("*", async (c, next) => {
-    const startTime = Date.now();
-    logger.request(c.req.method, c.req.path);
+    return runWithContext(async () => {
+        const startTime = Date.now();
+        logger.request(c.req.method, c.req.path);
 
-    await next();
+        await next();
 
-    const duration = Date.now() - startTime;
-    logger.response(c.req.method, c.req.path, c.res.status, duration);
+        const duration = Date.now() - startTime;
+        logger.response(c.req.method, c.req.path, c.res.status, duration);
+    });
 });
 
 // Health check endpoint

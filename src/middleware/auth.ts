@@ -1,7 +1,8 @@
 import { createMiddleware } from "hono/factory";
 import { verifyFirebaseToken, getFirebaseApp } from "@/config/firebase";
-import { logger } from "@/utils/logger";
+import { logger, setLogContext } from "@/utils/logger";
 import { fiUserSchema } from "@/types/user/fi_user";
+import { ObjectId } from "mongodb";
 import { Env } from "@/types/hono";
 
 export const authMiddleware = createMiddleware<Env>(async (c, next) => {
@@ -54,6 +55,11 @@ export const authMiddleware = createMiddleware<Env>(async (c, next) => {
 
         // Set user on context
         c.set("user", user);
+
+        // Update log context
+        const userIdStr = user._id instanceof ObjectId ? user._id.toHexString() : String(user._id);
+        setLogContext("companyId", user.companyId);
+        setLogContext("userId", userIdStr);
 
         await next();
     } catch (error: any) {
