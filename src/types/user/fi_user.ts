@@ -6,7 +6,7 @@ import { ObjectId } from 'mongodb';
 export const userRoleSchema = z.enum(['sudo', 'admin', 'user']);
 
 export const fiUserSchema = z.object({
-  _id: z.custom<ObjectId>().optional(),
+  _id: z.string().optional(),
   phoneNumber: phoneNumberSchema,
   name: z.string().min(3, "En az 3 karakter gereklidir."),
   surname: z.string().min(2, "En az 2 karakter gereklidir."),

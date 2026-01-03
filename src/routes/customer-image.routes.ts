@@ -94,7 +94,7 @@ customerImageRoutes.post("/:customerId/images", async (c) => {
     const image = await getService().uploadImage(
       user.companyId!,
       customerId,
-      user._id?.toHexString()!,
+      user._id?.toString()!,
       uploads[0]
     );
     return c.json(successResponse(toResponse(image)), 201);
@@ -102,7 +102,7 @@ customerImageRoutes.post("/:customerId/images", async (c) => {
     const images = await getService().uploadMultipleImages(
       user.companyId!,
       customerId,
-      user._id?.toHexString()!,
+      user._id?.toString()!,
       uploads
     );
     return c.json(successResponse(toResponseArray(images)), 201);
@@ -153,7 +153,7 @@ customerImageRoutes.post("/:customerId/upload/init", async (c) => {
   });
 
   const input = initSchema.parse(body);
-  const result = await getService().initUpload(user.companyId!, customerId, user._id?.toHexString()!, input);
+  const result = await getService().initUpload(user.companyId!, customerId, user._id?.toString()!, input);
 
   return c.json(successResponse(result));
 });

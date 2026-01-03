@@ -1,31 +1,57 @@
 import { ObjectId } from "mongodb";
 
 /**
- * Converts MongoDB ObjectId to string for a single object.
+ * Recursively converts MongoDB ObjectId to string.
  * Keeps the key as '_id'.
  */
-export function toResponse<T extends { _id?: ObjectId | string | undefined }>(
-  obj: T
-): T {
-  if (!obj) return obj;
+export function toResponse<T>(obj: T): any {
+  if (obj === null || obj === undefined) return obj;
 
-  const newObj: any = { ...obj };
-
-  if (newObj._id && newObj._id instanceof ObjectId) {
-    newObj._id = newObj._id.toHexString();
+  if (obj instanceof ObjectId) {
+    return obj.toHexString();
   }
 
-  // Recursively handle nested objects/arrays if needed could stay here, 
-  // but for now let's keep it simple (shallow for _id)
+  if (obj instanceof Date) {
+    return obj;
+  }
 
-  return newObj as T;
+  // Handle Buffer - return as is for JSON serialization (or could be base64)
+  // Ideally large buffers shouldn't be passed here
+  if (Buffer.isBuffer(obj)) {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map((item) => toResponse(item));
+  }
+
+  if (typeof obj === "object") {
+    // Check if it has toHexString method (like custom types behaving as ObjectId)
+    if (typeof (obj as any).toHexString === 'function') {
+      return (obj as any).toHexString();
+    }
+
+    const newObj: any = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        const val = (obj as any)[key];
+        // Special case for _id directly
+        if (key === "_id" && val instanceof ObjectId) {
+          newObj[key] = val.toHexString();
+        } else {
+          newObj[key] = toResponse(val);
+        }
+      }
+    }
+    return newObj;
+  }
+
+  return obj;
 }
 
 /**
- * Converts MongoDB ObjectId to string for an array of objects.
+ * Converts array of objects.
  */
-export function toResponseArray<T extends { _id?: ObjectId | string | undefined }>(
-  arr: T[]
-): T[] {
+export function toResponseArray<T>(arr: T[]): any[] {
   return arr.map((item) => toResponse(item));
 }

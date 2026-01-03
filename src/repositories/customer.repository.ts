@@ -1,6 +1,6 @@
 import { Collection, ObjectId, ClientSession } from "mongodb";
 import { getDatabaseForCompany } from "@/config/database";
-import { CustomerDb } from "@/types/customer/customer";
+import { CustomerDb, CustomerStatus } from "@/types/customer/customer";
 import { logger } from "@/utils/logger";
 
 export class CustomerRepository {
@@ -32,11 +32,15 @@ export class CustomerRepository {
     }
   }
 
-  async getAll(companyId: string): Promise<CustomerDb[]> {
+  async getAll(companyId: string, status?: CustomerStatus): Promise<CustomerDb[]> {
     try {
       const collection = this.getCollection(companyId);
+      const query: any = {};
+      if (status) {
+        query.status = status;
+      }
       const customers = await collection
-        .find({ status: "active" }) // Only active customers by default for dropdowns etc.
+        .find(query)
         .sort({ name: 1, surname: 1 })
         .toArray();
 

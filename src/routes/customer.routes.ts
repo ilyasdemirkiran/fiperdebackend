@@ -44,8 +44,15 @@ customerRoutes.get("/", async (c) => {
 // GET /api/customers/all - List all customers (without pagination)
 customerRoutes.get("/all", async (c) => {
   const user = c.get("user");
-  const customers = await getCustomerService().getAllCustomers(user.companyId!);
-  return c.json(successResponse(toResponseArray(customers)));
+
+  let customers = [];
+  if (user.role === "user") {
+    customers = await getCustomerService().getAllActiveCustomers(user.companyId!);
+  } else {
+    customers = await getCustomerService().getAllCustomers(user.companyId!);
+  }
+
+  return c.json(successResponse(customers));
 });
 
 // GET /api/customers/:id - Get single customer

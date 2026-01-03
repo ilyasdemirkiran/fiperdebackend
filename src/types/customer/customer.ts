@@ -47,6 +47,8 @@ export const customerSchema = customerBaseSchema.superRefine((data, ctx) => {
 
 export type Customer = z.infer<typeof customerSchema>;
 
+export type CustomerStatus = z.infer<typeof customerStatusSchema>;
+
 // Database type (alias for Customer)
 export type CustomerDb = Customer;
 

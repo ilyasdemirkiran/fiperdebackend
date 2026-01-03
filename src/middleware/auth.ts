@@ -43,9 +43,10 @@ export const authMiddleware = createMiddleware<Env>(async (c, next) => {
         // Validate and parse user data
         const userData = userDoc.data();
         const user = fiUserSchema.parse({
-            _id: userDoc.id,
-            ...userData,
+            _id: userData!.id,
+            ...userData
         });
+        console.log(user);
 
         logger.debug("User authenticated", {
             userId: user._id,
@@ -57,7 +58,7 @@ export const authMiddleware = createMiddleware<Env>(async (c, next) => {
         c.set("user", user);
 
         // Update log context
-        const userIdStr = user._id instanceof ObjectId ? user._id.toHexString() : String(user._id);
+        const userIdStr = user._id;
         setLogContext("companyId", user.companyId);
         setLogContext("userId", userIdStr);
 

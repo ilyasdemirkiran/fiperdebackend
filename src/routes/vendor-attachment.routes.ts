@@ -84,7 +84,7 @@ vendorAttachmentRoutes.post("/:vendorId/attachments", async (c) => {
 
   const attachment = await getService().uploadAttachment(
     vendorId,
-    user._id!.toHexString(),
+    user._id!.toString(),
     user.role,
     input
   );

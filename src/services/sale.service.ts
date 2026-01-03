@@ -129,8 +129,9 @@ export class SaleService {
 
     const validatedInput = addPaymentLogSchema.parse(input);
 
-    // Omit _id - MongoDB will auto-generate ObjectId
-    const paymentLog: Omit<PaymentLog, "_id"> = {
+    // Generate _id manually for subdocument
+    const paymentLog: PaymentLog = {
+      _id: new ObjectId(),
       saleId,
       customerId: sale.customerId,
       createdByUserId: userId,

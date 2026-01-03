@@ -14,7 +14,8 @@ export class SaleRepository {
   async create(companyId: string, sale: Sale): Promise<Sale> {
     try {
       const collection = this.getCollection(companyId);
-      await collection.insertOne(sale as any);
+      const result = await collection.insertOne(sale as any);
+      sale._id = result.insertedId;
       logger.info("Sale created", { saleId: sale._id, customerId: sale.customerId, companyId });
       return sale;
     } catch (error) {
