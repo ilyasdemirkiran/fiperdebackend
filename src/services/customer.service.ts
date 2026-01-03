@@ -58,6 +58,10 @@ export class CustomerService {
         return await this.repository.findAll(companyId, options);
     }
 
+    async getAllCustomers(companyId: string): Promise<CustomerDb[]> {
+        return await this.repository.getAll(companyId);
+    }
+
 
     async updateCustomer(
         companyId: string,

@@ -1,4 +1,4 @@
-import { Collection } from "mongodb";
+import { Collection, ObjectId } from "mongodb";
 import { getDatabaseForCompany } from "@/config/database";
 import { CustomerDb } from "@/types/customer/customer";
 import { logger } from "@/utils/logger";
@@ -24,13 +24,25 @@ export class CustomerRepository {
   async findById(companyId: string, id: string): Promise<CustomerDb | null> {
     try {
       const collection = this.getCollection(companyId);
-      const customer = await collection.findOne(
-        { _id: id } as any,
-        { projection: { _id: 0 } }
-      );
+      const customer = await collection.findOne({ _id: new ObjectId(id) } as any);
       return customer;
     } catch (error) {
       logger.error("Failed to find customer by ID", error);
+      throw error;
+    }
+  }
+
+  async getAll(companyId: string): Promise<CustomerDb[]> {
+    try {
+      const collection = this.getCollection(companyId);
+      const customers = await collection
+        .find({ status: "active" }) // Only active customers by default for dropdowns etc.
+        .sort({ name: 1, surname: 1 })
+        .toArray();
+
+      return customers;
+    } catch (error) {
+      logger.error("Failed to fetch all customers", error);
       throw error;
     }
   }
@@ -66,7 +78,7 @@ export class CustomerRepository {
       // Execute queries in parallel
       const [customers, total] = await Promise.all([
         collection
-          .find(query, { projection: { _id: 0 } })
+          .find(query)
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit)
@@ -91,9 +103,9 @@ export class CustomerRepository {
     try {
       const collection = this.getCollection(companyId);
       const result = await collection.findOneAndUpdate(
-        { _id: id } as any,
+        { _id: new ObjectId(id) } as any,
         { $set: { ...updates, updatedAt: new Date() } },
-        { returnDocument: "after", projection: { _id: 0 } }
+        { returnDocument: "after" }
       );
 
       if (result) {
@@ -110,7 +122,7 @@ export class CustomerRepository {
   async delete(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const result = await collection.deleteOne({ _id: id } as any);
+      const result = await collection.deleteOne({ _id: new ObjectId(id) } as any);
       const deleted = result.deletedCount > 0;
 
       if (deleted) {
@@ -127,7 +139,7 @@ export class CustomerRepository {
   async exists(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const count = await collection.countDocuments({ _id: id } as any);
+      const count = await collection.countDocuments({ _id: new ObjectId(id) } as any);
       return count > 0;
     } catch (error) {
       logger.error("Failed to check customer existence", error);
