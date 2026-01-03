@@ -57,10 +57,11 @@ app.get("/", (c) => {
 });
 
 // Mount routes
-app.route("/api/customers", customerRoutes);
-app.route("/api/labels", labelRoutes);
+// Mount routes
 app.route("/api/customers", customerImageRoutes);
 app.route("/api/customers", saleRoutes);
+app.route("/api/customers", customerRoutes);
+app.route("/api/labels", labelRoutes);
 app.route("/api/vendors", vendorRoutes);
 app.route("/api/vendors", vendorAttachmentRoutes);
 app.route("/api/products", productRoutes);
