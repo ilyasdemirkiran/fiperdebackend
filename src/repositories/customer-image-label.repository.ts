@@ -1,6 +1,6 @@
 import { Collection, ClientSession } from "mongodb";
 import { getDatabaseForCompany, getClient } from "@/config/database";
-import { CustomerImageLabel } from "@/types/customer/customer_image_label";
+import type { CustomerImageLabel } from "@/types/customer/customer_image_label";
 import { logger } from "@/utils/logger";
 
 export class CustomerImageLabelRepository {

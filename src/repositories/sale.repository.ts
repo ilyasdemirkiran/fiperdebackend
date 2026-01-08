@@ -1,7 +1,7 @@
 import { Collection, ObjectId } from "mongodb";
 import { getDatabaseForCompany } from "@/config/database";
-import { Sale, SaleStatus } from "@/types/customer/sale/sale";
-import PaymentLog from "@/types/customer/sale/payment_log";
+import type { Sale, SaleStatus } from "@/types/customer/sale/sale";
+import type { PaymentLog } from "@/types/customer/sale/payment_log";
 import { logger } from "@/utils/logger";
 import { Timestamp } from "firebase-admin/firestore";
 
@@ -140,12 +140,12 @@ export class SaleRepository {
       const logIndex = sale.logs.findIndex((log) => log._id?.toString() === logId);
       if (logIndex === -1) return null;
 
-      const oldAmount = sale.logs[logIndex].amount;
+      const oldAmount = sale.logs[logIndex]!.amount;
       const newAmount = updates.amount ?? oldAmount;
 
       // Update log in array
       const updatedLogs = [...sale.logs];
-      updatedLogs[logIndex] = { ...updatedLogs[logIndex], ...updates };
+      updatedLogs[logIndex] = { ...updatedLogs[logIndex]!, ...updates } as PaymentLog;
 
       // Recalculate totalPaidAmount
       const newTotalPaid = sale.totalPaidAmount - oldAmount + newAmount;

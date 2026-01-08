@@ -1,10 +1,10 @@
 import { SaleRepository } from "@/repositories/sale.repository";
-import { Sale, AddSale, addSaleSchema, AddPaymentLog, addPaymentLogSchema, UpdatePaymentLog, updatePaymentLogSchema } from "@/types/customer/sale/sale";
-import PaymentLog from "@/types/customer/sale/payment_log";
+import { type Sale, type AddSale, addSaleSchema, type AddPaymentLog, addPaymentLogSchema, type UpdatePaymentLog, updatePaymentLogSchema } from "@/types/customer/sale/sale";
+import type { PaymentLog } from "@/types/customer/sale/payment_log";
 import { AppError } from "@/middleware/error-handler";
 import { logger } from "@/utils/logger";
 import { Timestamp } from "firebase-admin/firestore";
-import { UserRole } from "@/types/user/fi_user";
+import type { UserRole } from "@/types/user/fi_user";
 import { ObjectId } from "mongodb";
 
 export class SaleService {

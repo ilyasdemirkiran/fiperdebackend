@@ -2,10 +2,10 @@ import { VendorRepository } from "@/repositories/vendor.repository";
 import { VendorPermissionRepository } from "@/repositories/vendor-permission.repository";
 import { ProductRepository } from "@/repositories/product.repository";
 import { VendorAttachmentRepository } from "@/repositories/vendor-attachment.repository";
-import { Vendor } from "@/types/vendor/vendor";
+import type { Vendor } from "@/types/vendor/vendor";
 import { AppError } from "@/middleware/error-handler";
 import { logger } from "@/utils/logger";
-import { UserRole } from "@/types/user/fi_user";
+import type { UserRole } from "@/types/user/fi_user";
 import { Timestamp } from "firebase-admin/firestore";
 
 export class VendorService {

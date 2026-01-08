@@ -1,14 +1,14 @@
 import { VendorAttachmentRepository } from "@/repositories/vendor-attachment.repository";
 import { VendorRepository } from "@/repositories/vendor.repository";
 import {
-  VendorAttachment,
-  VendorAttachmentMetadata,
+  type VendorAttachment,
+  type VendorAttachmentMetadata,
   ALLOWED_ATTACHMENT_MIME_TYPE,
 } from "@/types/vendor/vendor_attachment";
 import { AppError } from "@/middleware/error-handler";
 import { logger } from "@/utils/logger";
 import { Timestamp } from "firebase-admin/firestore";
-import { UserRole } from "@/types/user/fi_user";
+import type { UserRole } from "@/types/user/fi_user";
 import { Binary } from "mongodb";
 
 export interface UploadAttachmentInput {

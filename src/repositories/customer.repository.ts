@@ -1,6 +1,6 @@
 import { Collection, ObjectId, ClientSession } from "mongodb";
 import { getDatabaseForCompany } from "@/config/database";
-import { CustomerDb, CustomerStatus } from "@/types/customer/customer";
+import type { CustomerDb, CustomerStatus } from "@/types/customer/customer";
 import { logger } from "@/utils/logger";
 
 export class CustomerRepository {

@@ -1,11 +1,11 @@
-import { ErrorHandler } from "hono";
+import type { ErrorHandler } from "hono";
 import { ZodError } from "zod";
 import { logger } from "@/utils/logger";
 
 export class AppError extends Error {
     constructor(
         public statusCode: number,
-        public message: string,
+        public override message: string,
         public code?: string,
         public details?: any
     ) {

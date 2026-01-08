@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Env } from "@/types/hono";
+import type { Env } from "@/types/hono";
 import { CustomerImageLabelService } from "@/services/customer-image-label.service";
 import { successResponse } from "@/utils/response";
 import { authMiddleware } from "@/middleware/auth";

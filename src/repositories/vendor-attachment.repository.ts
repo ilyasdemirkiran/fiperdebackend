@@ -1,6 +1,6 @@
-import { Collection } from "mongodb";
+import type { Collection } from "mongodb";
 import { getGlobalVendorDatabase } from "@/config/database";
-import { VendorAttachment } from "@/types/vendor/vendor_attachment";
+import type { VendorAttachment } from "@/types/vendor/vendor_attachment";
 import { logger } from "@/utils/logger";
 
 export class VendorAttachmentRepository {

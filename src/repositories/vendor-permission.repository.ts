@@ -1,6 +1,6 @@
 import { Collection } from "mongodb";
 import { getGlobalVendorDatabase } from "@/config/database";
-import { VendorPermission } from "@/types/vendor/vendor_permission";
+import type { VendorPermission } from "@/types/vendor/vendor_permission";
 import { logger } from "@/utils/logger";
 import { Timestamp } from "firebase-admin/firestore";
 

@@ -1,6 +1,6 @@
 import { Collection, Binary, ClientSession } from "mongodb";
 import { getDatabaseForCompany, getClient } from "@/config/database";
-import { CustomerImage, CustomerImageMetadata } from "@/types/customer/customer_image";
+import type { CustomerImage, CustomerImageMetadata } from "@/types/customer/customer_image";
 import { logger } from "@/utils/logger";
 
 export class CustomerImageRepository {

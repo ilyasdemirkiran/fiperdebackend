@@ -2,8 +2,7 @@ import { createMiddleware } from "hono/factory";
 import { verifyFirebaseToken, getFirebaseApp } from "@/config/firebase";
 import { logger, setLogContext } from "@/utils/logger";
 import { fiUserSchema } from "@/types/user/fi_user";
-import { ObjectId } from "mongodb";
-import { Env } from "@/types/hono";
+import { type Env } from "@/types/hono";
 
 export const authMiddleware = createMiddleware<Env>(async (c, next) => {
     try {

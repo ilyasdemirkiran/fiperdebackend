@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { Env } from "@/types/hono";
-import { CustomerImageService, UploadImageInput } from "@/services/customer-image.service";
+import type { Env } from "@/types/hono";
+import { CustomerImageService, type UploadImageInput } from "@/services/customer-image.service";
 import { successResponse } from "@/utils/response";
 import { authMiddleware } from "@/middleware/auth";
 import { toResponse, toResponseArray } from "@/utils/response-transformer";
@@ -95,7 +95,7 @@ customerImageRoutes.post("/:customerId/images", async (c) => {
       user.companyId!,
       customerId,
       user._id?.toString()!,
-      uploads[0]
+      uploads[0]!
     );
     return c.json(successResponse(toResponse(image)), 201);
   } else {

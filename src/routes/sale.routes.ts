@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Env } from "@/types/hono";
+import type { Env } from "@/types/hono";
 import { SaleService } from "@/services/sale.service";
 import { successResponse } from "@/utils/response";
 import { authMiddleware } from "@/middleware/auth";

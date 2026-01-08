@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { Env } from "@/types/hono";
-import { VendorAttachmentService, UploadAttachmentInput } from "@/services/vendor-attachment.service";
+import type { Env } from "@/types/hono";
+import { VendorAttachmentService, type UploadAttachmentInput } from "@/services/vendor-attachment.service";
 import { successResponse } from "@/utils/response";
 import { authMiddleware } from "@/middleware/auth";
 import { z } from "zod";

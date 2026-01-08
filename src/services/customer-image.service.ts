@@ -1,11 +1,11 @@
 import { CustomerImageRepository } from "@/repositories/customer-image.repository";
-import { CustomerImage, CustomerImageMetadata } from "@/types/customer/customer_image";
+import type { CustomerImage, CustomerImageMetadata } from "@/types/customer/customer_image";
 import { AppError } from "@/middleware/error-handler";
 import { logger } from "@/utils/logger";
 import { Timestamp } from "firebase-admin/firestore";
 import { Binary, ObjectId } from "mongodb";
 import { UploadSessionRepository } from "@/repositories/upload-session.repository";
-import { InitUploadInput, UploadSession, UploadChunk } from "@/types/common/upload";
+import type { InitUploadInput, UploadSession, UploadChunk } from "@/types/common/upload";
 
 export interface UploadImageInput {
   title: string;

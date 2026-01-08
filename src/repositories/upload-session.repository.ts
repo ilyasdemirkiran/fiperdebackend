@@ -1,6 +1,6 @@
 import { Collection, ObjectId, Binary, ClientSession } from "mongodb";
 import { getDatabaseForCompany } from "@/config/database";
-import { UploadSession, UploadChunk } from "@/types/common/upload";
+import type { UploadSession, UploadChunk } from "@/types/common/upload";
 import { logger } from "@/utils/logger";
 
 export class UploadSessionRepository {

@@ -2,15 +2,15 @@ import { CustomerRepository } from "@/repositories/customer.repository";
 import { CustomerImageRepository } from "@/repositories/customer-image.repository";
 import { getClient } from "@/config/database";
 import {
-    CreateCustomerInput,
-    UpdateCustomerInput,
-    CustomerDb,
+    type CreateCustomerInput,
+    type UpdateCustomerInput,
+    type CustomerDb,
     createCustomerSchema,
     updateCustomerSchema,
 } from "@/types/customer/customer";
 import { AppError } from "@/middleware/error-handler";
 import { logger } from "@/utils/logger";
-import { FIUser, UserRole } from "@/types/user/fi_user";
+import type { FIUser, UserRole } from "@/types/user/fi_user";
 import { Timestamp } from "firebase-admin/firestore";
 
 export class CustomerService {

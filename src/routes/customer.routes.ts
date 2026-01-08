@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Env } from "@/types/hono";
+import type { Env } from "@/types/hono";
 import { CustomerService } from "@/services/customer.service";
 import { successResponse, paginatedResponse } from "@/utils/response";
 import { listCustomersQuerySchema } from "@/types/customer/customer";

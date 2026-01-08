@@ -34,6 +34,4 @@ export const paymentLogSchema = z.object({
 });
 
 export type PaymentType = z.infer<typeof paymentTypeSchema>;
-type PaymentLog = z.infer<typeof paymentLogSchema>;
-
-export default PaymentLog;
+export type PaymentLog = z.infer<typeof paymentLogSchema>;
