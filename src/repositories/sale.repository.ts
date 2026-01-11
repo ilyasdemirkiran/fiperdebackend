@@ -39,7 +39,7 @@ export class SaleRepository {
     try {
       const collection = this.getCollection(companyId);
       return await collection
-        .find({ customerId: new ObjectId(customerId) } as any)
+        .find({ customerId: customerId } as any)
         .sort({ createdAt: -1 })
         .toArray();
     } catch (error) {
