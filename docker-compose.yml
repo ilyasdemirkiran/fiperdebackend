@@ -1,6 +1,34 @@
 version: '3.8'
 
 services:
+  # Nginx Reverse Proxy with SSL
+  nginx:
+    image: nginx:alpine
+    container_name: fiperde-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - backend
+    networks:
+      - fiperde-network
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+  # Certbot for SSL certificate renewal
+  certbot:
+    image: certbot/certbot
+    container_name: fiperde-certbot
+    restart: unless-stopped
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
   # Backend API
   backend:
     build:
@@ -8,8 +36,9 @@ services:
       dockerfile: Dockerfile
     container_name: fiperde-backend
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    # Port no longer exposed to host - only accessible via nginx
+    expose:
+      - "3000"
     environment:
       - NODE_ENV=production
       - PORT=3000

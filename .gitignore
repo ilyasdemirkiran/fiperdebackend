@@ -31,3 +31,6 @@ Thumbs.db
 
 # Docker
 .dockerignore
+
+# SSL Certificates (Let's Encrypt)
+certbot/
