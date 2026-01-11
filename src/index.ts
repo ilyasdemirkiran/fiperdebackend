@@ -17,9 +17,6 @@ import { logger, runWithContext } from "@/utils/logger";
 import { successResponse } from "@/utils/response";
 import { authRoutes } from "@/routes/auth.routes";
 import { companyRoutes } from "@/routes/company.routes";
-import { registerClient, unregisterClient, getClientCount } from "@/config/websocket";
-import { initChangeStreams } from "@/services/change-stream.service";
-import type { ServerWebSocket } from "bun";
 
 const app = new Hono();
 
@@ -49,7 +46,6 @@ app.get("/health", (c) => {
             status: "healthy",
             timestamp: new Date().toISOString(),
             version: "1.0.0",
-            wsClients: getClientCount(),
         })
     );
 });
@@ -60,6 +56,15 @@ app.get("/", (c) => {
             status: "healthy",
             timestamp: new Date().toISOString(),
             version: "1.0.0",
+        })
+    );
+});
+
+// Fallback for /api
+app.get("/api", (c) => {
+    return c.json(
+        successResponse({
+            message: "API is running",
         })
     );
 });
@@ -88,14 +93,6 @@ async function initialize() {
         // Connect to MongoDB
         await connectDatabase();
 
-        // Initialize Change Streams for real-time updates
-        try {
-            initChangeStreams();
-            logger.info("📡 Change streams initialized");
-        } catch (error) {
-            logger.warn("Change streams not available - requires MongoDB replica set", error);
-        }
-
         logger.info(`✅ Server ready on port ${env.PORT}`);
     } catch (error) {
         logger.error("Failed to initialize server", error);
@@ -106,26 +103,7 @@ async function initialize() {
 // Start server
 await initialize();
 
-// WebSocket data type
-type WebSocketData = { id: string };
-
 export default {
     port: env.PORT,
     fetch: app.fetch,
-    websocket: {
-        open(ws: ServerWebSocket<WebSocketData>) {
-            const id = registerClient(ws);
-            ws.data = { id };
-            logger.info("WebSocket opened", { id });
-        },
-        close(ws: ServerWebSocket<WebSocketData>) {
-            if (ws.data?.id) {
-                unregisterClient(ws.data.id);
-            }
-        },
-        message(ws: ServerWebSocket<WebSocketData>, message: string | Buffer) {
-            // Handle incoming messages if needed
-            logger.debug("WebSocket message received", { id: ws.data?.id, message: message.toString() });
-        },
-    },
 };
