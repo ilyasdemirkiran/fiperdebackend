@@ -1,4 +1,4 @@
-import { Collection } from "mongodb";
+import { Collection, ObjectId } from "mongodb";
 import { getGlobalVendorDatabase } from "@/config/database";
 import type { Product } from "@/types/vendor/product/product";
 import { logger } from "@/utils/logger";
@@ -9,12 +9,16 @@ export class ProductRepository {
     return db.collection<Product>("products");
   }
 
-  async create(product: Product): Promise<Product> {
+  async create(product: Omit<Product, "_id">, vendorId: string): Promise<Product> {
     try {
       const collection = this.getCollection();
-      await collection.insertOne(product as any);
-      logger.info("Product created", { productId: product._id, vendorId: product.vendorId });
-      return product;
+      const productToInsert = {
+        ...product,
+        vendorId: new ObjectId(vendorId),
+      };
+      const result = await collection.insertOne(productToInsert as any);
+      logger.info("Product created", { productId: result.insertedId, vendorId });
+      return { ...productToInsert, _id: result.insertedId };
     } catch (error) {
       logger.error("Failed to create product", error);
       throw error;
@@ -24,7 +28,7 @@ export class ProductRepository {
   async findById(id: string): Promise<Product | null> {
     try {
       const collection = this.getCollection();
-      return await collection.findOne({ _id: id } as any);
+      return await collection.findOne({ _id: new ObjectId(id) });
     } catch (error) {
       logger.error("Failed to find product by ID", error);
       throw error;
@@ -38,8 +42,9 @@ export class ProductRepository {
   async findByVendorIds(vendorIds: string[]): Promise<Product[]> {
     try {
       const collection = this.getCollection();
+      const objectIds = vendorIds.map(id => new ObjectId(id));
       return await collection
-        .find({ vendorId: { $in: vendorIds } } as any)
+        .find({ vendorId: { $in: objectIds } })
         .sort({ name: 1 })
         .toArray();
     } catch (error) {
@@ -52,7 +57,7 @@ export class ProductRepository {
     try {
       const collection = this.getCollection();
       return await collection
-        .find({ vendorId } as any)
+        .find({ vendorId: new ObjectId(vendorId) })
         .sort({ name: 1 })
         .toArray();
     } catch (error) {
@@ -78,7 +83,7 @@ export class ProductRepository {
     try {
       const collection = this.getCollection();
       return await collection.findOneAndUpdate(
-        { _id: id } as any,
+        { _id: new ObjectId(id) },
         { $set: updates },
         { returnDocument: "after" }
       );
@@ -91,7 +96,7 @@ export class ProductRepository {
   async delete(id: string): Promise<boolean> {
     try {
       const collection = this.getCollection();
-      const result = await collection.deleteOne({ _id: id } as any);
+      const result = await collection.deleteOne({ _id: new ObjectId(id) });
       const deleted = result.deletedCount > 0;
 
       if (deleted) {
@@ -108,7 +113,7 @@ export class ProductRepository {
   async deleteByVendorId(vendorId: string): Promise<number> {
     try {
       const collection = this.getCollection();
-      const result = await collection.deleteMany({ vendorId } as any);
+      const result = await collection.deleteMany({ vendorId: new ObjectId(vendorId) });
       logger.info("Products deleted for vendor", { vendorId, count: result.deletedCount });
       return result.deletedCount;
     } catch (error) {
@@ -120,7 +125,7 @@ export class ProductRepository {
   async exists(id: string): Promise<boolean> {
     try {
       const collection = this.getCollection();
-      const count = await collection.countDocuments({ _id: id } as any);
+      const count = await collection.countDocuments({ _id: new ObjectId(id) });
       return count > 0;
     } catch (error) {
       logger.error("Failed to check product existence", error);

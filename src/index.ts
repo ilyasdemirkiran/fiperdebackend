@@ -11,6 +11,7 @@ import { vendorRoutes } from "@/routes/vendor.routes";
 import { productRoutes } from "@/routes/product.routes";
 import { vendorAttachmentRoutes } from "@/routes/vendor-attachment.routes";
 import { managementRoutes } from "@/routes/management.routes";
+import { priceListRequestRoutes } from "@/routes/price-list-request.routes";
 import { errorHandler } from "@/middleware/error-handler";
 import { logger, runWithContext } from "@/utils/logger";
 import { successResponse } from "@/utils/response";
@@ -63,6 +64,7 @@ app.get("/", (c) => {
 app.route("/api/auth", authRoutes);
 app.route("/api/companies", companyRoutes);
 app.route("/api/management", managementRoutes);
+app.route("/api/price-list-requests", priceListRequestRoutes);
 app.route("/api/customers", customerImageRoutes);
 app.route("/api/customers", saleRoutes);
 app.route("/api/customers", customerRoutes);

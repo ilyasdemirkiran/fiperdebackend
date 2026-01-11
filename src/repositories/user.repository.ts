@@ -1,4 +1,4 @@
-import { Collection } from "mongodb";
+import { Collection, ObjectId } from "mongodb";
 import { getCoreDatabase } from "@/config/database";
 import type { FIUser } from "@/types/user/fi_user";
 import { logger } from "@/utils/logger";
@@ -10,7 +10,7 @@ export class UserRepository {
 
   async create(user: FIUser): Promise<FIUser> {
     try {
-      await this.getCollection().insertOne(user as any); // Cast for _id string
+      await this.getCollection().insertOne(user as any);
       logger.info("User created", { userId: user._id });
       return user;
     } catch (error) {
@@ -19,9 +19,9 @@ export class UserRepository {
     }
   }
 
-  async findById(id: string): Promise<FIUser | null> {
+  async findById(_id: string): Promise<FIUser | null> {
     try {
-      return await this.getCollection().findOne({ _id: id } as any);
+      return await this.getCollection().findOne({ _id } as any);
     } catch (error) {
       logger.error("Failed to find user by ID", error);
       throw error;

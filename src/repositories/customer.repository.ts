@@ -1,6 +1,6 @@
 import { Collection, ObjectId, ClientSession } from "mongodb";
 import { getDatabaseForCompany } from "@/config/database";
-import type { CustomerDb, CustomerStatus } from "@/types/customer/customer";
+import type { Customer, CustomerDb, CustomerStatus } from "@/types/customer/customer";
 import { logger } from "@/utils/logger";
 
 export class CustomerRepository {
@@ -9,7 +9,7 @@ export class CustomerRepository {
     return db.collection<CustomerDb>("customers");
   }
 
-  async create(companyId: string, customer: CustomerDb): Promise<CustomerDb> {
+  async create(companyId: string, customer: CustomerDb): Promise<Omit<CustomerDb, "_id">> {
     try {
       const collection = this.getCollection(companyId);
       await collection.insertOne(customer as any);

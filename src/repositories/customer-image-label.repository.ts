@@ -14,11 +14,11 @@ export class CustomerImageLabelRepository {
     return db.collection("customer_images");
   }
 
-  async create(companyId: string, label: CustomerImageLabel): Promise<CustomerImageLabel> {
+  async create(companyId: string, label: CustomerImageLabel): Promise<Omit<CustomerImageLabel, "_id">> {
     try {
       const collection = this.getCollection(companyId);
       await collection.insertOne(label as any);
-      logger.info("Label created", { labelId: label._id, companyId });
+      logger.info("Label created", { labelId: new ObjectId(label._id), companyId: new ObjectId(companyId) });
       return label;
     } catch (error) {
       logger.error("Failed to create label", error);
@@ -29,7 +29,7 @@ export class CustomerImageLabelRepository {
   async findById(companyId: string, id: string): Promise<CustomerImageLabel | null> {
     try {
       const collection = this.getCollection(companyId);
-      return await collection.findOne({ _id: ObjectId.createFromHexString(id) } as any);
+      return await collection.findOne({ _id: new ObjectId(id) } as any);
     } catch (error) {
       logger.error("Failed to find label by ID", error);
       throw error;
@@ -54,7 +54,7 @@ export class CustomerImageLabelRepository {
     try {
       const collection = this.getCollection(companyId);
       const result = await collection.findOneAndUpdate(
-        { _id: ObjectId.createFromHexString(id) } as any,
+        { _id: new ObjectId(id) } as any,
         { $set: updates },
         { returnDocument: "after" }
       );
@@ -86,7 +86,7 @@ export class CustomerImageLabelRepository {
 
         // Delete the label
         const deleteResult = await labelsCollection.deleteOne(
-          { _id: ObjectId.createFromHexString(labelId) } as any,
+          { _id: new ObjectId(labelId) } as any,
           { session }
         );
 
@@ -96,8 +96,8 @@ export class CustomerImageLabelRepository {
 
         // Remove labelId from all customer_images.labels arrays
         await imagesCollection.updateMany(
-          { labels: ObjectId.createFromHexString(labelId) } as any,
-          { $pull: { labels: ObjectId.createFromHexString(labelId) } } as any,
+          { labels: new ObjectId(labelId) } as any,
+          { $pull: { labels: new ObjectId(labelId) } } as any,
           { session }
         );
 
@@ -117,7 +117,7 @@ export class CustomerImageLabelRepository {
   async exists(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const count = await collection.countDocuments({ _id: ObjectId.createFromHexString(id) } as any);
+      const count = await collection.countDocuments({ _id: new ObjectId(id) } as any);
       return count > 0;
     } catch (error) {
       logger.error("Failed to check label existence", error);

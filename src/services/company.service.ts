@@ -25,11 +25,8 @@ export class CompanyService {
     if (!user) throw new AppError(404, "User not found");
     if (user.companyId) throw new AppError(400, "User already has a company");
 
-    const companyId = new ObjectId().toHexString();
-
     // Creator becomes admin
-    const company: Company = {
-      _id: companyId,
+    const company: Omit<Company, "_id"> = {
       name,
       creatorUserId: userId,
       userIds: [userId],
@@ -37,11 +34,11 @@ export class CompanyService {
       createdAt: Timestamp.now(),
     };
 
-    await this.companyRepo.create(company);
-    await this.userRepo.update(userId, { companyId, role: "admin" });
+    const insertedCompany = await this.companyRepo.create(company);
+    await this.userRepo.update(userId, { companyId: insertedCompany._id.toHexString(), role: "admin" } as any);
 
-    logger.info("Company created", { companyId, userId });
-    return company;
+    logger.info("Company created", { companyId: insertedCompany._id.toHexString(), userId });
+    return insertedCompany;
   }
 
   async inviteUser(
@@ -64,8 +61,7 @@ export class CompanyService {
       throw new AppError(400, "User is already in a company");
     }
 
-    const invite: CompanyInvite = {
-      _id: new ObjectId().toHexString(),
+    const inviteData: Omit<CompanyInvite, "_id"> = {
       companyId,
       inviterUserId: inviterId,
       invitedUserId: invitedUser?._id || "",
@@ -74,7 +70,7 @@ export class CompanyService {
       createdAt: Timestamp.now(),
     };
 
-    await this.inviteRepo.create(invite);
+    const invite = await this.inviteRepo.create(inviteData);
     logger.info("User invited", { companyId, phone });
     return invite;
   }
@@ -109,7 +105,7 @@ export class CompanyService {
     const user = await this.userRepo.findById(userId);
     if (user?.companyId) throw new AppError(400, "You are already in a company");
 
-    // Accept logic
+    // Accept logic - invite.companyId is string (hex)
     await this.inviteRepo.updateStatus(inviteId, "accepted");
     await this.companyRepo.addUser(invite.companyId, userId);
     await this.userRepo.update(userId, { companyId: invite.companyId, role: "user" });
@@ -120,6 +116,7 @@ export class CompanyService {
   async getCompanyInvites(userId: string, companyId: string): Promise<CompanyInvite[]> {
     const user = await this.userRepo.findById(userId);
     if (!user) throw new AppError(404, "User not found");
+    console.log(user.companyId, companyId)
     if (user.companyId !== companyId) throw new AppError(403, "Not authorized");
 
     return await this.inviteRepo.findByCompanyId(companyId);
@@ -134,7 +131,8 @@ export class CompanyService {
 
     const companyIds = [...new Set(invites.map((i) => i.companyId))];
     const companies = await this.companyRepo.findByIds(companyIds);
-    const companyMap = new Map(companies.map((c) => [c._id, c.name]));
+    // Map by hex string for lookup
+    const companyMap = new Map(companies.map((c) => [c._id.toHexString(), c.name]));
 
     return invites.map((invite) => ({
       ...invite,
@@ -146,6 +144,7 @@ export class CompanyService {
     const user = await this.userRepo.findById(userId);
     if (!user) throw new AppError(404, "User not found");
 
+    console.log(user.companyId);
     const company = await this.companyRepo.findById(user.companyId ?? '');
 
     return company;

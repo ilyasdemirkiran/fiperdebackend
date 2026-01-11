@@ -9,4 +9,8 @@ export const VendorServerRoutes = {
   grantPermission: (id: string, companyId: string) => `/vendors/${id}/permissions/${companyId}`,
   revokePermission: (id: string, companyId: string) => `/vendors/${id}/permissions/${companyId}`,
   listPermissions: (id: string) => `/vendors/${id}/permissions`,
+
+  // Documents (client gets latest only)
+  document: (id: string) => `/vendors/${id}/document`,
+  documentMetadata: (id: string) => `/vendors/${id}/document/metadata`,
 } as const;

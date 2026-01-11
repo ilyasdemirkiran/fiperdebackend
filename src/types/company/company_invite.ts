@@ -1,13 +1,14 @@
 import { z } from "zod";
 import { timestampSchema } from "@/types/timestamp";
 import { phoneNumberSchema } from "@/types/phone_number";
+import { ObjectId } from "mongodb";
 
 export const companyInviteStatusSchema = z.enum(["pending", "accepted", "rejected", "cancelled"]);
 export type CompanyInviteStatus = z.infer<typeof companyInviteStatusSchema>;
 
 export const companyInviteSchema = z.object({
-  _id: z.string(),
-  companyId: z.string(),
+  _id: z.custom<ObjectId>().optional(),
+  companyId: z.string(), // hex string of Company._id
   invitedPhoneNumber: phoneNumberSchema,
   invitedUserId: z.string(),
   inviterUserId: z.string(),

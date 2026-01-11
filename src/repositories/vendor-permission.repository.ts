@@ -1,4 +1,4 @@
-import { Collection } from "mongodb";
+import { Collection, ObjectId } from "mongodb";
 import { getGlobalVendorDatabase } from "@/config/database";
 import type { VendorPermission } from "@/types/vendor/vendor_permission";
 import { logger } from "@/utils/logger";
@@ -14,10 +14,9 @@ export class VendorPermissionRepository {
     try {
       const collection = this.getCollection();
 
-      // Omit _id - MongoDB will auto-generate ObjectId
       const permission: Omit<VendorPermission, "_id"> = {
-        vendorId,
-        companyId,
+        vendorId: new ObjectId(vendorId),
+        companyId: new ObjectId(companyId),
         createdAt: Timestamp.now(),
       };
 
@@ -33,7 +32,10 @@ export class VendorPermissionRepository {
   async removePermission(vendorId: string, companyId: string): Promise<boolean> {
     try {
       const collection = this.getCollection();
-      const result = await collection.deleteOne({ vendorId, companyId } as any);
+      const result = await collection.deleteOne({
+        vendorId: new ObjectId(vendorId),
+        companyId: new ObjectId(companyId)
+      });
       const deleted = result.deletedCount > 0;
 
       if (deleted) {
@@ -55,10 +57,10 @@ export class VendorPermissionRepository {
     try {
       const collection = this.getCollection();
       const permissions = await collection
-        .find({ companyId } as any, { projection: { vendorId: 1, _id: 0 } })
+        .find({ companyId: new ObjectId(companyId) }, { projection: { vendorId: 1, _id: 0 } })
         .toArray();
 
-      return permissions.map((p) => p.vendorId);
+      return permissions.map((p) => p.vendorId.toHexString());
     } catch (error) {
       logger.error("Failed to get vendor IDs for company", error);
       throw error;
@@ -69,10 +71,10 @@ export class VendorPermissionRepository {
     try {
       const collection = this.getCollection();
       const permissions = await collection
-        .find({ vendorId } as any, { projection: { companyId: 1, _id: 0 } })
+        .find({ vendorId: new ObjectId(vendorId) }, { projection: { companyId: 1, _id: 0 } })
         .toArray();
 
-      return permissions.map((p) => p.companyId);
+      return permissions.map((p) => p.companyId.toHexString());
     } catch (error) {
       logger.error("Failed to get company IDs for vendor", error);
       throw error;
@@ -82,7 +84,10 @@ export class VendorPermissionRepository {
   async hasPermission(vendorId: string, companyId: string): Promise<boolean> {
     try {
       const collection = this.getCollection();
-      const count = await collection.countDocuments({ vendorId, companyId } as any);
+      const count = await collection.countDocuments({
+        vendorId: new ObjectId(vendorId),
+        companyId: new ObjectId(companyId)
+      });
       return count > 0;
     } catch (error) {
       logger.error("Failed to check vendor permission", error);
@@ -93,7 +98,7 @@ export class VendorPermissionRepository {
   async removeAllPermissionsForVendor(vendorId: string): Promise<number> {
     try {
       const collection = this.getCollection();
-      const result = await collection.deleteMany({ vendorId } as any);
+      const result = await collection.deleteMany({ vendorId: new ObjectId(vendorId) });
       logger.info("All permissions removed for vendor", { vendorId, count: result.deletedCount });
       return result.deletedCount;
     } catch (error) {

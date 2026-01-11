@@ -1,4 +1,4 @@
-import { Collection } from "mongodb";
+import { Collection, ObjectId } from "mongodb";
 import { getCoreDatabase } from "@/config/database";
 import type { Company } from "@/types/company/company";
 import { logger } from "@/utils/logger";
@@ -8,12 +8,14 @@ export class CompanyRepository {
     return getCoreDatabase().collection<Company>("companies");
   }
 
-  async create(company: Company): Promise<Company> {
+  async create(company: Omit<Company, "_id">): Promise<Company> {
     try {
-      // Company already has _id field now
-      await this.getCollection().insertOne(company as any);
-      logger.info("Company created", { companyId: company._id });
-      return company;
+      const result = await this.getCollection().insertOne(company as any);
+      logger.info("Company created", { companyId: result.insertedId });
+      return {
+        ...company,
+        _id: result.insertedId
+      };
     } catch (error) {
       logger.error("Failed to create company", error);
       throw error;
@@ -22,7 +24,7 @@ export class CompanyRepository {
 
   async findById(id: string): Promise<Company | null> {
     try {
-      const doc = await this.getCollection().findOne({ _id: id } as any);
+      const doc = await this.getCollection().findOne({ _id: new ObjectId(id) } as any);
       return doc as Company | null;
     } catch (error) {
       logger.error("Failed to find company by ID", error);
@@ -33,7 +35,7 @@ export class CompanyRepository {
   async findByIds(ids: string[]): Promise<Company[]> {
     try {
       const docs = await this.getCollection()
-        .find({ _id: { $in: ids } } as any)
+        .find({ _id: { $in: ids.map(id => new ObjectId(id)) } } as any)
         .toArray();
       return docs as Company[];
     } catch (error) {
@@ -45,7 +47,7 @@ export class CompanyRepository {
   async addUser(companyId: string, userId: string): Promise<void> {
     try {
       await this.getCollection().updateOne(
-        { _id: companyId } as any,
+        { _id: new ObjectId(companyId) } as any,
         { $addToSet: { userIds: userId } }
       );
     } catch (error) {
@@ -57,7 +59,7 @@ export class CompanyRepository {
   async removeUser(companyId: string, userId: string): Promise<void> {
     try {
       await this.getCollection().updateOne(
-        { _id: companyId } as any,
+        { _id: new ObjectId(companyId) } as any,
         { $pull: { userIds: userId } }
       );
     } catch (error) {
@@ -69,7 +71,7 @@ export class CompanyRepository {
   async update(companyId: string, updates: Partial<Company>): Promise<Company | null> {
     try {
       const result = await this.getCollection().findOneAndUpdate(
-        { _id: companyId } as any,
+        { _id: new ObjectId(companyId) } as any,
         { $set: updates },
         { returnDocument: "after" }
       );

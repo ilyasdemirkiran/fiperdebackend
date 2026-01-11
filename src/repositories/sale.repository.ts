@@ -14,7 +14,8 @@ export class SaleRepository {
   async create(companyId: string, sale: Sale): Promise<Sale> {
     try {
       const collection = this.getCollection(companyId);
-      const result = await collection.insertOne(sale as any);
+      const { _id, ...saleToInsert } = sale;
+      const result = await collection.insertOne(saleToInsert as any);
       sale._id = result.insertedId;
       logger.info("Sale created", { saleId: sale._id, customerId: sale.customerId, companyId });
       return sale;
@@ -27,7 +28,7 @@ export class SaleRepository {
   async findById(companyId: string, id: string): Promise<Sale | null> {
     try {
       const collection = this.getCollection(companyId);
-      return await collection.findOne({ _id: ObjectId.createFromHexString(id) } as any);
+      return await collection.findOne({ _id: new ObjectId(id) } as any);
     } catch (error) {
       logger.error("Failed to find sale by ID", error);
       throw error;
@@ -38,7 +39,7 @@ export class SaleRepository {
     try {
       const collection = this.getCollection(companyId);
       return await collection
-        .find({ customerId } as any)
+        .find({ customerId: new ObjectId(customerId) } as any)
         .sort({ createdAt: -1 })
         .toArray();
     } catch (error) {
@@ -55,7 +56,7 @@ export class SaleRepository {
     try {
       const collection = this.getCollection(companyId);
       return await collection.findOneAndUpdate(
-        { _id: ObjectId.createFromHexString(id) } as any,
+        { _id: new ObjectId(id) } as any,
         { $set: { ...updates, updatedAt: Timestamp.now() } },
         { returnDocument: "after" }
       );
@@ -68,7 +69,7 @@ export class SaleRepository {
   async delete(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const result = await collection.deleteOne({ _id: ObjectId.createFromHexString(id) } as any);
+      const result = await collection.deleteOne({ _id: new ObjectId(id) } as any);
       const deleted = result.deletedCount > 0;
 
       if (deleted) {
@@ -85,7 +86,7 @@ export class SaleRepository {
   async deleteByCustomerId(companyId: string, customerId: string, session: ClientSession): Promise<number> {
     try {
       const collection = this.getCollection(companyId);
-      const result = await collection.deleteMany({ customerId } as any, { session });
+      const result = await collection.deleteMany({ customerId: new ObjectId(customerId) } as any, { session });
 
       const count = result.deletedCount;
       if (count > 0) {
@@ -119,7 +120,7 @@ export class SaleRepository {
 
       // Update sale with new log and recalculated values
       return await collection.findOneAndUpdate(
-        { _id: ObjectId.createFromHexString(saleId) } as any,
+        { _id: new ObjectId(saleId) } as any,
         {
           $push: { logs: paymentLog } as any,
           $set: {
@@ -168,7 +169,7 @@ export class SaleRepository {
       const newStatus: SaleStatus = newTotalPaid >= sale.totalAmount ? "completed" : "pending";
 
       return await collection.findOneAndUpdate(
-        { _id: ObjectId.createFromHexString(saleId) } as any,
+        { _id: new ObjectId(saleId) } as any,
         {
           $set: {
             logs: updatedLogs,
@@ -209,7 +210,7 @@ export class SaleRepository {
       const newStatus: SaleStatus = newTotalPaid >= sale.totalAmount ? "completed" : "pending";
 
       return await collection.findOneAndUpdate(
-        { _id: ObjectId.createFromHexString(saleId) } as any,
+        { _id: new ObjectId(saleId) } as any,
         {
           $pull: { logs: { _id: log._id } } as any,
           $set: {
@@ -229,7 +230,7 @@ export class SaleRepository {
   async exists(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const count = await collection.countDocuments({ _id: id } as any);
+      const count = await collection.countDocuments({ _id: new ObjectId(id) } as any);
       return count > 0;
     } catch (error) {
       logger.error("Failed to check sale existence", error);

@@ -42,7 +42,15 @@ export class ProductService {
 
   async createProduct(
     role: UserRole,
-    data: Pick<Product, "name" | "code" | "price" | "currency" | "vendorId" | "description" | "imageUrl">
+    data: {
+      name: string;
+      code: string;
+      price: number;
+      currency: "TRY" | "USD" | "EUR";
+      vendorId: string;
+      description?: string;
+      imageUrl?: string;
+    }
   ): Promise<Product> {
     this.assertSudo(role);
 
@@ -52,19 +60,18 @@ export class ProductService {
       throw new AppError(404, "Vendor not found", "VENDOR_NOT_FOUND");
     }
 
-    // Omit _id - MongoDB will auto-generate ObjectId
-    const product: Omit<Product, "_id"> = {
+    // Omit _id and vendorId - repository will add vendorId as ObjectId
+    const productData: Omit<Product, "_id" | "vendorId"> = {
       name: data.name,
       code: data.code,
       price: data.price,
       currency: data.currency,
-      vendorId: data.vendorId,
       description: data.description,
       imageUrl: data.imageUrl,
       createdAt: Timestamp.now(),
     };
 
-    return await this.repository.create(product);
+    return await this.repository.create(productData as any, data.vendorId);
   }
 
   async getProduct(id: string): Promise<Product> {

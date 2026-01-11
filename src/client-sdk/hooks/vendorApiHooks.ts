@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Vendor } from "@/types/vendor/vendor";
+import type { VendorDocumentMetadata } from "@/types/vendor/vendor_document";
 import { api } from "@/api/apiAxios";
 import { VendorServerRoutes } from "../routes/vendorServerRoutes";
 import { vendorQueryKeys } from "./vendorQueryKeys";
@@ -28,6 +29,19 @@ export const useVendor = (id: string, enabled: boolean = true) => {
       return data.data;
     },
     enabled: !!id && enabled,
+  });
+};
+
+export const useVendorDocumentMetadata = (vendorId: string, enabled: boolean = true) => {
+  return useQuery({
+    queryKey: [...vendorQueryKeys.detail(vendorId), "document"],
+    queryFn: async () => {
+      const { data } = await api.get<SuccessResponse<VendorDocumentMetadata | null>>(
+        VendorServerRoutes.documentMetadata(vendorId)
+      );
+      return data.data;
+    },
+    enabled: !!vendorId && enabled,
   });
 };
 
@@ -109,3 +123,6 @@ export const useRevokeVendorPermission = () => {
     },
   });
 };
+
+// Helper to get document download URL
+export const getVendorDocumentUrl = (vendorId: string) => VendorServerRoutes.document(vendorId);

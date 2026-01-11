@@ -1,4 +1,4 @@
-import type { Collection } from "mongodb";
+import { Collection, ObjectId } from "mongodb";
 import { getGlobalVendorDatabase } from "@/config/database";
 import type { VendorAttachment } from "@/types/vendor/vendor_attachment";
 import { logger } from "@/utils/logger";
@@ -9,12 +9,13 @@ export class VendorAttachmentRepository {
     return db.collection<VendorAttachment>("vendor_attachments");
   }
 
-  async create(attachment: VendorAttachment): Promise<VendorAttachment> {
+  async create(attachment: Omit<VendorAttachment, "_id">): Promise<VendorAttachment> {
     try {
       const collection = this.getCollection();
-      await collection.insertOne(attachment as any);
-      logger.info("Vendor attachment created", { attachmentId: attachment._id, vendorId: attachment.vendorId });
-      return attachment;
+      const result = await collection.insertOne(attachment as any);
+      const created = { ...attachment, _id: result.insertedId } as VendorAttachment;
+      logger.info("Vendor attachment created", { attachmentId: result.insertedId, vendorId: attachment.vendorId });
+      return created;
     } catch (error) {
       logger.error("Failed to create vendor attachment", error);
       throw error;
@@ -24,7 +25,7 @@ export class VendorAttachmentRepository {
   async findById(id: string): Promise<VendorAttachment | null> {
     try {
       const collection = this.getCollection();
-      return await collection.findOne({ _id: id } as any);
+      return await collection.findOne({ _id: new ObjectId(id) });
     } catch (error) {
       logger.error("Failed to find attachment by ID", error);
       throw error;
@@ -35,7 +36,7 @@ export class VendorAttachmentRepository {
     try {
       const collection = this.getCollection();
       return await collection
-        .find({ vendorId } as any)
+        .find({ vendorId: new ObjectId(vendorId) } as any)
         .sort({ uploadedAt: -1 })
         .toArray();
     } catch (error) {
@@ -48,7 +49,7 @@ export class VendorAttachmentRepository {
     try {
       const collection = this.getCollection();
       return await collection.findOneAndUpdate(
-        { _id: id } as any,
+        { _id: new ObjectId(id) },
         { $set: updates },
         { returnDocument: "after" }
       );
@@ -61,7 +62,7 @@ export class VendorAttachmentRepository {
   async delete(id: string): Promise<boolean> {
     try {
       const collection = this.getCollection();
-      const result = await collection.deleteOne({ _id: id } as any);
+      const result = await collection.deleteOne({ _id: new ObjectId(id) });
       const deleted = result.deletedCount > 0;
 
       if (deleted) {
@@ -78,7 +79,7 @@ export class VendorAttachmentRepository {
   async deleteByVendorId(vendorId: string): Promise<number> {
     try {
       const collection = this.getCollection();
-      const result = await collection.deleteMany({ vendorId } as any);
+      const result = await collection.deleteMany({ vendorId: new ObjectId(vendorId) } as any);
       logger.info("Attachments deleted for vendor", { vendorId, count: result.deletedCount });
       return result.deletedCount;
     } catch (error) {
@@ -90,7 +91,7 @@ export class VendorAttachmentRepository {
   async exists(id: string): Promise<boolean> {
     try {
       const collection = this.getCollection();
-      const count = await collection.countDocuments({ _id: id } as any);
+      const count = await collection.countDocuments({ _id: new ObjectId(id) } as any);
       return count > 0;
     } catch (error) {
       logger.error("Failed to check attachment existence", error);

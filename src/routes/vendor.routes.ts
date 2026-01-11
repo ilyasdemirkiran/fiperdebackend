@@ -31,9 +31,12 @@ const createVendorSchema = z.object({
 
 const updateVendorSchema = createVendorSchema.partial();
 
-// GET /api/vendors - List all vendors (read-only for all)
+// GET /api/vendors - List vendors that company has permission to see
 vendorRoutes.get("/", async (c) => {
-  const vendors = await getService().listAllVendors();
+  const user = c.get("user");
+
+  // For client: only show permitted vendors
+  const vendors = await getService().listVendorsForCompany(user.companyId!);
   return c.json(successResponse(vendors));
 });
 
@@ -42,6 +45,34 @@ vendorRoutes.get("/:id", async (c) => {
   const id = c.req.param("id");
   const vendor = await getService().getVendor(id);
   return c.json(successResponse(vendor));
+});
+
+// GET /api/vendors/:id/document - Get latest document for vendor (PDF or Excel)
+vendorRoutes.get("/:id/document", async (c) => {
+  const vendorId = c.req.param("id");
+
+  const result = await getService().getLatestDocument(vendorId);
+
+  if (!result) {
+    return c.json(successResponse(null));
+  }
+
+  // Return binary data with correct content type
+  return new Response(result.buffer, {
+    headers: {
+      "Content-Type": result.metadata.mimeType,
+      "Content-Length": result.metadata.size.toString(),
+      "Content-Disposition": `inline; filename="${result.metadata.filename}"`,
+    },
+  });
+});
+
+// GET /api/vendors/:id/document/metadata - Get latest document metadata only
+vendorRoutes.get("/:id/document/metadata", async (c) => {
+  const vendorId = c.req.param("id");
+
+  const metadata = await getService().getLatestDocumentMetadata(vendorId);
+  return c.json(successResponse(metadata));
 });
 
 // POST /api/vendors - Create vendor (sudo only)

@@ -1,6 +1,7 @@
 import { ManagementRepository } from "@/repositories/management.repository";
 import { VendorRepository } from "@/repositories/vendor.repository";
 import { ProductRepository } from "@/repositories/product.repository";
+import { VendorPermissionRepository } from "@/repositories/vendor-permission.repository";
 import type { CompanyWithUsers, VendorWithProducts } from "@/types/management/management";
 import type { Vendor } from "@/types/vendor/vendor";
 import type { Product } from "@/types/vendor/product/product";
@@ -13,11 +14,13 @@ export class ManagementService {
   private repository: ManagementRepository;
   private vendorRepo: VendorRepository;
   private productRepo: ProductRepository;
+  private permissionRepo: VendorPermissionRepository;
 
   constructor() {
     this.repository = new ManagementRepository();
     this.vendorRepo = new VendorRepository();
     this.productRepo = new ProductRepository();
+    this.permissionRepo = new VendorPermissionRepository();
   }
 
   private assertSudo(role: UserRole): void {
@@ -94,7 +97,6 @@ export class ManagementService {
       city: data.city,
       district: data.district,
       address: data.address,
-      allowedCompanyIds: [],
       createdAt: Timestamp.now(),
     };
 
@@ -130,13 +132,24 @@ export class ManagementService {
   async setVendorAccess(role: UserRole, vendorId: string, companyIds: string[]): Promise<void> {
     this.assertSudo(role);
 
-    await this.repository.updateVendorAccess(vendorId, companyIds);
-  }
+    // Get current permissions
+    const currentPermissions = await this.permissionRepo.getCompanyIdsForVendor(vendorId);
 
-  async updateVendorPdfUrl(role: UserRole, vendorId: string, pdfUrl: string): Promise<void> {
-    this.assertSudo(role);
+    // Find permissions to add and remove
+    const toAdd = companyIds.filter(id => !currentPermissions.includes(id));
+    const toRemove = currentPermissions.filter(id => !companyIds.includes(id));
 
-    await this.repository.updateVendorPdfUrl(vendorId, pdfUrl);
+    // Add new permissions
+    for (const companyId of toAdd) {
+      await this.permissionRepo.addPermission(vendorId, companyId);
+    }
+
+    // Remove old permissions
+    for (const companyId of toRemove) {
+      await this.permissionRepo.removePermission(vendorId, companyId);
+    }
+
+    logger.info("Vendor access updated via permissions", { vendorId, added: toAdd, removed: toRemove });
   }
 
   // =====================
@@ -155,14 +168,13 @@ export class ManagementService {
       throw new AppError(404, "Vendor not found", "VENDOR_NOT_FOUND");
     }
 
-    const product: Omit<Product, "_id"> = {
+    const productData: Omit<Product, "_id" | "vendorId"> & { vendorName?: string } = {
       ...data,
-      vendorId,
       vendorName: vendor.name,
       createdAt: Timestamp.now(),
     };
 
-    return await this.productRepo.create(product);
+    return await this.productRepo.create(productData as any, vendorId);
   }
 
   async updateProduct(

@@ -1,5 +1,5 @@
-import { Collection } from "mongodb";
-import { getCoreDatabase, getDatabaseForCompany } from "@/config/database";
+import { Collection, ObjectId } from "mongodb";
+import { getCoreDatabase, getGlobalVendorDatabase } from "@/config/database";
 import type { Company } from "@/types/company/company";
 import type { FIUser } from "@/types/user/fi_user";
 import type { Vendor } from "@/types/vendor/vendor";
@@ -16,11 +16,11 @@ export class ManagementRepository {
   }
 
   private getVendorsCollection(): Collection<Vendor> {
-    return getCoreDatabase().collection<Vendor>("vendors");
+    return getGlobalVendorDatabase().collection<Vendor>("vendors");
   }
 
   private getProductsCollection(): Collection<Product> {
-    return getCoreDatabase().collection<Product>("products");
+    return getGlobalVendorDatabase().collection<Product>("products");
   }
 
   // Company operations
@@ -33,10 +33,11 @@ export class ManagementRepository {
     }
   }
 
+  // Note: User companyId is stored as hex string, not ObjectId
   async findUsersByCompanyId(companyId: string): Promise<FIUser[]> {
     try {
       return await this.getUsersCollection()
-        .find({ companyId } as any)
+        .find({ companyId })
         .toArray();
     } catch (error) {
       logger.error("Failed to fetch users by company", error);
@@ -44,6 +45,7 @@ export class ManagementRepository {
     }
   }
 
+  // Note: User _id is Firebase UID (string), not ObjectId
   async findUsersByIds(userIds: string[]): Promise<FIUser[]> {
     try {
       return await this.getUsersCollection()
@@ -55,6 +57,7 @@ export class ManagementRepository {
     }
   }
 
+  // Note: User _id is Firebase UID (string), not ObjectId
   async updateUserRole(userId: string, role: "admin" | "user"): Promise<void> {
     try {
       await this.getUsersCollection().updateOne(
@@ -84,37 +87,11 @@ export class ManagementRepository {
   async findProductsByVendorId(vendorId: string): Promise<Product[]> {
     try {
       return await this.getProductsCollection()
-        .find({ vendorId } as any)
+        .find({ vendorId: new ObjectId(vendorId) })
         .sort({ name: 1 })
         .toArray();
     } catch (error) {
       logger.error("Failed to fetch products by vendor", error);
-      throw error;
-    }
-  }
-
-  async updateVendorAccess(vendorId: string, companyIds: string[]): Promise<void> {
-    try {
-      await this.getVendorsCollection().updateOne(
-        { _id: vendorId } as any,
-        { $set: { allowedCompanyIds: companyIds } }
-      );
-      logger.info("Vendor access updated", { vendorId, companyIds });
-    } catch (error) {
-      logger.error("Failed to update vendor access", error);
-      throw error;
-    }
-  }
-
-  async updateVendorPdfUrl(vendorId: string, pdfUrl: string): Promise<void> {
-    try {
-      await this.getVendorsCollection().updateOne(
-        { _id: vendorId } as any,
-        { $set: { pdfUrl } }
-      );
-      logger.info("Vendor PDF URL updated", { vendorId, pdfUrl });
-    } catch (error) {
-      logger.error("Failed to update vendor PDF URL", error);
       throw error;
     }
   }

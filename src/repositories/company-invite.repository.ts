@@ -1,4 +1,4 @@
-import { Collection } from "mongodb";
+import { Collection, ObjectId } from "mongodb";
 import { getCoreDatabase } from "@/config/database";
 import type { CompanyInvite } from "@/types/company/company_invite";
 import { logger } from "@/utils/logger";
@@ -9,10 +9,10 @@ export class CompanyInviteRepository {
     return getCoreDatabase().collection<CompanyInvite>("company_invites");
   }
 
-  async create(invite: CompanyInvite): Promise<CompanyInvite> {
+  async create(invite: Omit<CompanyInvite, "_id">): Promise<CompanyInvite> {
     try {
-      await this.getCollection().insertOne(invite as any);
-      return invite;
+      const result = await this.getCollection().insertOne(invite as any);
+      return { ...invite, _id: result.insertedId } as CompanyInvite;
     } catch (error) {
       logger.error("Failed to create invite", error);
       throw error;
@@ -21,7 +21,7 @@ export class CompanyInviteRepository {
 
   async findById(id: string): Promise<CompanyInvite | null> {
     try {
-      const doc = await this.getCollection().findOne({ _id: id } as any);
+      const doc = await this.getCollection().findOne({ _id: new ObjectId(id) });
       return doc as CompanyInvite | null;
     } catch (error) {
       logger.error("Failed to find invite", error);
@@ -36,7 +36,7 @@ export class CompanyInviteRepository {
     try {
       const doc = await this.getCollection().findOne({
         invitedPhoneNumber: phone,
-        companyId,
+        companyId, // string
         status: "pending",
       } as any);
       return doc as CompanyInvite | null;
@@ -49,7 +49,7 @@ export class CompanyInviteRepository {
   async updateStatus(id: string, status: CompanyInvite["status"]): Promise<void> {
     try {
       await this.getCollection().updateOne(
-        { _id: id } as any,
+        { _id: new ObjectId(id) },
         {
           $set: {
             status,
@@ -65,7 +65,7 @@ export class CompanyInviteRepository {
 
   async delete(id: string): Promise<boolean> {
     try {
-      const result = await this.getCollection().deleteOne({ _id: id } as any);
+      const result = await this.getCollection().deleteOne({ _id: new ObjectId(id) });
       const deleted = result.deletedCount > 0;
       if (deleted) {
         logger.info("Invite deleted", { inviteId: id });
@@ -76,9 +76,10 @@ export class CompanyInviteRepository {
       throw error;
     }
   }
+
   async findByCompanyId(companyId: string): Promise<CompanyInvite[]> {
     try {
-      const docs = await this.getCollection().find({ companyId } as any).toArray();
+      const docs = await this.getCollection().find({ companyId }).toArray(); // companyId is string
       return docs as CompanyInvite[];
     } catch (error) {
       logger.error("Failed to find invites by company", error);

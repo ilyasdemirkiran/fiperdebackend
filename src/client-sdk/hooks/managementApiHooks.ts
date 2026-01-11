@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { CompanyWithUsers, VendorWithProducts } from "@/types/management/management";
 import type { Vendor } from "@/types/vendor/vendor";
 import type { Product } from "@/types/vendor/product/product";
+import type { VendorDocumentMetadata } from "@/types/vendor/vendor_document";
+import type { PriceListRequestMetadata } from "@/types/vendor/price_list_request";
 import { api } from "@/api/apiAxios";
 import { ManagementServerRoutes } from "../routes/managementServerRoutes";
 
@@ -15,6 +17,10 @@ export const managementQueryKeys = {
   companies: () => [...managementQueryKeys.all, "companies"] as const,
   vendors: () => [...managementQueryKeys.all, "vendors"] as const,
   vendor: (vendorId: string) => [...managementQueryKeys.all, "vendor", vendorId] as const,
+  vendorDocuments: (vendorId: string) => [...managementQueryKeys.all, "vendor", vendorId, "documents"] as const,
+  priceListRequests: () => [...managementQueryKeys.all, "priceListRequests"] as const,
+  priceListRequestsPending: () => [...managementQueryKeys.all, "priceListRequests", "pending"] as const,
+  priceListRequestsCompleted: () => [...managementQueryKeys.all, "priceListRequests", "completed"] as const,
 };
 
 // =====================
@@ -154,22 +160,73 @@ export const useSetVendorAccess = () => {
   });
 };
 
-export const useUploadVendorPdf = () => {
+// =====================
+// VENDOR DOCUMENT HOOKS
+// =====================
+
+export const useVendorDocuments = (vendorId: string, enabled: boolean = true) => {
+  return useQuery({
+    queryKey: managementQueryKeys.vendorDocuments(vendorId),
+    queryFn: async () => {
+      const { data } = await api.get<SuccessResponse<VendorDocumentMetadata[]>>(
+        ManagementServerRoutes.vendorDocuments(vendorId)
+      );
+      return data.data;
+    },
+    enabled: !!vendorId && enabled,
+  });
+};
+
+export const useUploadVendorDocument = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ vendorId, pdfUrl }: { vendorId: string; pdfUrl: string }) => {
-      const { data } = await api.post<SuccessResponse<{ message: string }>>(
-        ManagementServerRoutes.vendorPdf(vendorId),
-        { pdfUrl }
+    mutationFn: async ({
+      vendorId,
+      file,
+      title,
+      description
+    }: {
+      vendorId: string;
+      file: File;
+      title?: string;
+      description?: string;
+    }) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      if (title) formData.append("title", title);
+      if (description) formData.append("description", description);
+
+      const { data } = await api.post<SuccessResponse<VendorDocumentMetadata>>(
+        ManagementServerRoutes.vendorDocuments(vendorId),
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
       return data.data;
     },
     onSuccess: (_, { vendorId }) => {
+      queryClient.invalidateQueries({ queryKey: managementQueryKeys.vendorDocuments(vendorId) });
       queryClient.invalidateQueries({ queryKey: managementQueryKeys.vendor(vendorId) });
     },
   });
 };
+
+export const useDeleteVendorDocument = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ documentId, vendorId }: { documentId: string; vendorId: string }) => {
+      await api.delete(ManagementServerRoutes.deleteDocument(documentId));
+      return { vendorId };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: managementQueryKeys.vendorDocuments(result.vendorId) });
+    },
+  });
+};
+
+// Helper to get document download URL
+export const getDocumentDownloadUrl = (documentId: string) => ManagementServerRoutes.documentDownload(documentId);
 
 // =====================
 // PRODUCT HOOKS
@@ -227,3 +284,83 @@ export const useDeleteManagementProduct = () => {
     },
   });
 };
+
+// =====================
+// PRICE LIST REQUEST HOOKS (MANAGEMENT)
+// =====================
+
+export const useManagementPriceListRequests = (enabled: boolean = true) => {
+  return useQuery({
+    queryKey: managementQueryKeys.priceListRequests(),
+    queryFn: async () => {
+      const { data } = await api.get<SuccessResponse<PriceListRequestMetadata[]>>(
+        ManagementServerRoutes.priceListRequests
+      );
+      return data.data;
+    },
+    enabled,
+  });
+};
+
+export const useManagementPriceListRequestsPending = (enabled: boolean = true) => {
+  return useQuery({
+    queryKey: managementQueryKeys.priceListRequestsPending(),
+    queryFn: async () => {
+      const { data } = await api.get<SuccessResponse<PriceListRequestMetadata[]>>(
+        ManagementServerRoutes.priceListRequestsPending
+      );
+      return data.data;
+    },
+    enabled,
+  });
+};
+
+export const useManagementPriceListRequestsCompleted = (enabled: boolean = true) => {
+  return useQuery({
+    queryKey: managementQueryKeys.priceListRequestsCompleted(),
+    queryFn: async () => {
+      const { data } = await api.get<SuccessResponse<PriceListRequestMetadata[]>>(
+        ManagementServerRoutes.priceListRequestsCompleted
+      );
+      return data.data;
+    },
+    enabled,
+  });
+};
+
+export const useCompletePriceListRequest = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (requestId: string) => {
+      const { data } = await api.put<SuccessResponse<PriceListRequestMetadata>>(
+        ManagementServerRoutes.priceListRequestComplete(requestId)
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: managementQueryKeys.priceListRequests() });
+      queryClient.invalidateQueries({ queryKey: managementQueryKeys.priceListRequestsPending() });
+      queryClient.invalidateQueries({ queryKey: managementQueryKeys.priceListRequestsCompleted() });
+    },
+  });
+};
+
+export const useDeletePriceListRequest = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (requestId: string) => {
+      await api.delete(ManagementServerRoutes.priceListRequestDelete(requestId));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: managementQueryKeys.priceListRequests() });
+      queryClient.invalidateQueries({ queryKey: managementQueryKeys.priceListRequestsPending() });
+      queryClient.invalidateQueries({ queryKey: managementQueryKeys.priceListRequestsCompleted() });
+    },
+  });
+};
+
+// Helper to get price list request file download URL
+export const getPriceListRequestDownloadUrl = (requestId: string) =>
+  ManagementServerRoutes.priceListRequestDownload(requestId);
