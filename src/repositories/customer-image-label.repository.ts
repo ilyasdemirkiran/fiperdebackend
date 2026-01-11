@@ -1,6 +1,6 @@
-import { Collection, ClientSession } from "mongodb";
+import { Collection, ClientSession, ObjectId } from "mongodb";
 import { getDatabaseForCompany, getClient } from "@/config/database";
-import type { CustomerImageLabel } from "@/types/customer/customer_image_label";
+import type { CustomerImageLabel } from "@/types/customer/image/customer_image_label";
 import { logger } from "@/utils/logger";
 
 export class CustomerImageLabelRepository {
@@ -29,7 +29,7 @@ export class CustomerImageLabelRepository {
   async findById(companyId: string, id: string): Promise<CustomerImageLabel | null> {
     try {
       const collection = this.getCollection(companyId);
-      return await collection.findOne({ _id: id } as any, { projection: { _id: 0 } });
+      return await collection.findOne({ _id: ObjectId.createFromHexString(id) } as any);
     } catch (error) {
       logger.error("Failed to find label by ID", error);
       throw error;
@@ -39,7 +39,7 @@ export class CustomerImageLabelRepository {
   async findAll(companyId: string): Promise<CustomerImageLabel[]> {
     try {
       const collection = this.getCollection(companyId);
-      return await collection.find({}, { projection: { _id: 0 } }).toArray();
+      return await collection.find({}).toArray();
     } catch (error) {
       logger.error("Failed to fetch labels", error);
       throw error;
@@ -54,9 +54,9 @@ export class CustomerImageLabelRepository {
     try {
       const collection = this.getCollection(companyId);
       const result = await collection.findOneAndUpdate(
-        { _id: id } as any,
+        { _id: ObjectId.createFromHexString(id) } as any,
         { $set: updates },
-        { returnDocument: "after", projection: { _id: 0 } }
+        { returnDocument: "after" }
       );
 
       if (result) {
@@ -66,23 +66,6 @@ export class CustomerImageLabelRepository {
       return result;
     } catch (error) {
       logger.error("Failed to update label", error);
-      throw error;
-    }
-  }
-
-  async delete(companyId: string, id: string): Promise<boolean> {
-    try {
-      const collection = this.getCollection(companyId);
-      const result = await collection.deleteOne({ _id: id } as any);
-      const deleted = result.deletedCount > 0;
-
-      if (deleted) {
-        logger.info("Label deleted", { labelId: id, companyId });
-      }
-
-      return deleted;
-    } catch (error) {
-      logger.error("Failed to delete label", error);
       throw error;
     }
   }
@@ -103,7 +86,7 @@ export class CustomerImageLabelRepository {
 
         // Delete the label
         const deleteResult = await labelsCollection.deleteOne(
-          { _id: labelId } as any,
+          { _id: ObjectId.createFromHexString(labelId) } as any,
           { session }
         );
 
@@ -113,8 +96,8 @@ export class CustomerImageLabelRepository {
 
         // Remove labelId from all customer_images.labels arrays
         await imagesCollection.updateMany(
-          { labels: labelId },
-          { $pull: { labels: labelId } } as any,
+          { labels: ObjectId.createFromHexString(labelId) } as any,
+          { $pull: { labels: ObjectId.createFromHexString(labelId) } } as any,
           { session }
         );
 
@@ -134,7 +117,7 @@ export class CustomerImageLabelRepository {
   async exists(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const count = await collection.countDocuments({ _id: id } as any);
+      const count = await collection.countDocuments({ _id: ObjectId.createFromHexString(id) } as any);
       return count > 0;
     } catch (error) {
       logger.error("Failed to check label existence", error);

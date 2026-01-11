@@ -24,7 +24,7 @@ export class ProductRepository {
   async findById(id: string): Promise<Product | null> {
     try {
       const collection = this.getCollection();
-      return await collection.findOne({ _id: id } as any, { projection: { _id: 0 } });
+      return await collection.findOne({ _id: id } as any);
     } catch (error) {
       logger.error("Failed to find product by ID", error);
       throw error;
@@ -39,7 +39,7 @@ export class ProductRepository {
     try {
       const collection = this.getCollection();
       return await collection
-        .find({ vendorId: { $in: vendorIds } } as any, { projection: { _id: 0 } })
+        .find({ vendorId: { $in: vendorIds } } as any)
         .sort({ name: 1 })
         .toArray();
     } catch (error) {
@@ -52,7 +52,7 @@ export class ProductRepository {
     try {
       const collection = this.getCollection();
       return await collection
-        .find({ vendorId } as any, { projection: { _id: 0 } })
+        .find({ vendorId } as any)
         .sort({ name: 1 })
         .toArray();
     } catch (error) {
@@ -65,7 +65,7 @@ export class ProductRepository {
     try {
       const collection = this.getCollection();
       return await collection
-        .find({}, { projection: { _id: 0 } })
+        .find({})
         .sort({ name: 1 })
         .toArray();
     } catch (error) {
@@ -80,7 +80,7 @@ export class ProductRepository {
       return await collection.findOneAndUpdate(
         { _id: id } as any,
         { $set: updates },
-        { returnDocument: "after", projection: { _id: 0 } }
+        { returnDocument: "after" }
       );
     } catch (error) {
       logger.error("Failed to update product", error);

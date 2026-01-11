@@ -42,6 +42,7 @@ export const addSaleSchema = saleSchema.pick({
   status: true,
   description: true,
   logs: true,
+  createdAt: true,
 });
 export type AddSale = z.infer<typeof addSaleSchema>;
 
@@ -51,6 +52,7 @@ export const updateSaleSchema = saleSchema.pick({
   status: true,
   description: true,
   logs: true,
+  createdAt: true,
 });
 export type UpdateSale = z.infer<typeof updateSaleSchema>;
 
@@ -61,6 +63,8 @@ export const addPaymentLogSchema = paymentLogSchema.pick({
   currency: true,
   paymentType: true,
   description: true,
+}).extend({
+  createdAt: timestampSchema.optional(),
 });
 export type AddPaymentLog = z.infer<typeof addPaymentLogSchema>;
 
@@ -70,6 +74,8 @@ export const updatePaymentLogSchema = paymentLogSchema.pick({
   currency: true,
   paymentType: true,
   description: true,
+}).extend({
+  createdAt: timestampSchema.optional(),
 });
 export type UpdatePaymentLog = z.infer<typeof updatePaymentLogSchema>;
 

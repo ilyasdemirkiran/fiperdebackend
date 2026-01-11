@@ -16,6 +16,8 @@ export const vendorBaseSchema = z.object({
     .min(2, 'En az 2 karakter gereklidir')
     .max(1000, 'Max 1000 karakter')
     .optional(),
+  pdfUrl: z.string().optional(),
+  allowedCompanyIds: z.array(z.string()).default([]), // empty = all companies can see
   createdAt: timestampSchema
 });
 

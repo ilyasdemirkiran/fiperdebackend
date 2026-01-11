@@ -1,0 +1,14 @@
+export const CompanyServerRoutes = {
+  create: "/companies",
+  invite: "/companies/invite",
+  respondInvite: (id: string) => `/companies/invites/${id}/respond`,
+  getCompanyInvites: "/companies/invites",
+  getMyInvites: "/companies/my-invites",
+  myCompany: "/companies/my-company",
+  users: (companyId: string) => `/companies/${companyId}/users`,
+  promoteUser: (companyId: string, userId: string) => `/companies/${companyId}/users/${userId}/promote`,
+  demoteUser: (companyId: string, userId: string) => `/companies/${companyId}/users/${userId}/demote`,
+  leave: "/companies/leave",
+  deleteInvite: (inviteId: string) => `/companies/invites/${inviteId}`,
+  updateName: "/companies/name",
+} as const;

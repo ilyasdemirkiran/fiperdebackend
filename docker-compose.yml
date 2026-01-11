@@ -26,13 +26,13 @@ services:
     networks:
       - fiperde-network
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:3000/health" ]
+      test: [ "CMD", "bun", "run", "-e", "fetch('http://localhost:3000/health').then(r => r.ok ? process.exit(0) : process.exit(1))" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
-  # Production MongoDB (NOT exposed externally)
+  # Production MongoDB (configured as replica set for transaction support)
   mongodb:
     image: mongo:7.0
     container_name: fiperde-mongodb
@@ -41,34 +41,58 @@ services:
       - "2961:27017" # Expose on port 2961 to avoid conflict with existing MongoDB
     environment:
       - MONGO_INITDB_DATABASE=fiperde
+    command: [ "--replSet", "rs0", "--bind_ip_all" ]
     volumes:
       - mongodb-data:/data/db
       - mongodb-config:/data/configdb
     networks:
       - fiperde-network
     healthcheck:
-      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      test: |
+        mongosh --eval "
+        try {
+          rs.status();
+        } catch(e) {
+          rs.initiate({
+            _id: 'rs0',
+            members: [{ _id: 0, host: 'mongodb:27017' }]
+          });
+        }
+        db.adminCommand('ping');
+        "
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 20s
-    # Test MongoDB (for testing purposes)
+      retries: 10
+      start_period: 30s
+    # Test MongoDB (configured as replica set for transaction support)
   mongodb-test:
     image: mongo:7.0
     container_name: fiperde-mongodb-test
     restart: unless-stopped
     environment:
       - MONGO_INITDB_DATABASE=fiperde-test
+    command: [ "--replSet", "rs0-test", "--bind_ip_all" ]
     volumes:
       - mongodb-test-data:/data/db
     networks:
       - fiperde-network
     healthcheck:
-      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      test: |
+        mongosh --eval "
+        try {
+          rs.status();
+        } catch(e) {
+          rs.initiate({
+            _id: 'rs0-test',
+            members: [{ _id: 0, host: 'mongodb-test:27017' }]
+          });
+        }
+        db.adminCommand('ping');
+        "
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 10
+      start_period: 30s
     # IMPORTANT: No ports exposed to host
 
 networks:

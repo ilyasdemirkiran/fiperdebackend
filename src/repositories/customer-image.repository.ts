@@ -1,7 +1,8 @@
-import { Collection, Binary, ClientSession } from "mongodb";
-import { getDatabaseForCompany, getClient } from "@/config/database";
-import type { CustomerImage, CustomerImageMetadata } from "@/types/customer/customer_image";
+import { Collection, ObjectId, ClientSession, GridFSBucket } from "mongodb";
+import { getDatabaseForCompany, getClient, getGridFSBucket } from "@/config/database";
+import type { CustomerImage, CustomerImageMetadata } from "@/types/customer/image/customer_image";
 import { logger } from "@/utils/logger";
+import { Readable } from "stream";
 
 export class CustomerImageRepository {
   private getCollection(companyId: string): Collection<CustomerImage> {
@@ -14,23 +15,124 @@ export class CustomerImageRepository {
     return db.collection("customers");
   }
 
+  private getBucket(companyId: string): GridFSBucket {
+    return getGridFSBucket(companyId, "images");
+  }
+
   /**
-   * Create image and increment Customer.imageCount (transaction)
+   * Upload file to GridFS and return the file ID
+   */
+  async uploadToGridFS(
+    companyId: string,
+    filename: string,
+    data: Buffer,
+    metadata?: Record<string, any>
+  ): Promise<ObjectId> {
+    const bucket = this.getBucket(companyId);
+
+    return new Promise((resolve, reject) => {
+      const readableStream = Readable.from(data);
+      const uploadStream = bucket.openUploadStream(filename, { metadata });
+
+      readableStream
+        .pipe(uploadStream)
+        .on("error", (error) => {
+          logger.error("GridFS upload failed", error);
+          reject(error);
+        })
+        .on("finish", () => {
+          logger.info("GridFS upload completed", { fileId: uploadStream.id, filename });
+          resolve(uploadStream.id);
+        });
+    });
+  }
+
+  /**
+   * Download file from GridFS
+   */
+  async downloadFromGridFS(companyId: string, fileId: ObjectId): Promise<Buffer> {
+    const bucket = this.getBucket(companyId);
+
+    return new Promise((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      const downloadStream = bucket.openDownloadStream(fileId);
+
+      downloadStream
+        .on("data", (chunk) => chunks.push(Buffer.from(chunk)))
+        .on("error", (error) => {
+          logger.error("GridFS download failed", error);
+          reject(error);
+        })
+        .on("end", () => {
+          resolve(Buffer.concat(chunks));
+        });
+    });
+  }
+
+  /**
+   * Get GridFS download stream for streaming response
+   */
+  getDownloadStream(companyId: string, fileId: ObjectId) {
+    const bucket = this.getBucket(companyId);
+    return bucket.openDownloadStream(fileId);
+  }
+
+  /**
+   * Delete file from GridFS
+   */
+  async deleteFromGridFS(companyId: string, fileId: ObjectId): Promise<void> {
+    const bucket = this.getBucket(companyId);
+    await bucket.delete(fileId);
+    logger.info("GridFS file deleted", { fileId });
+  }
+
+  /**
+   * Create image metadata and upload to GridFS (transaction)
    */
   async createWithTransaction(
     companyId: string,
     customerId: string,
-    image: CustomerImage
+    imageData: {
+      title: string;
+      description?: string;
+      filename: string;
+      mimeType: string;
+      data: Buffer;
+      uploaderId: string;
+      labels?: string[];
+      uploadedAt: any;
+    }
   ): Promise<CustomerImageMetadata> {
     const client = getClient();
     const session = client.startSession();
+    let fileId: ObjectId | null = null;
 
     try {
+      // First upload to GridFS (outside transaction - GridFS doesn't support transactions)
+      fileId = await this.uploadToGridFS(companyId, imageData.filename, imageData.data, {
+        customerId,
+        mimeType: imageData.mimeType,
+      });
+
       await session.withTransaction(async () => {
         const imagesCollection = this.getCollection(companyId);
         const customersCollection = this.getCustomersCollection(companyId);
 
-        // Insert image
+        const image: CustomerImage = {
+          _id: new ObjectId(),
+          customerId,
+          title: imageData.title,
+          description: imageData.description || "",
+          uploadedAt: imageData.uploadedAt,
+          uploaderId: imageData.uploaderId,
+          filename: imageData.filename,
+          mimeType: imageData.mimeType,
+          size: imageData.data.length,
+          fileId: fileId!,
+          labels: imageData.labels || [],
+        };
+
+        // Insert image metadata
         await imagesCollection.insertOne(image as any, { session });
 
         // Increment customer imageCount
@@ -41,17 +143,34 @@ export class CustomerImageRepository {
         );
       });
 
-      logger.info("Image created with transaction", {
-        imageId: image._id,
+      logger.info("Image created with GridFS", {
+        fileId,
         customerId,
         companyId,
       });
 
-      // Return metadata without binary data
-      const { data, ...metadata } = image;
-      return metadata as CustomerImageMetadata;
+      // Return metadata without fileId
+      return {
+        customerId,
+        title: imageData.title,
+        description: imageData.description || "",
+        uploadedAt: imageData.uploadedAt,
+        uploaderId: imageData.uploaderId,
+        filename: imageData.filename,
+        mimeType: imageData.mimeType,
+        size: imageData.data.length,
+        labels: imageData.labels || [],
+      } as CustomerImageMetadata;
     } catch (error) {
-      logger.error("Failed to create image with transaction", error);
+      // Cleanup GridFS file if transaction failed
+      if (fileId) {
+        try {
+          await this.deleteFromGridFS(companyId, fileId);
+        } catch (cleanupError) {
+          logger.error("Failed to cleanup GridFS file after transaction failure", cleanupError);
+        }
+      }
+      logger.error("Failed to create image with GridFS", error);
       throw error;
     } finally {
       await session.endSession();
@@ -59,17 +178,50 @@ export class CustomerImageRepository {
   }
 
   /**
-   * Create multiple images and increment Customer.imageCount (transaction)
+   * Create multiple images with GridFS (transaction)
    */
   async createManyWithTransaction(
     companyId: string,
     customerId: string,
-    images: CustomerImage[]
+    imagesData: Array<{
+      title: string;
+      description?: string;
+      filename: string;
+      mimeType: string;
+      data: Buffer;
+      uploaderId: string;
+      labels?: string[];
+      uploadedAt: any;
+    }>
   ): Promise<CustomerImageMetadata[]> {
     const client = getClient();
     const session = client.startSession();
+    const uploadedFileIds: ObjectId[] = [];
 
     try {
+      // First upload all files to GridFS
+      for (const imgData of imagesData) {
+        const fileId = await this.uploadToGridFS(companyId, imgData.filename, imgData.data, {
+          customerId,
+          mimeType: imgData.mimeType,
+        });
+        uploadedFileIds.push(fileId);
+      }
+
+      const images: CustomerImage[] = imagesData.map((imgData, index) => ({
+        _id: new ObjectId(),
+        customerId,
+        title: imgData.title,
+        description: imgData.description || "",
+        uploadedAt: imgData.uploadedAt,
+        uploaderId: imgData.uploaderId,
+        filename: imgData.filename,
+        mimeType: imgData.mimeType,
+        size: imgData.data.length,
+        fileId: uploadedFileIds[index]!,
+        labels: imgData.labels || [],
+      }));
+
       await session.withTransaction(async () => {
         const imagesCollection = this.getCollection(companyId);
         const customersCollection = this.getCustomersCollection(companyId);
@@ -85,16 +237,24 @@ export class CustomerImageRepository {
         );
       });
 
-      logger.info("Multiple images created with transaction", {
+      logger.info("Multiple images created with GridFS", {
         count: images.length,
         customerId,
         companyId,
       });
 
-      // Return metadata without binary data
-      return images.map(({ data, ...metadata }) => metadata as CustomerImageMetadata);
+      // Return metadata without fileId
+      return images.map(({ fileId, ...metadata }) => metadata as CustomerImageMetadata);
     } catch (error) {
-      logger.error("Failed to create multiple images with transaction", error);
+      // Cleanup GridFS files if transaction failed
+      for (const fileId of uploadedFileIds) {
+        try {
+          await this.deleteFromGridFS(companyId, fileId);
+        } catch (cleanupError) {
+          logger.error("Failed to cleanup GridFS file after transaction failure", cleanupError);
+        }
+      }
+      logger.error("Failed to create multiple images with GridFS", error);
       throw error;
     } finally {
       await session.endSession();
@@ -104,7 +264,7 @@ export class CustomerImageRepository {
   async findById(companyId: string, id: string): Promise<CustomerImage | null> {
     try {
       const collection = this.getCollection(companyId);
-      return await collection.findOne({ _id: id } as any, { projection: { _id: 0 } });
+      return await collection.findOne({ _id: ObjectId.createFromHexString(id) } as any);
     } catch (error) {
       logger.error("Failed to find image by ID", error);
       throw error;
@@ -115,8 +275,8 @@ export class CustomerImageRepository {
     try {
       const collection = this.getCollection(companyId);
       return await collection.findOne(
-        { _id: id } as any,
-        { projection: { _id: 0, data: 0 } }
+        { _id: ObjectId.createFromHexString(id) } as any,
+        { projection: { fileId: 0 } }
       ) as CustomerImageMetadata | null;
     } catch (error) {
       logger.error("Failed to find image metadata by ID", error);
@@ -128,11 +288,27 @@ export class CustomerImageRepository {
     try {
       const collection = this.getCollection(companyId);
       return await collection
-        .find({ customerId } as any, { projection: { _id: 0, data: 0 } })
+        .find({ customerId } as any, { projection: { fileId: 0 } })
         .sort({ uploadedAt: -1 })
         .toArray() as CustomerImageMetadata[];
     } catch (error) {
       logger.error("Failed to fetch images by customerId", error);
+      throw error;
+    }
+  }
+
+  async findByLabelIds(companyId: string, labelIds: string[]): Promise<CustomerImageMetadata[]> {
+    try {
+      const collection = this.getCollection(companyId);
+      return await collection
+        .find(
+          { labels: { $in: labelIds } } as any,
+          { projection: { fileId: 0 } }
+        )
+        .sort({ uploadedAt: -1 })
+        .toArray() as CustomerImageMetadata[];
+    } catch (error) {
+      logger.error("Failed to fetch images by label IDs", error);
       throw error;
     }
   }
@@ -145,9 +321,9 @@ export class CustomerImageRepository {
     try {
       const collection = this.getCollection(companyId);
       const result = await collection.findOneAndUpdate(
-        { _id: id } as any,
+        { _id: ObjectId.createFromHexString(id) } as any,
         { $set: updates },
-        { returnDocument: "after", projection: { _id: 0, data: 0 } }
+        { returnDocument: "after", projection: { fileId: 0 } }
       );
       return result as CustomerImageMetadata | null;
     } catch (error) {
@@ -157,7 +333,7 @@ export class CustomerImageRepository {
   }
 
   /**
-   * Delete image and decrement Customer.imageCount (transaction)
+   * Delete image and GridFS file (transaction)
    */
   async deleteWithTransaction(
     companyId: string,
@@ -168,15 +344,21 @@ export class CustomerImageRepository {
     const session = client.startSession();
 
     try {
+      // First get the image to find the fileId
+      const image = await this.findById(companyId, imageId);
+      if (!image) {
+        throw new Error("Image not found");
+      }
+
       let deleted = false;
 
       await session.withTransaction(async () => {
         const imagesCollection = this.getCollection(companyId);
         const customersCollection = this.getCustomersCollection(companyId);
 
-        // Delete the image
+        // Delete the image metadata
         const deleteResult = await imagesCollection.deleteOne(
-          { _id: imageId } as any,
+          { _id: ObjectId.createFromHexString(imageId) } as any,
           { session }
         );
 
@@ -194,10 +376,15 @@ export class CustomerImageRepository {
         deleted = true;
       });
 
-      logger.info("Image deleted with transaction", { imageId, customerId, companyId });
+      // Delete from GridFS after successful transaction
+      if (deleted && image.fileId) {
+        await this.deleteFromGridFS(companyId, image.fileId);
+      }
+
+      logger.info("Image deleted with GridFS", { imageId, customerId, companyId });
       return deleted;
     } catch (error) {
-      logger.error("Failed to delete image with transaction", error);
+      logger.error("Failed to delete image with GridFS", error);
       throw error;
     } finally {
       await session.endSession();
@@ -207,7 +394,7 @@ export class CustomerImageRepository {
   async exists(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const count = await collection.countDocuments({ _id: id } as any);
+      const count = await collection.countDocuments({ _id: ObjectId.createFromHexString(id) } as any);
       return count > 0;
     } catch (error) {
       logger.error("Failed to check image existence", error);
@@ -218,7 +405,24 @@ export class CustomerImageRepository {
   async deleteAllByCustomerId(companyId: string, customerId: string, session: ClientSession): Promise<number> {
     try {
       const collection = this.getCollection(companyId);
+
+      // First get all images to find fileIds
+      const images = await collection.find({ customerId } as any).toArray();
+
+      // Delete image records
       const result = await collection.deleteMany({ customerId } as any, { session });
+
+      // Delete GridFS files (outside transaction)
+      for (const image of images) {
+        if (image.fileId) {
+          try {
+            await this.deleteFromGridFS(companyId, image.fileId);
+          } catch (error) {
+            logger.error("Failed to delete GridFS file during customer cleanup", error);
+          }
+        }
+      }
+
       return result.deletedCount;
     } catch (error) {
       logger.error("Failed to delete customer images", error);

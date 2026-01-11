@@ -1,8 +1,8 @@
 import { createMiddleware } from "hono/factory";
-import { verifyFirebaseToken, getFirebaseApp } from "@/config/firebase";
+import { verifyFirebaseToken } from "@/config/firebase";
 import { logger, setLogContext } from "@/utils/logger";
-import { fiUserSchema } from "@/types/user/fi_user";
 import { type Env } from "@/types/hono";
+import { UserRepository } from "@/repositories/user.repository";
 
 export const authMiddleware = createMiddleware<Env>(async (c, next) => {
     try {
@@ -24,12 +24,11 @@ export const authMiddleware = createMiddleware<Env>(async (c, next) => {
         const decodedToken = await verifyFirebaseToken(token);
         const userId = decodedToken.uid;
 
-        // Fetch user from Firestore 'users' collection
-        const firebaseApp = getFirebaseApp();
-        const db = firebaseApp.firestore();
-        const userDoc = await db.collection("users").doc(userId).get();
+        // Fetch user from MongoDB 'users' collection
+        const userRepo = new UserRepository();
+        const user = await userRepo.findById(userId);
 
-        if (!userDoc.exists) {
+        if (!user) {
             return c.json(
                 {
                     success: false,
@@ -38,14 +37,6 @@ export const authMiddleware = createMiddleware<Env>(async (c, next) => {
                 401
             );
         }
-
-        // Validate and parse user data
-        const userData = userDoc.data();
-        const user = fiUserSchema.parse({
-            _id: userData!.id,
-            ...userData
-        });
-        console.log(user);
 
         logger.debug("User authenticated", {
             userId: user._id,

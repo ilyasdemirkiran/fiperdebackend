@@ -1,8 +1,9 @@
-import { MongoClient, Db } from "mongodb";
+import { MongoClient, Db, GridFSBucket } from "mongodb";
 import { getMongoUri } from "./env";
 
 let client: MongoClient | null = null;
 const dbCache: Map<string, Db> = new Map();
+const gridFSCache: Map<string, GridFSBucket> = new Map();
 
 /**
  * Initialize MongoDB client connection (single connection pool for all databases)
@@ -89,6 +90,55 @@ export function getGlobalVendorDatabase(): Db {
     return db;
 }
 
+/**
+ * Get core database (shared collections like users, companies, invites)
+ */
+export function getCoreDatabase(): Db {
+    if (!client) {
+        throw new Error("Database not connected. Call connectDatabase() first.");
+    }
+
+    const dbName = "fiperde_core";
+
+    // Check cache first
+    let db = dbCache.get(dbName);
+    if (db) {
+        return db;
+    }
+
+    // Create new db reference and cache it
+    db = client.db(dbName);
+    dbCache.set(dbName, db);
+
+    return db;
+}
+
+/**
+ * Get GridFS bucket for a specific company's database
+ * Used for storing large binary files like images
+ */
+export function getGridFSBucket(companyId: string, bucketName: string = "images"): GridFSBucket {
+    if (!client) {
+        throw new Error("Database not connected. Call connectDatabase() first.");
+    }
+
+    const cacheKey = `${companyId}_${bucketName}`;
+
+    // Check cache first
+    let bucket = gridFSCache.get(cacheKey);
+    if (bucket) {
+        return bucket;
+    }
+
+    // Get or create database for company
+    const db = getDatabaseForCompany(companyId);
+
+    // Create new GridFS bucket and cache it
+    bucket = new GridFSBucket(db, { bucketName });
+    gridFSCache.set(cacheKey, bucket);
+
+    return bucket;
+}
 
 /**
  * Create indexes for a company's database

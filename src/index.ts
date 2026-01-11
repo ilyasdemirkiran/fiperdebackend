@@ -10,9 +10,12 @@ import { saleRoutes } from "@/routes/sale.routes";
 import { vendorRoutes } from "@/routes/vendor.routes";
 import { productRoutes } from "@/routes/product.routes";
 import { vendorAttachmentRoutes } from "@/routes/vendor-attachment.routes";
+import { managementRoutes } from "@/routes/management.routes";
 import { errorHandler } from "@/middleware/error-handler";
 import { logger, runWithContext } from "@/utils/logger";
 import { successResponse } from "@/utils/response";
+import { authRoutes } from "@/routes/auth.routes";
+import { companyRoutes } from "@/routes/company.routes";
 
 const app = new Hono();
 
@@ -57,7 +60,9 @@ app.get("/", (c) => {
 });
 
 // Mount routes
-// Mount routes
+app.route("/api/auth", authRoutes);
+app.route("/api/companies", companyRoutes);
+app.route("/api/management", managementRoutes);
 app.route("/api/customers", customerImageRoutes);
 app.route("/api/customers", saleRoutes);
 app.route("/api/customers", customerRoutes);

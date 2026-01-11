@@ -1,4 +1,4 @@
-import { Collection, ObjectId } from "mongodb";
+import { Collection, ObjectId, ClientSession } from "mongodb";
 import { getDatabaseForCompany } from "@/config/database";
 import type { Sale, SaleStatus } from "@/types/customer/sale/sale";
 import type { PaymentLog } from "@/types/customer/sale/payment_log";
@@ -27,7 +27,7 @@ export class SaleRepository {
   async findById(companyId: string, id: string): Promise<Sale | null> {
     try {
       const collection = this.getCollection(companyId);
-      return await collection.findOne({ _id: id } as any, { projection: { _id: 0 } });
+      return await collection.findOne({ _id: ObjectId.createFromHexString(id) } as any);
     } catch (error) {
       logger.error("Failed to find sale by ID", error);
       throw error;
@@ -38,7 +38,7 @@ export class SaleRepository {
     try {
       const collection = this.getCollection(companyId);
       return await collection
-        .find({ customerId } as any, { projection: { _id: 0 } })
+        .find({ customerId } as any)
         .sort({ createdAt: -1 })
         .toArray();
     } catch (error) {
@@ -55,9 +55,9 @@ export class SaleRepository {
     try {
       const collection = this.getCollection(companyId);
       return await collection.findOneAndUpdate(
-        { _id: id } as any,
+        { _id: ObjectId.createFromHexString(id) } as any,
         { $set: { ...updates, updatedAt: Timestamp.now() } },
-        { returnDocument: "after", projection: { _id: 0 } }
+        { returnDocument: "after" }
       );
     } catch (error) {
       logger.error("Failed to update sale", error);
@@ -68,7 +68,7 @@ export class SaleRepository {
   async delete(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const result = await collection.deleteOne({ _id: id } as any);
+      const result = await collection.deleteOne({ _id: ObjectId.createFromHexString(id) } as any);
       const deleted = result.deletedCount > 0;
 
       if (deleted) {
@@ -78,6 +78,22 @@ export class SaleRepository {
       return deleted;
     } catch (error) {
       logger.error("Failed to delete sale", error);
+      throw error;
+    }
+  }
+
+  async deleteByCustomerId(companyId: string, customerId: string, session: ClientSession): Promise<number> {
+    try {
+      const collection = this.getCollection(companyId);
+      const result = await collection.deleteMany({ customerId } as any, { session });
+
+      const count = result.deletedCount;
+      if (count > 0) {
+        logger.info(`Deleted ${count} sales for customer`, { customerId, companyId });
+      }
+      return count;
+    } catch (error) {
+      logger.error("Failed to delete sales by customer ID", error);
       throw error;
     }
   }
@@ -103,7 +119,7 @@ export class SaleRepository {
 
       // Update sale with new log and recalculated values
       return await collection.findOneAndUpdate(
-        { _id: saleId } as any,
+        { _id: ObjectId.createFromHexString(saleId) } as any,
         {
           $push: { logs: paymentLog } as any,
           $set: {
@@ -112,7 +128,7 @@ export class SaleRepository {
             updatedAt: Timestamp.now(),
           },
         },
-        { returnDocument: "after", projection: { _id: 0 } }
+        { returnDocument: "after" }
       );
     } catch (error) {
       logger.error("Failed to add payment log", error);
@@ -127,7 +143,7 @@ export class SaleRepository {
     companyId: string,
     saleId: string,
     logId: string,
-    updates: Partial<Pick<PaymentLog, "amount" | "currency" | "paymentType" | "description">>
+    updates: Partial<Pick<PaymentLog, "amount" | "currency" | "paymentType" | "description" | "createdAt">>
   ): Promise<Sale | null> {
     try {
       const collection = this.getCollection(companyId);
@@ -152,7 +168,7 @@ export class SaleRepository {
       const newStatus: SaleStatus = newTotalPaid >= sale.totalAmount ? "completed" : "pending";
 
       return await collection.findOneAndUpdate(
-        { _id: saleId } as any,
+        { _id: ObjectId.createFromHexString(saleId) } as any,
         {
           $set: {
             logs: updatedLogs,
@@ -161,7 +177,7 @@ export class SaleRepository {
             updatedAt: Timestamp.now(),
           },
         },
-        { returnDocument: "after", projection: { _id: 0 } }
+        { returnDocument: "after" }
       );
     } catch (error) {
       logger.error("Failed to update payment log", error);
@@ -193,7 +209,7 @@ export class SaleRepository {
       const newStatus: SaleStatus = newTotalPaid >= sale.totalAmount ? "completed" : "pending";
 
       return await collection.findOneAndUpdate(
-        { _id: saleId } as any,
+        { _id: ObjectId.createFromHexString(saleId) } as any,
         {
           $pull: { logs: { _id: log._id } } as any,
           $set: {
@@ -202,7 +218,7 @@ export class SaleRepository {
             updatedAt: Timestamp.now(),
           },
         },
-        { returnDocument: "after", projection: { _id: 0 } }
+        { returnDocument: "after" }
       );
     } catch (error) {
       logger.error("Failed to delete payment log", error);

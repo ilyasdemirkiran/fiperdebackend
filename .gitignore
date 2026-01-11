@@ -4,7 +4,6 @@
 
 # Firebase service account
 firebase-service-account.json
-*.json
 
 # Dependencies
 node_modules/

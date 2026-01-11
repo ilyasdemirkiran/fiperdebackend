@@ -7,6 +7,7 @@ import { z } from "zod";
 import { toResponse, toResponseArray } from "@/utils/response-transformer";
 import { currencySchema } from "@/types/currency";
 import { paymentTypeSchema } from "@/types/customer/sale/payment_log";
+import { timestampSchema } from "@/types/timestamp";
 
 export const saleRoutes = new Hono<Env>();
 
@@ -27,12 +28,14 @@ const createSaleSchema = z.object({
   totalAmount: z.number().positive(),
   currency: currencySchema,
   description: z.string().optional(),
+  createdAt: timestampSchema,
 });
 
 const updateSaleSchema = z.object({
   totalAmount: z.number().positive().optional(),
   currency: currencySchema.optional(),
   description: z.string().optional(),
+  createdAt: timestampSchema.optional(),
 });
 
 const addPaymentLogSchema = z.object({
@@ -40,6 +43,7 @@ const addPaymentLogSchema = z.object({
   currency: currencySchema,
   paymentType: paymentTypeSchema,
   description: z.string().optional(),
+  createdAt: timestampSchema.optional(),
 });
 
 const updatePaymentLogSchema = z.object({
@@ -47,6 +51,7 @@ const updatePaymentLogSchema = z.object({
   currency: currencySchema.optional(),
   paymentType: paymentTypeSchema.optional(),
   description: z.string().optional(),
+  createdAt: timestampSchema.optional(),
 });
 
 // ========== SALE CRUD ==========
@@ -92,6 +97,7 @@ saleRoutes.post("/:customerId/sales", async (c) => {
       currency: input.currency,
       status: "pending",
       description: input.description,
+      createdAt: input.createdAt,
       logs: [],
     }
   );

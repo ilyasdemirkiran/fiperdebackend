@@ -1,5 +1,5 @@
 import { CustomerImageLabelRepository } from "@/repositories/customer-image-label.repository";
-import type { CustomerImageLabel } from "@/types/customer/customer_image_label";
+import type { CustomerImageLabel } from "@/types/customer/image/customer_image_label";
 import { AppError } from "@/middleware/error-handler";
 import { logger } from "@/utils/logger";
 

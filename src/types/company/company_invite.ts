@@ -6,7 +6,7 @@ export const companyInviteStatusSchema = z.enum(["pending", "accepted", "rejecte
 export type CompanyInviteStatus = z.infer<typeof companyInviteStatusSchema>;
 
 export const companyInviteSchema = z.object({
-  id: z.string(),
+  _id: z.string(),
   companyId: z.string(),
   invitedPhoneNumber: phoneNumberSchema,
   invitedUserId: z.string(),
@@ -14,6 +14,7 @@ export const companyInviteSchema = z.object({
   createdAt: timestampSchema,
   updatedAt: timestampSchema.optional(),
   status: companyInviteStatusSchema,
+  companyName: z.string().optional(),
 });
 
 export type CompanyInvite = z.infer<typeof companyInviteSchema>;

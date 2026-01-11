@@ -45,7 +45,7 @@ export class SaleService {
       currency: validatedInput.currency,
       status,
       description: validatedInput.description,
-      createdAt: Timestamp.now(),
+      createdAt: input.createdAt,
       logs: validatedInput.logs || [],
     };
 
@@ -70,7 +70,7 @@ export class SaleService {
     companyId: string,
     saleId: string,
     role: UserRole,
-    updates: Partial<Pick<Sale, "totalAmount" | "currency" | "description">>
+    updates: Partial<Pick<Sale, "totalAmount" | "currency" | "description" | "createdAt">>
   ): Promise<Sale> {
     this.assertAdmin(role);
 
@@ -128,6 +128,7 @@ export class SaleService {
     }
 
     const validatedInput = addPaymentLogSchema.parse(input);
+    console.log('validatedInput', validatedInput);
 
     // Generate _id manually for subdocument
     const paymentLog: PaymentLog = {
@@ -141,7 +142,7 @@ export class SaleService {
       paymentType: validatedInput.paymentType,
       description: validatedInput.description,
       paymentDate: Timestamp.now(),
-      createdAt: Timestamp.now(),
+      createdAt: validatedInput.createdAt || Timestamp.now(),
     };
 
     const updated = await this.repository.addPaymentLog(companyId, saleId, paymentLog);
@@ -159,7 +160,7 @@ export class SaleService {
     saleId: string,
     logId: string,
     role: UserRole,
-    input: Partial<Pick<PaymentLog, "amount" | "currency" | "paymentType" | "description">>
+    input: Partial<Pick<PaymentLog, "amount" | "currency" | "paymentType" | "description" | "createdAt">>
   ): Promise<Sale> {
     this.assertAdmin(role);
 

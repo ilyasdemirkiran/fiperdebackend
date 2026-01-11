@@ -30,6 +30,20 @@ customerImageRoutes.get("/:customerId/images", async (c) => {
   return c.json(successResponse(toResponseArray(images)));
 });
 
+// POST /api/customers/images/by-labels - Get images by label IDs
+const byLabelsSchema = z.object({
+  labelIds: z.array(z.string()).min(1, "At least one label ID required"),
+});
+
+customerImageRoutes.post("/images/by-labels", async (c) => {
+  const user = c.get("user");
+  const body = await c.req.json();
+  const { labelIds } = byLabelsSchema.parse(body);
+
+  const images = await getService().getImagesByLabels(user.companyId!, labelIds);
+  return c.json(successResponse(toResponseArray(images)));
+});
+
 // GET /api/customers/:customerId/images/:imageId - Get image metadata
 customerImageRoutes.get("/:customerId/images/:imageId", async (c) => {
   const user = c.get("user");
@@ -44,15 +58,14 @@ customerImageRoutes.get("/:customerId/images/:imageId/download", async (c) => {
   const user = c.get("user");
   const imageId = c.req.param("imageId");
 
-  const image = await getService().getImageData(user.companyId!, imageId);
+  const { buffer, metadata } = await getService().getImageData(user.companyId!, imageId);
 
   // Return binary data with correct content type
-  const buffer = (image.data as Binary).buffer;
   return new Response(buffer, {
     headers: {
-      "Content-Type": image.mimeType,
-      "Content-Length": image.size.toString(),
-      "Content-Disposition": `inline; filename="${image.filename}"`,
+      "Content-Type": metadata.mimeType,
+      "Content-Length": metadata.size.toString(),
+      "Content-Disposition": `inline; filename="${metadata.filename}"`,
     },
   });
 });
@@ -133,6 +146,7 @@ customerImageRoutes.delete("/:customerId/images/:imageId", async (c) => {
   const customerId = c.req.param("customerId");
   const imageId = c.req.param("imageId");
 
+  console.log("geldi", user.companyId, customerId, imageId)
   await getService().deleteImage(user.companyId!, customerId, imageId);
 
   return c.json(successResponse({ message: "Image deleted successfully" }));

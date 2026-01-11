@@ -1,5 +1,6 @@
 import { CustomerRepository } from "@/repositories/customer.repository";
 import { CustomerImageRepository } from "@/repositories/customer-image.repository";
+import { SaleRepository } from "@/repositories/sale.repository";
 import { getClient } from "@/config/database";
 import {
     type CreateCustomerInput,
@@ -131,7 +132,11 @@ export class CustomerService {
                     const imageRepo = new CustomerImageRepository();
                     const deletedImagesCount = await imageRepo.deleteAllByCustomerId(companyId, id, session);
 
-                    logger.info(`Deleted ${deletedImagesCount} images for customer ${id}`, { companyId });
+                    // Delete associated sales and logs
+                    const saleRepo = new SaleRepository();
+                    const deletedSalesCount = await saleRepo.deleteByCustomerId(companyId, id, session);
+
+                    logger.info(`Deleted ${deletedImagesCount} images and ${deletedSalesCount} sales for customer ${id}`, { companyId });
                 });
 
                 logger.info("Customer and associated images permanently deleted (hard delete)", { id, companyId, userRole });

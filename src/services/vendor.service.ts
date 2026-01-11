@@ -40,6 +40,7 @@ export class VendorService {
       city: data.city,
       district: data.district,
       address: data.address,
+      allowedCompanyIds: [],
       createdAt: Timestamp.now(),
     };
 

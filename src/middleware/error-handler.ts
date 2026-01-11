@@ -34,22 +34,25 @@ export const errorHandler: ErrorHandler = (error, c) => {
     // Custom application errors
     if (error instanceof AppError) {
         logger.warn("Application error", { code: error.code, message: error.message });
+        const status = error.statusCode as 400 | 401 | 403 | 404 | 500;
+        c.status(status);
         return c.json(
             {
                 success: false,
                 error: {
                     message: error.message,
-                    code: error.code,
+                    code: error.statusCode,
                     details: error.details,
                 },
             },
-            error.statusCode as 400 | 401 | 403 | 404 | 500
+            status
         );
     }
 
     // Authentication errors
     if (error.message?.includes("Authentication") || error.message?.includes("token")) {
         logger.error("Authentication error", error);
+        c.status(401);
         return c.json(
             {
                 success: false,

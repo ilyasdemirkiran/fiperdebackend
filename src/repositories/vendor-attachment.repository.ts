@@ -24,7 +24,7 @@ export class VendorAttachmentRepository {
   async findById(id: string): Promise<VendorAttachment | null> {
     try {
       const collection = this.getCollection();
-      return await collection.findOne({ _id: id } as any, { projection: { _id: 0 } });
+      return await collection.findOne({ _id: id } as any);
     } catch (error) {
       logger.error("Failed to find attachment by ID", error);
       throw error;
@@ -35,7 +35,7 @@ export class VendorAttachmentRepository {
     try {
       const collection = this.getCollection();
       return await collection
-        .find({ vendorId } as any, { projection: { _id: 0 } })
+        .find({ vendorId } as any)
         .sort({ uploadedAt: -1 })
         .toArray();
     } catch (error) {
@@ -50,7 +50,7 @@ export class VendorAttachmentRepository {
       return await collection.findOneAndUpdate(
         { _id: id } as any,
         { $set: updates },
-        { returnDocument: "after", projection: { _id: 0 } }
+        { returnDocument: "after" }
       );
     } catch (error) {
       logger.error("Failed to update attachment", error);

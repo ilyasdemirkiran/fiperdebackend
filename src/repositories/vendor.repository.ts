@@ -24,7 +24,7 @@ export class VendorRepository {
   async findById(id: string): Promise<Vendor | null> {
     try {
       const collection = this.getCollection();
-      return await collection.findOne({ _id: id } as any, { projection: { _id: 0 } });
+      return await collection.findOne({ _id: id } as any);
     } catch (error) {
       logger.error("Failed to find vendor by ID", error);
       throw error;
@@ -35,7 +35,7 @@ export class VendorRepository {
     try {
       const collection = this.getCollection();
       return await collection
-        .find({}, { projection: { _id: 0 } })
+        .find({})
         .sort({ name: 1 })
         .toArray();
     } catch (error) {
@@ -48,7 +48,7 @@ export class VendorRepository {
     try {
       const collection = this.getCollection();
       return await collection
-        .find({ _id: { $in: ids } } as any, { projection: { _id: 0 } })
+        .find({ _id: { $in: ids } } as any)
         .sort({ name: 1 })
         .toArray();
     } catch (error) {
@@ -63,7 +63,7 @@ export class VendorRepository {
       return await collection.findOneAndUpdate(
         { _id: id } as any,
         { $set: updates },
-        { returnDocument: "after", projection: { _id: 0 } }
+        { returnDocument: "after" }
       );
     } catch (error) {
       logger.error("Failed to update vendor", error);
