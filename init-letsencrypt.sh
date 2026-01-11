@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# init-letsencrypt.sh - Initialize Let's Encrypt certificates for fisoft.app
+# init-letsencrypt.sh - Initialize Let's Encrypt certificates for api.fisoft.app
 # Run this script on the VPS before starting the full docker-compose
 
 set -e
 
-DOMAIN="fisoft.app"
+DOMAIN="api.fisoft.app"
 EMAIL="fisoft.tr@gmail.com"
 STAGING=0 # Set to 1 for testing (avoids rate limits)
 
@@ -44,7 +44,6 @@ docker compose run --rm --entrypoint "\
     $staging_arg \
     --email $EMAIL \
     --domain $DOMAIN \
-    --domain www.$DOMAIN \
     --rsa-key-size 4096 \
     --agree-tos \
     --no-eff-email \
