@@ -18,6 +18,7 @@ export const managementQueryKeys = {
   vendors: () => [...managementQueryKeys.all, "vendors"] as const,
   vendor: (vendorId: string) => [...managementQueryKeys.all, "vendor", vendorId] as const,
   vendorDocuments: (vendorId: string) => [...managementQueryKeys.all, "vendor", vendorId, "documents"] as const,
+  vendorPermissions: () => [...managementQueryKeys.all, "vendorPermissions"] as const,
   priceListRequests: () => [...managementQueryKeys.all, "priceListRequests"] as const,
   priceListRequestsPending: () => [...managementQueryKeys.all, "priceListRequests", "pending"] as const,
   priceListRequestsCompleted: () => [...managementQueryKeys.all, "priceListRequests", "completed"] as const,
@@ -95,6 +96,25 @@ export const useManagementVendor = (vendorId: string, enabled: boolean = true) =
       return data.data;
     },
     enabled: !!vendorId && enabled,
+  });
+};
+
+type VendorPermissionItem = {
+  vendorId: string;
+  companyId: string;
+  createdAt: any;
+};
+
+export const useVendorPermissions = (enabled: boolean = true) => {
+  return useQuery({
+    queryKey: managementQueryKeys.vendorPermissions(),
+    queryFn: async () => {
+      const { data } = await api.get<SuccessResponse<VendorPermissionItem[]>>(
+        ManagementServerRoutes.vendorPermissions
+      );
+      return data.data;
+    },
+    enabled,
   });
 };
 

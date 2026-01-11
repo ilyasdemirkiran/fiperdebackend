@@ -52,6 +52,7 @@ vendorRoutes.get("/:id/document", async (c) => {
   const vendorId = c.req.param("id");
 
   const result = await getService().getLatestDocument(vendorId);
+  console.log('res', result)
 
   if (!result) {
     return c.json(successResponse(null));

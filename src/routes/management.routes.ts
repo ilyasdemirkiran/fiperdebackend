@@ -142,6 +142,14 @@ managementRoutes.put("/vendors/:id/access", async (c) => {
   return c.json(successResponse({ message: "Vendor access updated" }));
 });
 
+// GET /management/vendor-permissions - Get all vendor permissions
+managementRoutes.get("/vendor-permissions", async (c) => {
+  const user = c.get("user");
+
+  const permissions = await getManagementService().listAllVendorPermissions(user.role);
+  return c.json(successResponse(permissions));
+});
+
 // =====================
 // VENDOR DOCUMENT ENDPOINTS
 // =====================

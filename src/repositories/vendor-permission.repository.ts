@@ -106,4 +106,22 @@ export class VendorPermissionRepository {
       throw error;
     }
   }
+
+  /**
+   * Get all vendor permissions (for management dashboard)
+   */
+  async findAll(): Promise<Array<{ vendorId: string; companyId: string; createdAt: any }>> {
+    try {
+      const collection = this.getCollection();
+      const permissions = await collection.find({}).toArray();
+      return permissions.map((p) => ({
+        vendorId: p.vendorId.toHexString(),
+        companyId: p.companyId.toHexString(),
+        createdAt: p.createdAt,
+      }));
+    } catch (error) {
+      logger.error("Failed to get all vendor permissions", error);
+      throw error;
+    }
+  }
 }

@@ -8,6 +8,7 @@ export const ManagementServerRoutes = {
   vendors: "/management/vendors",
   vendor: (vendorId: string) => `/management/vendors/${vendorId}`,
   vendorAccess: (vendorId: string) => `/management/vendors/${vendorId}/access`,
+  vendorPermissions: "/management/vendor-permissions",
 
   // Vendor Documents
   vendorDocuments: (vendorId: string) => `/management/vendors/${vendorId}/documents`,

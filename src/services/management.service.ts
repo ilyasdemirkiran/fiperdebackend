@@ -152,6 +152,14 @@ export class ManagementService {
     logger.info("Vendor access updated via permissions", { vendorId, added: toAdd, removed: toRemove });
   }
 
+  /**
+   * Get all vendor permissions for management dashboard
+   */
+  async listAllVendorPermissions(role: UserRole): Promise<Array<{ vendorId: string; companyId: string; createdAt: any }>> {
+    this.assertSudo(role);
+    return await this.permissionRepo.findAll();
+  }
+
   // =====================
   // PRODUCT MANAGEMENT
   // =====================
