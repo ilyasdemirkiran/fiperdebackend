@@ -80,7 +80,6 @@ customerImageRoutes.post("/:customerId/images", async (c) => {
 
   const formData = await c.req.formData();
   const files = formData.getAll("files") as File[];
-  const title = formData.get("title") as string || "Untitled";
   const description = formData.get("description") as string || "";
   const labelsStr = formData.get("labels") as string || "[]";
 
@@ -97,7 +96,7 @@ customerImageRoutes.post("/:customerId/images", async (c) => {
 
   const uploads: UploadImageInput[] = await Promise.all(
     files.map(async (file) => ({
-      title: files.length === 1 ? title : file.name,
+      title: file.name, // Always use filename as title
       description,
       filename: file.name,
       mimeType: file.type,
