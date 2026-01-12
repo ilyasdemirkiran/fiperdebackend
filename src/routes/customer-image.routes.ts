@@ -60,12 +60,15 @@ customerImageRoutes.get("/:customerId/images/:imageId/download", async (c) => {
 
   const { buffer, metadata } = await getService().getImageData(user.companyId!, imageId);
 
-  // Return binary data with correct content type
+  // Return binary data with correct content type and CORS headers
   return new Response(buffer, {
     headers: {
       "Content-Type": metadata.mimeType,
       "Content-Length": metadata.size.toString(),
       "Content-Disposition": `inline; filename="${metadata.filename}"`,
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
     },
   });
 });

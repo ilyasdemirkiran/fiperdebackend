@@ -64,6 +64,9 @@ vendorRoutes.get("/:id/document", async (c) => {
       "Content-Type": result.metadata.mimeType,
       "Content-Length": result.metadata.size.toString(),
       "Content-Disposition": `inline; filename="${result.metadata.filename}"`,
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
     },
   });
 });

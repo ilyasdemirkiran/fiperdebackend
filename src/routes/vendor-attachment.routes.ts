@@ -51,6 +51,9 @@ vendorAttachmentRoutes.get("/:vendorId/attachments/:attachmentId/download", asyn
       "Content-Type": attachment.mimeType,
       "Content-Length": attachment.size.toString(),
       "Content-Disposition": `inline; filename="${attachment.filename}"`,
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
     },
   });
 });
