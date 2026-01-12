@@ -59,3 +59,10 @@ authRoutes.put("/me", authMiddleware, async (c) => {
 
   return c.json(successResponse(updated));
 });
+
+// DELETE /api/auth/me - Delete account
+authRoutes.delete("/me", authMiddleware, async (c) => {
+  const user = c.get("user");
+  await authService.deleteAccount(user._id!);
+  return c.json(successResponse({ success: true, message: "Account deleted successfully" }));
+});

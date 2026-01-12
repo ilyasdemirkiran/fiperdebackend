@@ -81,4 +81,15 @@ export class CompanyRepository {
       throw error;
     }
   }
+
+  async delete(companyId: string): Promise<boolean> {
+    try {
+      const result = await this.getCollection().deleteOne({ _id: new ObjectId(companyId) } as any);
+      logger.info("Company deleted", { companyId });
+      return result.deletedCount > 0;
+    } catch (error) {
+      logger.error("Failed to delete company", error);
+      throw error;
+    }
+  }
 }

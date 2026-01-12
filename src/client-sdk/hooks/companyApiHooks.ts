@@ -173,3 +173,18 @@ export const useUpdateCompanyName = () => {
     },
   });
 };
+
+export const useDeleteCompany = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.delete<SuccessResponse<{ success: boolean }>>(CompanyServerRoutes.deleteCompany);
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: companyQueryKeys.myCompany() });
+      queryClient.invalidateQueries({ queryKey: companyQueryKeys.all });
+    },
+  });
+};

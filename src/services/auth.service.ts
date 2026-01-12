@@ -75,4 +75,42 @@ export class AuthService {
 
     return updated;
   }
+
+  async deleteAccount(userId: string): Promise<void> {
+    const user = await this.userRepo.findById(userId);
+
+    if (user.companyId) {
+      // Check if user is the company owner
+      const { CompanyRepository } = await import("@/repositories/company.repository");
+      const companyRepo = new CompanyRepository();
+      const company = await companyRepo.findById(user.companyId);
+
+      if (company && company.creatorUserId === userId) {
+        // Owner deleting account -> Delete entire company first
+        const { CompanyService } = await import("./company.service");
+        const companyService = new CompanyService();
+        await companyService.deleteCompany(userId);
+      } else {
+        // Regular member -> Remove from company
+        const { CompanyRepository } = await import("@/repositories/company.repository");
+        const companyRepo = new CompanyRepository(); // Instantiate again or reuse if refactored
+        await companyRepo.removeUser(user.companyId, userId);
+      }
+    }
+
+    // Finally delete the user account
+    await this.userRepo.delete(userId);
+
+    // Also delete from Firebase Auth (optional, but good practice if you have the SDK setup for it)
+    try {
+      const { getAuth } = await import("firebase-admin/auth");
+      await getAuth().deleteUser(userId);
+      logger.info("Deleted user from Firebase Auth", { uid: userId });
+    } catch (error) {
+      logger.error("Failed to delete user from Firebase Auth", error);
+      // Continue even if Firebase deletion fails
+    }
+
+    logger.info("Account deleted", { userId });
+  }
 }

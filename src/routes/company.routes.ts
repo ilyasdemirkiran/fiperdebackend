@@ -102,6 +102,13 @@ companyRoutes.put("/name", async (c) => {
   return c.json(successResponse(company));
 });
 
+// DELETE /companies/me - Delete company (owner only)
+companyRoutes.delete("/me", async (c) => {
+  const user = c.get("user");
+  await companyService.deleteCompany(user._id!);
+  return c.json(successResponse({ success: true, message: "Company deleted successfully" }));
+});
+
 // POST /companies/leave - Leave current company
 companyRoutes.post("/leave", async (c) => {
   const user = c.get("user");

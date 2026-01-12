@@ -253,4 +253,33 @@ export class CompanyService {
     logger.info("Company name updated", { companyId: user.companyId, name, userId });
     return updated;
   }
+
+  async deleteCompany(userId: string): Promise<void> {
+    const user = await this.userRepo.findById(userId);
+    if (!user) throw new AppError(404, "User not found");
+    if (!user.companyId) throw new AppError(400, "User is not in a company");
+
+    const companyId = user.companyId;
+    const company = await this.companyRepo.findById(companyId);
+    if (!company) throw new AppError(404, "Company not found");
+
+    if (company.creatorUserId !== userId) {
+      throw new AppError(403, "Only the company owner can delete the company");
+    }
+
+    // 1. Reset all users in the company
+    const users = await this.userRepo.findByCompanyId(companyId);
+    for (const u of users) {
+      await this.userRepo.update(u._id, { companyId: undefined, role: "user" });
+    }
+
+    // 2. Drop the company database
+    const { dropCompanyDatabase } = await import("@/config/database");
+    await dropCompanyDatabase(companyId);
+
+    // 3. Delete the company document
+    await this.companyRepo.delete(companyId);
+
+    logger.info("Company deleted", { companyId, deletedBy: userId });
+  }
 }

@@ -63,6 +63,38 @@ export function getDatabaseForCompany(companyId: string): Db {
 }
 
 /**
+ * Drop a company's database completely
+ * Used when deleting a company
+ */
+export async function dropCompanyDatabase(companyId: string): Promise<boolean> {
+    if (!client) {
+        throw new Error("Database not connected");
+    }
+
+    const dbName = `fi_${companyId}`;
+    try {
+        const db = client.db(dbName);
+        await db.dropDatabase();
+
+        // Clear from cache
+        dbCache.delete(dbName);
+
+        // Clear GridFS cache for this company
+        for (const key of gridFSCache.keys()) {
+            if (key.startsWith(`${companyId}_`)) {
+                gridFSCache.delete(key);
+            }
+        }
+
+        console.log(`🗑️ Dropped database: ${dbName}`);
+        return true;
+    } catch (error) {
+        console.error(`❌ Failed to drop database ${dbName}:`, error);
+        throw error;
+    }
+}
+
+/**
  * Get global vendor database (shared across all companies)
  */
 export function getGlobalVendorDatabase(): Db {

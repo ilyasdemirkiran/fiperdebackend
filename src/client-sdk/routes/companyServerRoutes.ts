@@ -11,4 +11,5 @@ export const CompanyServerRoutes = {
   leave: "/companies/leave",
   deleteInvite: (inviteId: string) => `/companies/invites/${inviteId}`,
   updateName: "/companies/name",
+  deleteCompany: "/companies/me",
 } as const;

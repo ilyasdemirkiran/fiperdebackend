@@ -59,4 +59,15 @@ export class UserRepository {
       throw error;
     }
   }
+
+  async delete(id: string): Promise<boolean> {
+    try {
+      const result = await this.getCollection().deleteOne({ _id: id } as any);
+      logger.info("User deleted", { userId: id });
+      return result.deletedCount > 0;
+    } catch (error) {
+      logger.error("Failed to delete user", error);
+      throw error;
+    }
+  }
 }

@@ -58,3 +58,12 @@ export const useUpdateProfile = () => {
     },
   });
 };
+
+export const useDeleteAccount = () => {
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.delete<SuccessResponse<{ success: boolean }>>(AuthServerRoutes.deleteAccount);
+      return data.data;
+    },
+  });
+};
