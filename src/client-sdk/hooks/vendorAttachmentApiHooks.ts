@@ -91,3 +91,17 @@ export const useDeleteVendorAttachment = () => {
     },
   });
 };
+
+export const useVendorAttachmentPreview = () => {
+  return useMutation({
+    mutationFn: async ({ vendorId, attachmentId }: { vendorId: string; attachmentId: string }) => {
+      const response = await api.get(VendorAttachmentServerRoutes.preview(vendorId, attachmentId), {
+        responseType: "arraybuffer", // Important for binary data
+      });
+
+      // Convert arraybuffer to blob
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      return blob;
+    },
+  });
+};

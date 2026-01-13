@@ -38,6 +38,49 @@ vendorAttachmentRoutes.get("/:vendorId/attachments/:attachmentId", async (c) => 
   return c.json(successResponse(attachment));
 });
 
+// GET /api/vendors/:vendorId/attachments/:attachmentId/preview - Preview PDF (converts if necessary)
+vendorAttachmentRoutes.get("/:vendorId/attachments/:attachmentId/preview", async (c) => {
+  const attachmentId = c.req.param("attachmentId");
+
+  const attachment = await getService().getAttachment(attachmentId);
+  const binaryData = (attachment.data as Binary).buffer;
+  let buffer = Buffer.from(binaryData);
+  let mimeType = attachment.mimeType as string; // Assert string to use string methods
+  let filename = attachment.filename;
+
+  // If not PDF, convert
+  if (mimeType !== "application/pdf") {
+    const { DocumentConverter } = await import("@/utils/document-converter");
+
+    try {
+      if (mimeType.includes("sheet") || mimeType.includes("excel") || filename.endsWith(".xls") || filename.endsWith(".xlsx")) {
+        const u8 = await DocumentConverter.excelToPdf(buffer);
+        buffer = Buffer.from(u8);
+        mimeType = "application/pdf";
+      } else if (mimeType.includes("word") || mimeType.includes("document") || filename.endsWith(".doc") || filename.endsWith(".docx")) {
+        const u8 = await DocumentConverter.docToPdf(buffer);
+        buffer = Buffer.from(u8);
+        mimeType = "application/pdf";
+      }
+    } catch (error) {
+      console.error("Preview conversion failed", error);
+      // If conversion fails, return original file but it might not preview well
+    }
+  }
+
+  // Preview means inline usually, but since client wants data to show:
+  return new Response(buffer, {
+    headers: {
+      "Content-Type": "application/pdf", // Force PDF content type for preview
+      "Content-Length": buffer.length.toString(),
+      "Content-Disposition": `inline; filename="${filename.replace(/\.[^/.]+$/, "")}.pdf"`,
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
+});
+
 // GET /api/vendors/:vendorId/attachments/:attachmentId/download - Download PDF
 vendorAttachmentRoutes.get("/:vendorId/attachments/:attachmentId/download", async (c) => {
   const attachmentId = c.req.param("attachmentId");
@@ -57,6 +100,7 @@ vendorAttachmentRoutes.get("/:vendorId/attachments/:attachmentId/download", asyn
     },
   });
 });
+
 
 // POST /api/vendors/:vendorId/attachments - Upload PDF (sudo only)
 vendorAttachmentRoutes.post("/:vendorId/attachments", async (c) => {
