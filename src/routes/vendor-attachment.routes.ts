@@ -50,7 +50,7 @@ vendorAttachmentRoutes.get("/:vendorId/attachments/:attachmentId/download", asyn
     headers: {
       "Content-Type": attachment.mimeType,
       "Content-Length": attachment.size.toString(),
-      "Content-Disposition": `inline; filename="${attachment.filename}"`,
+      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(attachment.filename)}`,
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",

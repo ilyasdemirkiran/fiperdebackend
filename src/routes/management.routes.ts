@@ -206,7 +206,7 @@ managementRoutes.get("/documents/:id/download", async (c) => {
     headers: {
       "Content-Type": result.metadata.mimeType,
       "Content-Length": result.metadata.size.toString(),
-      "Content-Disposition": `attachment; filename="${result.metadata.filename}"`,
+      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(result.metadata.filename)}`,
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
@@ -306,7 +306,7 @@ managementRoutes.get("/price-list-requests/:id/download", async (c) => {
     headers: {
       "Content-Type": result.metadata.mimeType,
       "Content-Length": result.metadata.size.toString(),
-      "Content-Disposition": `attachment; filename="${result.metadata.filename}"`,
+      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(result.metadata.filename)}`,
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",

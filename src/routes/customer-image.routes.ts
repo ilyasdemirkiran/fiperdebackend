@@ -65,7 +65,7 @@ customerImageRoutes.get("/:customerId/images/:imageId/download", async (c) => {
     headers: {
       "Content-Type": metadata.mimeType,
       "Content-Length": metadata.size.toString(),
-      "Content-Disposition": `inline; filename="${metadata.filename}"`,
+      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(metadata.filename)}`,
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
