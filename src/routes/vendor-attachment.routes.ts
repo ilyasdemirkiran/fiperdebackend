@@ -74,7 +74,7 @@ vendorAttachmentRoutes.get("/:vendorId/attachments/:attachmentId/preview", async
     headers: {
       "Content-Type": "application/pdf", // Force PDF content type for preview
       "Content-Length": buffer.length.toString(),
-      "Content-Disposition": `inline; filename="${filename.replace(/\.[^/.]+$/, "")}.pdf"`,
+      "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(filename.replace(/\.[^/.]+$/, "") + ".pdf")}`,
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
