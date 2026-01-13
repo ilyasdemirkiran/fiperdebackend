@@ -4,6 +4,23 @@ import mammoth from 'mammoth';
 
 export class DocumentConverter {
   /**
+   * Helper to replace non-standard characters with ASCII equivalents
+   * pdf-lib StandardFonts do not support UTF-8 characters like Turkish ones.
+   */
+  private static sanitizeText(text: string): string {
+    if (!text) return "";
+    return text
+      .replace(/ğ/g, "g").replace(/Ğ/g, "G")
+      .replace(/ü/g, "u").replace(/Ü/g, "U")
+      .replace(/ş/g, "s").replace(/Ş/g, "S")
+      .replace(/ı/g, "i").replace(/İ/g, "I")
+      .replace(/ö/g, "o").replace(/Ö/g, "O")
+      .replace(/ç/g, "c").replace(/Ç/g, "C")
+      // Remove other non-ascii if needed, or hope for the best
+      .replace(/[^\x00-\x7F]/g, "?");
+  }
+
+  /**
    * Convert Excel buffer to PDF buffer
    */
   static async excelToPdf(buffer: Buffer): Promise<Uint8Array> {
@@ -26,7 +43,7 @@ export class DocumentConverter {
       let yPosition = height - 50;
 
       // Sheet title
-      page.drawText(sheetName, {
+      page.drawText(this.sanitizeText(sheetName), {
         x: 50,
         y: yPosition,
         size: 16,
@@ -55,7 +72,8 @@ export class DocumentConverter {
         if (!row) continue;
 
         for (let j = 0; j < Math.min(row.length, maxCols); j++) {
-          const cellValue = String(row[j] || '');
+          const rawValue = String(row[j] || '');
+          const cellValue = this.sanitizeText(rawValue);
           const xPosition = 50 + (j * cellWidth);
 
           // Cell border
@@ -71,9 +89,16 @@ export class DocumentConverter {
           // Cell content (truncated)
           const fontSize = 10;
           const textWidth = font.widthOfTextAtSize(cellValue, fontSize);
-          const truncatedText = textWidth > cellWidth - 10
-            ? cellValue.substring(0, Math.floor((cellWidth - 10) / (textWidth / cellValue.length))) + '...'
-            : cellValue;
+
+          let truncatedText = cellValue;
+          if (textWidth > cellWidth - 10) {
+            // Handle potential division by zero if string length is 0 (though sanitizeText usually avoids this if rawValue was not empty)
+            const charWidth = cellValue.length > 0 ? textWidth / cellValue.length : 0;
+            if (charWidth > 0) {
+              const maxChars = Math.floor((cellWidth - 10) / charWidth);
+              truncatedText = cellValue.substring(0, Math.max(0, maxChars)) + '...';
+            }
+          }
 
           page.drawText(truncatedText, {
             x: xPosition + 5,
@@ -103,7 +128,8 @@ export class DocumentConverter {
 
     // Simple text extraction from HTML
     // Note: robust HTML to PDF is complex, this is a basic text extraction
-    const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const rawText = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const text = this.sanitizeText(rawText);
 
     const { width, height } = page.getSize();
     const fontSize = 12;
