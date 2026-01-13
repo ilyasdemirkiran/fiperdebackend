@@ -39,7 +39,7 @@ export class CustomerImageLabelRepository {
   async findAll(companyId: string): Promise<CustomerImageLabel[]> {
     try {
       const collection = this.getCollection(companyId);
-      return await collection.find({}).toArray();
+      return await collection.find({}).sort({ _id: -1 }).toArray();
     } catch (error) {
       logger.error("Failed to fetch labels", error);
       throw error;
