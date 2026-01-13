@@ -100,8 +100,10 @@ export const useVendorAttachmentPreview = (vendorId: string, attachmentId: strin
         responseType: "arraybuffer", // Important for binary data
       });
 
-      // Convert arraybuffer to blob
-      const blob = new Blob([response.data], { type: "application/pdf" });
+      const contentType = response.headers["content-type"];
+
+      // Convert arraybuffer to blob with correct type
+      const blob = new Blob([response.data], { type: contentType });
       return blob;
     },
     enabled: !!vendorId && !!attachmentId && enabled,
