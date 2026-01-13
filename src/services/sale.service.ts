@@ -6,6 +6,8 @@ import { logger } from "@/utils/logger";
 import { Timestamp } from "firebase-admin/firestore";
 import type { UserRole } from "@/types/user/fi_user";
 import { ObjectId } from "mongodb";
+import { isAdmin } from "@/types/user/fi_user";
+
 
 export class SaleService {
   private repository: SaleRepository;
@@ -15,7 +17,7 @@ export class SaleService {
   }
 
   private assertAdmin(role: UserRole): void {
-    if (role !== "admin" && role !== "sudo") {
+    if (!isAdmin(role)) {
       throw new AppError(403, "Only admin users can perform this operation", "FORBIDDEN");
     }
   }

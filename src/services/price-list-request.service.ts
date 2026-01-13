@@ -4,6 +4,7 @@ import { PRICE_LIST_ALLOWED_MIME_TYPES } from "@/types/vendor/price_list_request
 import { AppError } from "@/middleware/error-handler";
 import { logger } from "@/utils/logger";
 import type { UserRole, FIUser } from "@/types/user/fi_user";
+import { isAdmin } from "@/types/user/fi_user";
 import { Timestamp } from "firebase-admin/firestore";
 import { Binary } from "mongodb";
 
@@ -28,7 +29,7 @@ export class PriceListRequestService {
   }
 
   private assertAdminOrAbove(role: UserRole): void {
-    if (role !== "admin" && role !== "sudo") {
+    if (!isAdmin(role)) {
       throw new AppError(403, "Only admin users can perform this operation", "FORBIDDEN");
     }
   }

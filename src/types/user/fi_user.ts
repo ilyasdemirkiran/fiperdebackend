@@ -16,3 +16,5 @@ export const fiUserSchema = z.object({
 
 export type FIUser = z.infer<typeof fiUserSchema>;
 export type UserRole = z.infer<typeof userRoleSchema>;
+
+export const isAdmin = (role: UserRole | string | undefined | null) => role === 'admin' || role === 'sudo';

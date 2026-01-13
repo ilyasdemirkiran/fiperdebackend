@@ -8,6 +8,8 @@ import type { Company } from "@/types/company/company";
 import type { CompanyInvite } from "@/types/company/company_invite";
 import type { FIUser } from "@/types/user/fi_user";
 import { logger } from "@/utils/logger";
+import { isAdmin } from "@/types/user/fi_user";
+
 
 export class CompanyService {
   private companyRepo: CompanyRepository;
@@ -160,7 +162,7 @@ export class CompanyService {
 
   async promoteUser(requesterId: string, companyId: string, targetUserId: string): Promise<void> {
     const requester = await this.userRepo.findById(requesterId);
-    if (!requester || requester.companyId !== companyId || requester.role !== "admin") {
+    if (!requester || requester.companyId !== companyId || !isAdmin(requester.role)) {
       throw new AppError(403, "Not authorized to promote users");
     }
 
@@ -182,7 +184,7 @@ export class CompanyService {
 
   async demoteUser(requesterId: string, companyId: string, targetUserId: string): Promise<void> {
     const requester = await this.userRepo.findById(requesterId);
-    if (!requester || requester.companyId !== companyId || requester.role !== "admin") {
+    if (!requester || requester.companyId !== companyId || !isAdmin(requester.role)) {
       throw new AppError(403, "Not authorized to demote users");
     }
 
@@ -223,7 +225,7 @@ export class CompanyService {
 
   async deleteInvite(requesterId: string, inviteId: string): Promise<void> {
     const requester = await this.userRepo.findById(requesterId);
-    if (!requester || !requester.companyId || requester.role !== "admin") {
+    if (!requester || !requester.companyId || !isAdmin(requester.role)) {
       throw new AppError(403, "Not authorized to delete invites");
     }
 
@@ -242,7 +244,7 @@ export class CompanyService {
     const user = await this.userRepo.findById(userId);
     if (!user) throw new AppError(404, "User not found");
     if (!user.companyId) throw new AppError(400, "User is not in a company");
-    if (user.role !== "admin") throw new AppError(403, "Only admins can update company name");
+    if (!isAdmin(user.role)) throw new AppError(403, "Only admins can update company name");
 
     const company = await this.companyRepo.findById(user.companyId);
     if (!company) throw new AppError(404, "Company not found");
