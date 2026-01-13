@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { VendorAttachment } from "@/types/vendor/vendor_attachment";
+import type { VendorAttachment, VendorAttachmentMetadata } from "@/types/vendor/vendor_attachment";
 import { api } from "@/api/apiAxios";
 import { VendorAttachmentServerRoutes } from "../routes/vendorAttachmentServerRoutes";
 import { vendorAttachmentQueryKeys } from "./vendorAttachmentQueryKeys";
@@ -13,7 +13,7 @@ export const useVendorAttachments = (vendorId: string, enabled: boolean = true) 
   return useQuery({
     queryKey: vendorAttachmentQueryKeys.byVendor(vendorId),
     queryFn: async () => {
-      const { data } = await api.get<SuccessResponse<VendorAttachment[]>>(VendorAttachmentServerRoutes.list(vendorId));
+      const { data } = await api.get<SuccessResponse<VendorAttachmentMetadata[]>>(VendorAttachmentServerRoutes.list(vendorId));
       return data.data;
     },
     enabled: !!vendorId && enabled,
@@ -92,9 +92,10 @@ export const useDeleteVendorAttachment = () => {
   });
 };
 
-export const useVendorAttachmentPreview = () => {
-  return useMutation({
-    mutationFn: async ({ vendorId, attachmentId }: { vendorId: string; attachmentId: string }) => {
+export const useVendorAttachmentPreview = (vendorId: string, attachmentId: string, enabled: boolean = false) => {
+  return useQuery({
+    queryKey: vendorAttachmentQueryKeys.preview(attachmentId),
+    queryFn: async () => {
       const response = await api.get(VendorAttachmentServerRoutes.preview(vendorId, attachmentId), {
         responseType: "arraybuffer", // Important for binary data
       });
@@ -103,5 +104,8 @@ export const useVendorAttachmentPreview = () => {
       const blob = new Blob([response.data], { type: "application/pdf" });
       return blob;
     },
+    enabled: !!vendorId && !!attachmentId && enabled,
+    staleTime: 1000 * 60 * 60, // 1 hour stale time since preview is unlikely to change
+    gcTime: 1000 * 60 * 60 * 24, // Keep in cache for 24 hours
   });
 };

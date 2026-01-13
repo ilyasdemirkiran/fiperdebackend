@@ -41,6 +41,7 @@ vendorAttachmentRoutes.get("/:vendorId/attachments/:attachmentId", async (c) => 
 // GET /api/vendors/:vendorId/attachments/:attachmentId/preview - Preview PDF (converts if necessary)
 vendorAttachmentRoutes.get("/:vendorId/attachments/:attachmentId/preview", async (c) => {
   const attachmentId = c.req.param("attachmentId");
+  console.log(`Preview requested for attachmentId: ${attachmentId}`);
 
   const attachment = await getService().getAttachment(attachmentId);
   const binaryData = (attachment.data as Binary).buffer;
@@ -132,6 +133,7 @@ vendorAttachmentRoutes.post("/:vendorId/attachments", async (c) => {
   const attachment = await getService().uploadAttachment(
     vendorId,
     user._id!.toString(),
+    user.name,
     user.role,
     input
   );
