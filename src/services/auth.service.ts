@@ -26,6 +26,12 @@ export class AuthService {
       return existing;
     }
 
+    // Check if phone number is already in use by another user
+    const existingByPhone = await this.userRepo.findByPhoneNumber(phone_number);
+    if (existingByPhone) {
+      throw new AppError(409, "Bu telefon numarası zaten kayıtlı", "PHONE_NUMBER_ALREADY_EXISTS");
+    }
+
     const newUser: FIUser = {
       _id: uid,
       phoneNumber: phone_number,
@@ -78,6 +84,10 @@ export class AuthService {
 
   async deleteAccount(userId: string): Promise<void> {
     const user = await this.userRepo.findById(userId);
+
+    if (!user) {
+      throw new AppError(404, "User not found");
+    }
 
     if (user.companyId) {
       // Check if user is the company owner
