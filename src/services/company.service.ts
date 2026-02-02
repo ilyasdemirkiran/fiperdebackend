@@ -204,6 +204,30 @@ export class CompanyService {
     logger.info("User demoted", { companyId, targetUserId, requesterId });
   }
 
+  async removeUserFromCompany(requesterId: string, companyId: string, targetUserId: string): Promise<void> {
+    const requester = await this.userRepo.findById(requesterId);
+    if (!requester || requester.companyId !== companyId || !isAdmin(requester.role)) {
+      throw new AppError(403, "Not authorized to remove users");
+    }
+
+    const company = await this.companyRepo.findById(companyId);
+    if (!company) throw new AppError(404, "Company not found");
+
+    if (company.creatorUserId === targetUserId) {
+      throw new AppError(400, "Cannot remove company owner");
+    }
+
+    const targetUser = await this.userRepo.findById(targetUserId);
+    if (!targetUser || targetUser.companyId !== companyId) {
+      throw new AppError(404, "Target user not found in company");
+    }
+
+    await this.companyRepo.removeUser(companyId, targetUserId);
+    await this.userRepo.update(targetUserId, { companyId: undefined, role: "user" });
+
+    logger.info("User removed from company", { companyId, targetUserId, requesterId });
+  }
+
   async leaveCompany(userId: string): Promise<void> {
     const user = await this.userRepo.findById(userId);
     if (!user) throw new AppError(404, "User not found");

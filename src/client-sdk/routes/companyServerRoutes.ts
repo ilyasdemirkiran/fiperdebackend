@@ -8,6 +8,7 @@ export const CompanyServerRoutes = {
   users: (companyId: string) => `/companies/${companyId}/users`,
   promoteUser: (companyId: string, userId: string) => `/companies/${companyId}/users/${userId}/promote`,
   demoteUser: (companyId: string, userId: string) => `/companies/${companyId}/users/${userId}/demote`,
+  removeUser: (companyId: string, userId: string) => `/companies/${companyId}/users/${userId}`,
   leave: "/companies/leave",
   deleteInvite: (inviteId: string) => `/companies/invites/${inviteId}`,
   updateName: "/companies/name",

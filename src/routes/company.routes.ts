@@ -149,3 +149,12 @@ companyRoutes.post("/:id/users/:userId/demote", async (c) => {
   await companyService.demoteUser(user._id!, companyId, targetUserId);
   return c.json(successResponse({ success: true }));
 });
+
+// DELETE /companies/:id/users/:userId - Remove user from company
+companyRoutes.delete("/:id/users/:userId", async (c) => {
+  const user = c.get("user");
+  const companyId = c.req.param("id");
+  const targetUserId = c.req.param("userId");
+  await companyService.removeUserFromCompany(user._id!, companyId, targetUserId);
+  return c.json(successResponse({ success: true }));
+});

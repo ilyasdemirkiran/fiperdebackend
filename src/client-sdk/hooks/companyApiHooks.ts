@@ -125,6 +125,22 @@ export const useDemoteUser = () => {
   });
 };
 
+export const useRemoveUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ companyId, userId }: { companyId: string; userId: string }) => {
+      const { data } = await api.delete<SuccessResponse<{ success: boolean }>>(
+        CompanyServerRoutes.removeUser(companyId, userId)
+      );
+      return data.data;
+    },
+    onSuccess: (_, { companyId }) => {
+      queryClient.invalidateQueries({ queryKey: companyQueryKeys.users(companyId) });
+    },
+  });
+};
+
 export const useLeaveCompany = () => {
   const queryClient = useQueryClient();
 
