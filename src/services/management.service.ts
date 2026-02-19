@@ -2,6 +2,7 @@ import { ManagementRepository } from "@/repositories/management.repository";
 import { VendorRepository } from "@/repositories/vendor.repository";
 import { ProductRepository } from "@/repositories/product.repository";
 import { VendorPermissionRepository } from "@/repositories/vendor-permission.repository";
+import { VendorDocumentRepository } from "@/repositories/vendor-document.repository";
 import type { CompanyWithUsers, VendorWithProducts } from "@/types/management/management";
 import type { Vendor } from "@/types/vendor/vendor";
 import type { Product } from "@/types/vendor/product/product";
@@ -15,12 +16,14 @@ export class ManagementService {
   private vendorRepo: VendorRepository;
   private productRepo: ProductRepository;
   private permissionRepo: VendorPermissionRepository;
+  private documentRepo: VendorDocumentRepository;
 
   constructor() {
     this.repository = new ManagementRepository();
     this.vendorRepo = new VendorRepository();
     this.productRepo = new ProductRepository();
     this.permissionRepo = new VendorPermissionRepository();
+    this.documentRepo = new VendorDocumentRepository();
   }
 
   private assertSudo(role: UserRole): void {
@@ -126,7 +129,19 @@ export class ManagementService {
       throw new AppError(404, "Vendor not found", "VENDOR_NOT_FOUND");
     }
 
-    logger.info("Vendor deleted", { vendorId });
+    // Cascade delete all related data
+    const [productsDeleted, documentsDeleted, permissionsDeleted] = await Promise.all([
+      this.productRepo.deleteByVendorId(vendorId),
+      this.documentRepo.deleteByVendorId(vendorId),
+      this.permissionRepo.removeAllPermissionsForVendor(vendorId),
+    ]);
+
+    logger.info("Vendor deleted with cascade", {
+      vendorId,
+      productsDeleted,
+      documentsDeleted,
+      permissionsDeleted,
+    });
   }
 
   async setVendorAccess(role: UserRole, vendorId: string, companyIds: string[]): Promise<void> {
@@ -209,5 +224,50 @@ export class ManagementService {
     }
 
     logger.info("Product deleted", { productId });
+  }
+
+  async bulkCreateProducts(
+    role: UserRole,
+    vendorId: string,
+    products: Pick<Product, "name" | "code" | "price" | "currency" | "description" | "imageUrl">[]
+  ): Promise<Product[]> {
+    this.assertSudo(role);
+
+    const vendor = await this.vendorRepo.findById(vendorId);
+    if (!vendor) {
+      throw new AppError(404, "Vendor not found", "VENDOR_NOT_FOUND");
+    }
+
+    const productsData = products.map((p) => ({
+      ...p,
+      vendorName: vendor.name,
+      createdAt: Timestamp.now(),
+    }));
+
+    return await this.productRepo.bulkCreate(productsData as any, vendorId);
+  }
+
+  async bulkDeleteProducts(
+    role: UserRole,
+    vendorId: string,
+    productIds: string[]
+  ): Promise<number> {
+    this.assertSudo(role);
+
+    const deletedCount = await this.productRepo.bulkDelete(productIds, vendorId);
+    logger.info("Products bulk deleted", { vendorId, requestedCount: productIds.length, deletedCount });
+    return deletedCount;
+  }
+
+  async bulkUpdateProducts(
+    role: UserRole,
+    vendorId: string,
+    updates: { productId: string; data: Partial<Pick<Product, "name" | "code" | "price" | "currency" | "description" | "imageUrl">> }[]
+  ): Promise<number> {
+    this.assertSudo(role);
+
+    const modifiedCount = await this.productRepo.bulkUpdate(updates, vendorId);
+    logger.info("Products bulk updated", { vendorId, requestedCount: updates.length, modifiedCount });
+    return modifiedCount;
   }
 }

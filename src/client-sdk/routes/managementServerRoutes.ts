@@ -18,6 +18,9 @@ export const ManagementServerRoutes = {
   // Products
   createProduct: (vendorId: string) => `/management/vendors/${vendorId}/products`,
   product: (productId: string) => `/management/products/${productId}`,
+  bulkCreateProducts: (vendorId: string) => `/management/vendors/${vendorId}/products/bulk`,
+  bulkDeleteProducts: (vendorId: string) => `/management/vendors/${vendorId}/products/bulk`,
+  bulkUpdateProducts: (vendorId: string) => `/management/vendors/${vendorId}/products/bulk`,
 
   // Price List Requests
   priceListRequests: "/management/price-list-requests",

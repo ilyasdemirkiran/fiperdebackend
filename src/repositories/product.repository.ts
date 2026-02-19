@@ -93,6 +93,27 @@ export class ProductRepository {
     }
   }
 
+  async bulkUpdate(
+    updates: { productId: string; data: Partial<Product> }[],
+    vendorId: string
+  ): Promise<number> {
+    try {
+      const collection = this.getCollection();
+      const bulkOps = updates.map(({ productId, data }) => ({
+        updateOne: {
+          filter: { _id: new ObjectId(productId), vendorId: new ObjectId(vendorId) },
+          update: { $set: data },
+        },
+      }));
+      const result = await collection.bulkWrite(bulkOps);
+      logger.info("Products bulk updated", { count: result.modifiedCount, vendorId });
+      return result.modifiedCount;
+    } catch (error) {
+      logger.error("Failed to bulk update products", error);
+      throw error;
+    }
+  }
+
   async delete(id: string): Promise<boolean> {
     try {
       const collection = this.getCollection();
@@ -118,6 +139,38 @@ export class ProductRepository {
       return result.deletedCount;
     } catch (error) {
       logger.error("Failed to delete products by vendor ID", error);
+      throw error;
+    }
+  }
+
+  async bulkCreate(products: Omit<Product, "_id">[], vendorId: string): Promise<Product[]> {
+    try {
+      const collection = this.getCollection();
+      const productsToInsert = products.map((p) => ({
+        ...p,
+        vendorId: new ObjectId(vendorId),
+      }));
+      const result = await collection.insertMany(productsToInsert as any);
+      logger.info("Products bulk created", { count: result.insertedCount, vendorId });
+      return productsToInsert.map((p, i) => ({ ...p, _id: result.insertedIds[i] }));
+    } catch (error) {
+      logger.error("Failed to bulk create products", error);
+      throw error;
+    }
+  }
+
+  async bulkDelete(productIds: string[], vendorId: string): Promise<number> {
+    try {
+      const collection = this.getCollection();
+      const objectIds = productIds.map((id) => new ObjectId(id));
+      const result = await collection.deleteMany({
+        _id: { $in: objectIds },
+        vendorId: new ObjectId(vendorId),
+      });
+      logger.info("Products bulk deleted", { count: result.deletedCount, vendorId });
+      return result.deletedCount;
+    } catch (error) {
+      logger.error("Failed to bulk delete products", error);
       throw error;
     }
   }

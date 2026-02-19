@@ -268,6 +268,58 @@ managementRoutes.delete("/products/:id", async (c) => {
 });
 
 // =====================
+// BULK PRODUCT ENDPOINTS
+// =====================
+
+const bulkProductSchema = z.object({
+  products: z.array(productSchema).min(1, "En az 1 ürün gerekli"),
+});
+
+// POST /management/vendors/:vendorId/products/bulk - Bulk create products
+managementRoutes.post("/vendors/:vendorId/products/bulk", async (c) => {
+  const user = c.get("user");
+  const vendorId = c.req.param("vendorId");
+  const body = await c.req.json();
+  const { products } = bulkProductSchema.parse(body);
+
+  const created = await getManagementService().bulkCreateProducts(user.role, vendorId, products);
+  return c.json(successResponse(toResponseArray(created)), 201);
+});
+
+const bulkDeleteSchema = z.object({
+  productIds: z.array(z.string()).min(1, "En az 1 ürün ID gerekli"),
+});
+
+// DELETE /management/vendors/:vendorId/products/bulk - Bulk delete products
+managementRoutes.delete("/vendors/:vendorId/products/bulk", async (c) => {
+  const user = c.get("user");
+  const vendorId = c.req.param("vendorId");
+  const body = await c.req.json();
+  const { productIds } = bulkDeleteSchema.parse(body);
+
+  const deletedCount = await getManagementService().bulkDeleteProducts(user.role, vendorId, productIds);
+  return c.json(successResponse({ message: `${deletedCount} ürün silindi`, deletedCount }));
+});
+
+const bulkUpdateSchema = z.object({
+  updates: z.array(z.object({
+    productId: z.string(),
+    data: productSchema.partial(),
+  })).min(1, "En az 1 ürün güncellemesi gerekli"),
+});
+
+// PUT /management/vendors/:vendorId/products/bulk - Bulk update products
+managementRoutes.put("/vendors/:vendorId/products/bulk", async (c) => {
+  const user = c.get("user");
+  const vendorId = c.req.param("vendorId");
+  const body = await c.req.json();
+  const { updates } = bulkUpdateSchema.parse(body);
+
+  const modifiedCount = await getManagementService().bulkUpdateProducts(user.role, vendorId, updates);
+  return c.json(successResponse({ message: `${modifiedCount} ürün güncellendi`, modifiedCount }));
+});
+
+// =====================
 // PRICE LIST REQUEST ENDPOINTS
 // =====================
 

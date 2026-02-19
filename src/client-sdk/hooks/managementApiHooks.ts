@@ -305,6 +305,78 @@ export const useDeleteManagementProduct = () => {
   });
 };
 
+export const useBulkCreateManagementProducts = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      vendorId,
+      products,
+    }: {
+      vendorId: string;
+      products: { name: string; code: string; price: number; currency: string; description?: string; imageUrl?: string }[];
+    }) => {
+      const response = await api.post<SuccessResponse<Product[]>>(
+        ManagementServerRoutes.bulkCreateProducts(vendorId),
+        { products }
+      );
+      return response.data.data;
+    },
+    onSuccess: (_, { vendorId }) => {
+      queryClient.invalidateQueries({ queryKey: managementQueryKeys.vendor(vendorId) });
+      queryClient.invalidateQueries({ queryKey: managementQueryKeys.vendors() });
+    },
+  });
+};
+
+export const useBulkDeleteManagementProducts = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      vendorId,
+      productIds,
+    }: {
+      vendorId: string;
+      productIds: string[];
+    }) => {
+      const response = await api.delete<SuccessResponse<{ message: string; deletedCount: number }>>(
+        ManagementServerRoutes.bulkDeleteProducts(vendorId),
+        { data: { productIds } }
+      );
+      return response.data.data;
+    },
+    onSuccess: (_, { vendorId }) => {
+      queryClient.invalidateQueries({ queryKey: managementQueryKeys.vendor(vendorId) });
+      queryClient.invalidateQueries({ queryKey: managementQueryKeys.vendors() });
+    },
+  });
+};
+
+export const useBulkUpdateManagementProducts = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      vendorId,
+      updates,
+    }: {
+      vendorId: string;
+      updates: { productId: string; data: Partial<Product> }[];
+    }) => {
+      const response = await api.put<SuccessResponse<{ message: string; modifiedCount: number }>>(
+        ManagementServerRoutes.bulkUpdateProducts(vendorId),
+        { updates }
+      );
+      return response.data.data;
+    },
+    onSuccess: (_, { vendorId }) => {
+      queryClient.invalidateQueries({ queryKey: managementQueryKeys.vendor(vendorId) });
+      queryClient.invalidateQueries({ queryKey: managementQueryKeys.vendors() });
+    },
+  });
+};
+
 // =====================
 // PRICE LIST REQUEST HOOKS (MANAGEMENT)
 // =====================
