@@ -17,6 +17,7 @@ import { logger, runWithContext } from "@/utils/logger";
 import { successResponse } from "@/utils/response";
 import { authRoutes } from "@/routes/auth.routes";
 import { companyRoutes } from "@/routes/company.routes";
+import { vendorPriceRateRoutes } from "@/routes/vendor-price-rate.routes";
 
 const app = new Hono();
 
@@ -81,6 +82,7 @@ app.route("/api/labels", labelRoutes);
 app.route("/api/vendors", vendorRoutes);
 app.route("/api/vendors", vendorAttachmentRoutes);
 app.route("/api/products", productRoutes);
+app.route("/api/vendor-price-rates", vendorPriceRateRoutes);
 
 // Initialize services
 async function initialize() {

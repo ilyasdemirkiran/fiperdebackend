@@ -209,6 +209,7 @@ async function createVendorIndexes(database: Db) {
     const productsCollection = database.collection("products");
     const attachmentsCollection = database.collection("vendor_attachments");
     const permissionsCollection = database.collection("vendor_permissions");
+    const priceRatesCollection = database.collection("vendor_price_rates");
 
     // Vendor indexes
     await vendorsCollection.createIndex({ name: 1 });
@@ -226,6 +227,9 @@ async function createVendorIndexes(database: Db) {
         { unique: true }
     );
     await permissionsCollection.createIndex({ vendorId: 1 });
+
+    // Price rate indexes
+    await priceRatesCollection.createIndex({ vendorId: 1 }, { unique: true });
 
     console.log(`✅ Vendor indexes created for ${database.databaseName}`);
 }

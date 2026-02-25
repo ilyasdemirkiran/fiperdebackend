@@ -2,26 +2,31 @@ import { VendorRepository } from "@/repositories/vendor.repository";
 import { VendorPermissionRepository } from "@/repositories/vendor-permission.repository";
 import { ProductRepository } from "@/repositories/product.repository";
 import { VendorDocumentRepository } from "@/repositories/vendor-document.repository";
+import { VendorPriceRateRepository } from "@/repositories/vendor-price-rate.repository";
 import type { Vendor } from "@/types/vendor/vendor";
 import type { VendorDocument, VendorDocumentMetadata } from "@/types/vendor/vendor_document";
 import { ALLOWED_DOCUMENT_MIME_TYPES } from "@/types/vendor/vendor_document";
+import type { VendorPriceRate } from "@/types/vendor/vendor_price_rate";
 import { AppError } from "@/middleware/error-handler";
 import { logger } from "@/utils/logger";
 import type { UserRole } from "@/types/user/fi_user";
+import { isAdmin } from "@/types/user/fi_user";
 import { Timestamp } from "firebase-admin/firestore";
-import { Binary } from "mongodb";
+import { Binary, ObjectId } from "mongodb";
 
 export class VendorService {
   private repository: VendorRepository;
   private permissionRepository: VendorPermissionRepository;
   private productRepository: ProductRepository;
   private documentRepository: VendorDocumentRepository;
+  private priceRateRepository: VendorPriceRateRepository;
 
   constructor() {
     this.repository = new VendorRepository();
     this.permissionRepository = new VendorPermissionRepository();
     this.productRepository = new ProductRepository();
     this.documentRepository = new VendorDocumentRepository();
+    this.priceRateRepository = new VendorPriceRateRepository();
   }
 
   private assertSudo(role: UserRole): void {
@@ -157,6 +162,33 @@ export class VendorService {
     }
 
     return await this.permissionRepository.getCompanyIdsForVendor(vendorId);
+  }
+
+  // ========== PRICE RATE MANAGEMENT ==========
+
+  /**
+   * Get price rates for all vendors that company has permission to see
+   */
+  async getPriceRatesForCompany(companyId: string): Promise<VendorPriceRate[]> {
+    const vendorIds = await this.permissionRepository.getVendorIdsForCompany(companyId);
+
+    if (vendorIds.length === 0) {
+      return [];
+    }
+
+    const objectIds = vendorIds.map((id) => new ObjectId(id));
+    return await this.priceRateRepository.findByVendorIds(objectIds);
+  }
+
+  /**
+   * Bulk update price rates (admin/sudo only)
+   */
+  async updatePriceRates(role: UserRole, rates: VendorPriceRate[]): Promise<void> {
+    if (!isAdmin(role)) {
+      throw new AppError(403, "Only admin users can perform this operation", "FORBIDDEN");
+    }
+
+    await this.priceRateRepository.bulkUpsert(rates);
   }
 
   // ========== DOCUMENT MANAGEMENT ==========
