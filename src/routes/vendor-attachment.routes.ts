@@ -37,8 +37,8 @@ vendorAttachmentRoutes.get("/preview/:vendorId/:attachmentId", async (c) => {
   });
 });
 
-// Apply auth middleware (all routes below require auth)
-vendorAttachmentRoutes.use("*", authMiddleware);
+// Apply auth middleware to attachment CRUD routes only (not public preview)
+vendorAttachmentRoutes.use("/:vendorId/attachments/*", authMiddleware);
 
 // GET /api/vendors/:vendorId/attachments - List attachments for vendor (metadata only)
 vendorAttachmentRoutes.get("/:vendorId/attachments", async (c) => {
