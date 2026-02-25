@@ -18,6 +18,7 @@ import { successResponse } from "@/utils/response";
 import { authRoutes } from "@/routes/auth.routes";
 import { companyRoutes } from "@/routes/company.routes";
 import { vendorPriceRateRoutes } from "@/routes/vendor-price-rate.routes";
+import { publicRoutes } from "@/routes/public.routes";
 
 const app = new Hono();
 
@@ -71,6 +72,7 @@ app.get("/api", (c) => {
 });
 
 // Mount routes
+app.route("/api/public", publicRoutes);
 app.route("/api/auth", authRoutes);
 app.route("/api/companies", companyRoutes);
 app.route("/api/management", managementRoutes);

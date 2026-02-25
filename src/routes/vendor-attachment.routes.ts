@@ -17,28 +17,8 @@ function getService(): VendorAttachmentService {
   return service;
 }
 
-// PUBLIC: Preview attachment without auth
-vendorAttachmentRoutes.get("/preview/:vendorId/:attachmentId", async (c) => {
-  const attachmentId = c.req.param("attachmentId");
-
-  const attachment = await getService().getAttachment(attachmentId);
-  const binaryData = (attachment.data as Binary).buffer;
-  const buffer = Buffer.from(binaryData);
-
-  return new Response(buffer, {
-    headers: {
-      "Content-Type": attachment.mimeType,
-      "Content-Length": buffer.length.toString(),
-      "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(attachment.filename)}`,
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
-  });
-});
-
-// Apply auth middleware to attachment CRUD routes only (not public preview)
-vendorAttachmentRoutes.use("/:vendorId/attachments/*", authMiddleware);
+// Apply auth middleware
+vendorAttachmentRoutes.use("*", authMiddleware);
 
 // GET /api/vendors/:vendorId/attachments - List attachments for vendor (metadata only)
 vendorAttachmentRoutes.get("/:vendorId/attachments", async (c) => {
