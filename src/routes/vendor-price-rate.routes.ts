@@ -24,7 +24,7 @@ vendorPriceRateRoutes.use("*", authMiddleware);
 const bulkUpdateSchema = z.array(
   z.object({
     vendorId: z.string().min(1),
-    rate: z.number().min(0).max(100),
+    rate: z.number().min(0).max(500),
   })
 );
 
