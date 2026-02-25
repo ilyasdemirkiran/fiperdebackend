@@ -140,14 +140,7 @@ export class VendorAttachmentService {
     // Use findAllByVendorId from document repo
     const documents = await this.repository.findAllByVendorId(vendorId);
 
-    // Filter only PDFs if we want to strictly emulate "Attachments" behavior,
-    // or return all if unification means "all documents".
-    // For now, let's filter for PDFs to maintain expected behavior if "Attachments" meant specifically PDFs
-    // But since the request is unification, showing all might be better.
-    // Let's filter by PDF to keep consistency with the 'Attachment' service name constraints
-    const pdfs = documents.filter(doc => doc.mimeType === "application/pdf");
-
-    return pdfs.map(doc => doc as unknown as VendorAttachmentMetadata);
+    return documents.map(doc => doc as unknown as VendorAttachmentMetadata);
   }
 
   /**

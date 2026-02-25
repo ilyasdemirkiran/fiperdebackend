@@ -7,6 +7,12 @@ export const ALLOWED_DOCUMENT_MIME_TYPES = [
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // xlsx
   'application/vnd.ms-excel', // xls
+  'application/msword', // doc
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // docx
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
 ] as const;
 
 export const vendorDocumentSchema = z.object({
