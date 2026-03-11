@@ -42,8 +42,10 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - MONGODB_URI=mongodb://mongodb:27017/fiperde
-      - MONGODB_TEST_URI=mongodb://mongodb-test:27017/fiperde-test
+      - MONGODB_URI=mongodb://mongodb:27017/fiperde?authSource=admin
+      - MONGODB_TEST_URI=mongodb://mongodb-test:27017/fiperde-test?authSource=admin
+      - MONGO_USERNAME=${MONGO_ROOT_USERNAME}
+      - MONGO_PASSWORD=${MONGO_ROOT_PASSWORD}
       - FIREBASE_SERVICE_ACCOUNT_PATH=/app/firebase-service-account.json
       - DB_NAME=fiperde
       - DB_TEST_NAME=fiperde-test
@@ -66,11 +68,14 @@ services:
     image: mongo:7.0
     container_name: fiperde-mongodb
     restart: unless-stopped
-    ports:
-      - "2961:27017" # Expose on port 2961 to avoid conflict with existing MongoDB
+    # Port NOT exposed to host — only accessible within Docker network
+    expose:
+      - "27017"
     environment:
       - MONGO_INITDB_DATABASE=fiperde
-    command: [ "--replSet", "rs0", "--bind_ip_all" ]
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+    command: [ "--replSet", "rs0", "--bind_ip", "localhost,mongodb", "--auth" ]
     volumes:
       - mongodb-data:/data/db
       - mongodb-config:/data/configdb
@@ -78,7 +83,7 @@ services:
       - fiperde-network
     healthcheck:
       test: |
-        mongosh --eval "
+        mongosh -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "
         try {
           rs.status();
         } catch(e) {
@@ -98,16 +103,21 @@ services:
     image: mongo:7.0
     container_name: fiperde-mongodb-test
     restart: unless-stopped
+    # No ports exposed to host
+    expose:
+      - "27017"
     environment:
       - MONGO_INITDB_DATABASE=fiperde-test
-    command: [ "--replSet", "rs0-test", "--bind_ip_all" ]
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+    command: [ "--replSet", "rs0-test", "--bind_ip", "localhost,mongodb-test", "--auth" ]
     volumes:
       - mongodb-test-data:/data/db
     networks:
       - fiperde-network
     healthcheck:
       test: |
-        mongosh --eval "
+        mongosh -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "
         try {
           rs.status();
         } catch(e) {
@@ -122,7 +132,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-    # IMPORTANT: No ports exposed to host
 
 networks:
   fiperde-network:

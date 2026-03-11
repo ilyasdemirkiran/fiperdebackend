@@ -13,6 +13,7 @@ import { vendorAttachmentRoutes } from "@/routes/vendor-attachment.routes";
 import { managementRoutes } from "@/routes/management.routes";
 import { priceListRequestRoutes } from "@/routes/price-list-request.routes";
 import { errorHandler } from "@/middleware/error-handler";
+import { botGuard, rateLimiter } from "@/middleware/security";
 import { logger, runWithContext } from "@/utils/logger";
 import { successResponse } from "@/utils/response";
 import { authRoutes } from "@/routes/auth.routes";
@@ -27,6 +28,10 @@ app.onError(errorHandler);
 
 // CORS
 app.use("/*", cors());
+
+// Security middleware — block bots before they hit logging
+app.use("*", botGuard);
+app.use("*", rateLimiter);
 
 // Request logging middleware
 app.use("*", async (c, next) => {
