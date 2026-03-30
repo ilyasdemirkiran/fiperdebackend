@@ -28,7 +28,7 @@ export class CustomerImageService {
 
   async uploadImage(
     companyId: string,
-    customerId: string,
+    customerId: string | undefined,
     uploaderId: string,
     input: UploadImageInput
   ): Promise<CustomerImageMetadata> {
@@ -46,7 +46,7 @@ export class CustomerImageService {
 
   async uploadMultipleImages(
     companyId: string,
-    customerId: string,
+    customerId: string | undefined,
     uploaderId: string,
     inputs: UploadImageInput[]
   ): Promise<CustomerImageMetadata[]> {
@@ -111,6 +111,12 @@ export class CustomerImageService {
     return { stream, metadata: image };
   }
 
+  async listAllImages(
+    companyId: string
+  ): Promise<CustomerImageMetadata[]> {
+    return await this.repository.findAll(companyId);
+  }
+
   async listImagesByCustomer(
     companyId: string,
     customerId: string
@@ -149,7 +155,6 @@ export class CustomerImageService {
 
   async deleteImage(
     companyId: string,
-    customerId: string,
     imageId: string
   ): Promise<void> {
     const image = await this.repository.findMetadataById(companyId, imageId);
@@ -158,13 +163,9 @@ export class CustomerImageService {
       throw new AppError(404, "Image not found", "IMAGE_NOT_FOUND");
     }
 
-    if (image.customerId !== customerId) {
-      throw new AppError(403, "Image does not belong to this customer", "FORBIDDEN");
-    }
-
     const deleted = await this.repository.deleteWithTransaction(
       companyId,
-      customerId,
+      image.customerId,
       imageId
     );
 
@@ -172,7 +173,7 @@ export class CustomerImageService {
       throw new AppError(500, "Failed to delete image", "DELETE_FAILED");
     }
 
-    logger.info("Image deleted successfully", { imageId, customerId, companyId });
+    logger.info("Image deleted successfully", { imageId, customerId: image.customerId, companyId });
   }
 
   // Resumable Upload Methods

@@ -5,7 +5,7 @@ import { ObjectId } from 'mongodb';
 export const customerImageSchema = z
   .object({
     _id: z.custom<ObjectId>().optional(),
-    customerId: z.string(),
+    customerId: z.string().optional(),
     title: z.string(),
     description: z.string().default(""),
     uploadedAt: timestampSchema,

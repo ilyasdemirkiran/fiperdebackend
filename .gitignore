@@ -34,3 +34,6 @@ Thumbs.db
 
 # SSL Certificates (Let's Encrypt)
 certbot/
+
+# MongoDB replica set keyfile
+mongo-keyfile/

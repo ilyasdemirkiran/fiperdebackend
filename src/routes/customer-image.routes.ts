@@ -5,7 +5,7 @@ import { successResponse } from "@/utils/response";
 import { authMiddleware } from "@/middleware/auth";
 import { toResponse, toResponseArray } from "@/utils/response-transformer";
 import { z } from "zod";
-import { Binary } from "mongodb";
+import type { CustomerImageMetadata } from "@/types/customer/image/customer_image";
 
 export const customerImageRoutes = new Hono<Env>();
 
@@ -21,46 +21,21 @@ function getService(): CustomerImageService {
 // Apply auth middleware
 customerImageRoutes.use("*", authMiddleware);
 
-// GET /api/customers/:customerId/images - List images for customer (metadata only)
-customerImageRoutes.get("/:customerId/images", async (c) => {
+// GET /api/customers/images - List all images (no customerId filter)
+customerImageRoutes.get("/images", async (c) => {
   const user = c.get("user");
-  const customerId = c.req.param("customerId");
 
-  const images = await getService().listImagesByCustomer(user.companyId!, customerId);
+  const images = await getService().listAllImages(user.companyId!);
   return c.json(successResponse(toResponseArray(images)));
 });
 
-// POST /api/customers/images/by-labels - Get images by label IDs
-const byLabelsSchema = z.object({
-  labelIds: z.array(z.string()).min(1, "At least one label ID required"),
-});
-
-customerImageRoutes.post("/images/by-labels", async (c) => {
-  const user = c.get("user");
-  const body = await c.req.json();
-  const { labelIds } = byLabelsSchema.parse(body);
-
-  const images = await getService().getImagesByLabels(user.companyId!, labelIds);
-  return c.json(successResponse(toResponseArray(images)));
-});
-
-// GET /api/customers/:customerId/images/:imageId - Get image metadata
-customerImageRoutes.get("/:customerId/images/:imageId", async (c) => {
-  const user = c.get("user");
-  const imageId = c.req.param("imageId");
-
-  const image = await getService().getImageMetadata(user.companyId!, imageId);
-  return c.json(successResponse(toResponse(image)));
-});
-
-// GET /api/customers/:customerId/images/:imageId/download - Download image binary
-customerImageRoutes.get("/:customerId/images/:imageId/download", async (c) => {
+// GET /api/customers/images/:imageId/download - Download image binary by imageId only
+customerImageRoutes.get("/images/:imageId/download", async (c) => {
   const user = c.get("user");
   const imageId = c.req.param("imageId");
 
   const { buffer, metadata } = await getService().getImageData(user.companyId!, imageId);
 
-  // Return binary data with correct content type and CORS headers
   return new Response(buffer, {
     headers: {
       "Content-Type": metadata.mimeType,
@@ -73,10 +48,43 @@ customerImageRoutes.get("/:customerId/images/:imageId/download", async (c) => {
   });
 });
 
-// POST /api/customers/:customerId/images - Upload image(s) via multipart/form-data
-customerImageRoutes.post("/:customerId/images", async (c) => {
+// GET /api/customers/:customerId/images - List images for customer (metadata only)
+customerImageRoutes.get("/:customerId/images", async (c) => {
   const user = c.get("user");
   const customerId = c.req.param("customerId");
+
+  const images = await getService().listImagesByCustomer(user.companyId!, customerId);
+  return c.json(successResponse(toResponseArray(images)));
+});
+
+// POST /api/customers/images/by-labels - Get images by label IDs
+const byLabelsSchema = z.object({
+  labelIds: z.array(z.string()).default([]),
+});
+
+customerImageRoutes.post("/images/by-labels", async (c) => {
+  const user = c.get("user");
+  const body = await c.req.json();
+  const { labelIds } = byLabelsSchema.parse(body);
+
+  const images = labelIds.length === 0
+    ? await getService().listAllImages(user.companyId!)
+    : await getService().getImagesByLabels(user.companyId!, labelIds);
+  return c.json(successResponse(toResponseArray(images)));
+});
+
+// GET /api/customers/images/:imageId - Get image metadata
+customerImageRoutes.get("/images/:imageId", async (c) => {
+  const user = c.get("user");
+  const imageId = c.req.param("imageId");
+
+  const image = await getService().getImageMetadata(user.companyId!, imageId);
+  return c.json(successResponse(toResponse(image)));
+});
+
+// Shared upload handler
+async function handleImageUpload(c: any, customerId?: string) {
+  const user = c.get("user");
 
   const formData = await c.req.formData();
   const files = formData.getAll("files") as File[];
@@ -122,10 +130,21 @@ customerImageRoutes.post("/:customerId/images", async (c) => {
     );
     return c.json(successResponse(toResponseArray(images)), 201);
   }
+}
+
+// POST /api/customers/images - Upload image(s) without customerId
+customerImageRoutes.post("/images", async (c) => {
+  return handleImageUpload(c);
 });
 
-// PUT /api/customers/:customerId/images/:imageId - Update image metadata
-customerImageRoutes.put("/:customerId/images/:imageId", async (c) => {
+// POST /api/customers/:customerId/images - Upload image(s) with customerId
+customerImageRoutes.post("/:customerId/images", async (c) => {
+  const customerId = c.req.param("customerId");
+  return handleImageUpload(c, customerId);
+});
+
+// PUT /api/customers/images/:imageId - Update image metadata
+customerImageRoutes.put("/images/:imageId", async (c) => {
   const user = c.get("user");
   const imageId = c.req.param("imageId");
   const body = await c.req.json();
@@ -137,19 +156,17 @@ customerImageRoutes.put("/:customerId/images/:imageId", async (c) => {
   });
 
   const input = updateSchema.parse(body);
-  const image = await getService().updateImage(user.companyId!, imageId, input);
+  const image: CustomerImageMetadata = await getService().updateImage(user.companyId!, imageId, input);
 
   return c.json(successResponse(toResponse(image)));
 });
 
-// DELETE /api/customers/:customerId/images/:imageId - Delete image
-customerImageRoutes.delete("/:customerId/images/:imageId", async (c) => {
+// DELETE /api/customers/images/:imageId - Delete image by imageId only
+customerImageRoutes.delete("/images/:imageId", async (c) => {
   const user = c.get("user");
-  const customerId = c.req.param("customerId");
   const imageId = c.req.param("imageId");
 
-  console.log("geldi", user.companyId, customerId, imageId)
-  await getService().deleteImage(user.companyId!, customerId, imageId);
+  await getService().deleteImage(user.companyId!, imageId);
 
   return c.json(successResponse({ message: "Image deleted successfully" }));
 });

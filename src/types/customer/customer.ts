@@ -18,9 +18,9 @@ const customerBaseSchema = z.object({
     .string({ message: "Soyisim zorunludur" })
     .min(2, "En az 2 karakter")
     .max(100),
-  phone: phoneNumberSchema,
-  city: z.string().min(1, "Şehir zorunludur."),
-  district: z.string().min(1, "İlçe zorunludur."),
+  phone: phoneNumberSchema.optional().or(z.literal("")),
+  city: z.string().min(1, "Şehir zorunludur.").optional().or(z.literal("")),
+  district: z.string().min(1, "İlçe zorunludur.").optional().or(z.literal("")),
   address: z
     .string()
     .max(100, "En fazla 100 karakter")

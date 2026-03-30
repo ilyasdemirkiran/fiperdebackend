@@ -39,10 +39,32 @@ export class CustomerRepository {
       if (status) {
         query.status = status;
       }
-      const customers = await collection
-        .find(query)
-        .sort({ name: 1, surname: 1 })
-        .toArray();
+
+      const pipeline: any[] = [
+        { $match: query },
+        {
+          $lookup: {
+            from: "customer_images",
+            let: { customerId: { $toString: "$_id" } },
+            pipeline: [
+              { $match: { $expr: { $eq: ["$customerId", "$$customerId"] } } },
+              { $count: "count" },
+            ],
+            as: "imageStats",
+          },
+        },
+        {
+          $addFields: {
+            imageCount: {
+              $ifNull: [{ $arrayElemAt: ["$imageStats.count", 0] }, 0],
+            },
+          },
+        },
+        { $project: { imageStats: 0 } },
+        { $sort: { _id: -1 as const } },
+      ];
+
+      const customers = await collection.aggregate<CustomerDb>(pipeline).toArray();
 
       return customers;
     } catch (error) {

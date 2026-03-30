@@ -63,73 +63,33 @@ services:
       retries: 3
       start_period: 40s
 
-  # Production MongoDB (configured as replica set for transaction support)
   mongodb:
     image: mongo:7.0
     container_name: fiperde-mongodb
     restart: unless-stopped
-    # Port NOT exposed to host — only accessible within Docker network
-    expose:
-      - "27017"
+    ports:
+      - "2961:27017"
     environment:
       - MONGO_INITDB_DATABASE=fiperde
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
-    command: [ "--replSet", "rs0", "--bind_ip", "localhost,mongodb", "--auth" ]
+    entrypoint: >
+      bash -c '
+        cp /data/mongo-keyfile-src/keyfile /tmp/mongo-keyfile &&
+        chmod 400 /tmp/mongo-keyfile &&
+        chown 999:999 /tmp/mongo-keyfile &&
+        exec mongod --replSet rs0 --bind_ip localhost,mongodb --auth --keyFile /tmp/mongo-keyfile
+      '
     volumes:
       - mongodb-data:/data/db
       - mongodb-config:/data/configdb
+      - ./mongo-keyfile/keyfile:/data/mongo-keyfile-src/keyfile:ro
     networks:
       - fiperde-network
     healthcheck:
-      test: |
-        mongosh -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "
-        try {
-          rs.status();
-        } catch(e) {
-          rs.initiate({
-            _id: 'rs0',
-            members: [{ _id: 0, host: 'mongodb:27017' }]
-          });
-        }
-        db.adminCommand('ping');
-        "
+      test: [ "CMD-SHELL", "mongosh -u \"$$MONGO_INITDB_ROOT_USERNAME\" -p \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval \"try { rs.status(); } catch(e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongodb:27017' }] }); } db.adminCommand('ping');\"" ]
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-    # Test MongoDB (configured as replica set for transaction support)
-  mongodb-test:
-    image: mongo:7.0
-    container_name: fiperde-mongodb-test
-    restart: unless-stopped
-    # No ports exposed to host
-    expose:
-      - "27017"
-    environment:
-      - MONGO_INITDB_DATABASE=fiperde-test
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
-    command: [ "--replSet", "rs0-test", "--bind_ip", "localhost,mongodb-test", "--auth" ]
-    volumes:
-      - mongodb-test-data:/data/db
-    networks:
-      - fiperde-network
-    healthcheck:
-      test: |
-        mongosh -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "
-        try {
-          rs.status();
-        } catch(e) {
-          rs.initiate({
-            _id: 'rs0-test',
-            members: [{ _id: 0, host: 'mongodb-test:27017' }]
-          });
-        }
-        db.adminCommand('ping');
-        "
-      interval: 10s
-      timeout: 5s
+      timeout: 10s
       retries: 10
       start_period: 30s
 

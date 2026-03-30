@@ -91,7 +91,7 @@ export class CustomerImageRepository {
    */
   async createWithTransaction(
     companyId: string,
-    customerId: string,
+    customerId: string | undefined,
     imageData: {
       title: string;
       description?: string;
@@ -136,11 +136,13 @@ export class CustomerImageRepository {
         await imagesCollection.insertOne(image as any, { session });
 
         // Increment customer imageCount
-        await customersCollection.updateOne(
-          { _id: customerId } as any,
-          { $inc: { imageCount: 1 } },
-          { session }
-        );
+        if (customerId) {
+          await customersCollection.updateOne(
+            { _id: customerId } as any,
+            { $inc: { imageCount: 1 } },
+            { session }
+          );
+        }
       });
 
       logger.info("Image created with GridFS", {
@@ -182,7 +184,7 @@ export class CustomerImageRepository {
    */
   async createManyWithTransaction(
     companyId: string,
-    customerId: string,
+    customerId: string | undefined,
     imagesData: Array<{
       title: string;
       description?: string;
@@ -230,11 +232,13 @@ export class CustomerImageRepository {
         await imagesCollection.insertMany(images as any[], { session });
 
         // Increment customer imageCount by number of images
-        await customersCollection.updateOne(
-          { _id: customerId } as any,
-          { $inc: { imageCount: images.length } },
-          { session }
-        );
+        if (customerId) {
+          await customersCollection.updateOne(
+            { _id: customerId } as any,
+            { $inc: { imageCount: images.length } },
+            { session }
+          );
+        }
       });
 
       logger.info("Multiple images created with GridFS", {
@@ -280,6 +284,19 @@ export class CustomerImageRepository {
       ) as CustomerImageMetadata | null;
     } catch (error) {
       logger.error("Failed to find image metadata by ID", error);
+      throw error;
+    }
+  }
+
+  async findAll(companyId: string): Promise<CustomerImageMetadata[]> {
+    try {
+      const collection = this.getCollection(companyId);
+      return await collection
+        .find({}, { projection: { fileId: 0 } })
+        .sort({ uploadedAt: -1 })
+        .toArray() as CustomerImageMetadata[];
+    } catch (error) {
+      logger.error("Failed to fetch all images", error);
       throw error;
     }
   }
@@ -337,7 +354,7 @@ export class CustomerImageRepository {
    */
   async deleteWithTransaction(
     companyId: string,
-    customerId: string,
+    customerId: string | undefined,
     imageId: string
   ): Promise<boolean> {
     const client = getClient();
@@ -367,11 +384,13 @@ export class CustomerImageRepository {
         }
 
         // Decrement customer imageCount
-        await customersCollection.updateOne(
-          { _id: customerId } as any,
-          { $inc: { imageCount: -1 } },
-          { session }
-        );
+        if (customerId) {
+          await customersCollection.updateOne(
+            { _id: customerId } as any,
+            { $inc: { imageCount: -1 } },
+            { session }
+          );
+        }
 
         deleted = true;
       });
