@@ -96,7 +96,7 @@ interface RateLimitEntry {
 
 const rateLimitStore = new Map<string, RateLimitEntry>();
 const WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_REQUESTS = 100; // per window per IP
+const MAX_REQUESTS = 500; // per window per IP
 
 // Cleanup stale entries every 5 minutes
 setInterval(() => {
@@ -113,6 +113,14 @@ setInterval(() => {
  * Returns 429 if rate limit is exceeded.
  */
 export const rateLimiter = async (c: Context, next: Next) => {
+  const path = c.req.path.toLowerCase();
+
+  // Skip rate limiter for completely static assets like images, to not block normal grid loading
+  if (c.req.method === "GET" && path.includes("/images")) {
+    await next();
+    return;
+  }
+
   const ip =
     c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
     c.req.header("x-real-ip") ||

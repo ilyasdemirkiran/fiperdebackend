@@ -29,9 +29,10 @@ export class CustomerService {
         const validatedInput = createCustomerSchema.parse(input);
         // Omit _id - MongoDB will auto-generate ObjectId
         const customer: Omit<CustomerDb, "_id"> = {
-            ...validatedInput,
-            status: validatedInput.status || "active",
-            address: validatedInput.address || "",
+            name: validatedInput.name,
+            surname: validatedInput.surname,
+            status: "active",
+            address: "",
             imageCount: 0,
             createdAt: Timestamp.now(),
         };
