@@ -2,6 +2,7 @@ import { z } from "zod";
 import { currencySchema } from "@/types/currency";
 import { timestampSchema } from "@/types/timestamp";
 import { ObjectId } from "mongodb";
+import { Timestamp } from "firebase-admin/firestore";
 
 export const quoteStatusSchema = z.enum(["draft", "sent_for_approval", "approved", "denied"]);
 export type QuoteStatus = z.infer<typeof quoteStatusSchema>;
@@ -43,7 +44,7 @@ export const quoteSchema = z.object({
   rooms: z.array(quoteRoomSchema).default([]),
   status: quoteStatusSchema.default("draft"),
   total: z.number().default(0),
-  createdAt: timestampSchema,
+  createdAt: timestampSchema.default(Timestamp.now()),
   updatedAt: timestampSchema.optional(),
 });
 
@@ -63,7 +64,11 @@ export const updateQuoteCustomerSchema = z.object({
   }).optional(),
 });
 
-export const updateQuoteConversionsSchema = z.record(currencySchema, z.number());
+export const updateQuoteConversionsSchema = z.record(currencySchema, z.number()).default({
+  EUR: 1.00,
+  USD: 1.00,
+  TRY: 1.00,
+});
 
 export const addRoomSchema = z.object({
   name: z.string().min(1),
@@ -82,9 +87,14 @@ export const updateQuoteItemSchema = z.object({
   customPrice: z.number().optional(),
 });
 
+export const updateRoomNameSchema = z.object({
+  name: z.string().min(1),
+});
+
 export type CreateQuoteInput = z.infer<typeof createQuoteSchema>;
 export type UpdateQuoteCustomerInput = z.infer<typeof updateQuoteCustomerSchema>;
 export type UpdateQuoteConversionsInput = z.infer<typeof updateQuoteConversionsSchema>;
 export type AddRoomInput = z.infer<typeof addRoomSchema>;
 export type AddItemsToRoomInput = z.infer<typeof addItemsToRoomSchema>;
 export type UpdateQuoteItemInput = z.infer<typeof updateQuoteItemSchema>;
+export type UpdateRoomNameInput = z.infer<typeof updateRoomNameSchema>;

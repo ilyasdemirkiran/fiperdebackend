@@ -1,6 +1,7 @@
 import { Collection, ObjectId } from "mongodb";
 import { getGlobalVendorDatabase } from "@/config/database";
 import type { Product } from "@/types/vendor/product/product";
+import type { Vendor } from "@/types/vendor/vendor";
 import { logger } from "@/utils/logger";
 
 export class ProductRepository {
@@ -75,6 +76,110 @@ export class ProductRepository {
         .toArray();
     } catch (error) {
       logger.error("Failed to fetch all products", error);
+      throw error;
+    }
+  }
+
+  // ========== ENRICHED (AGGREGATION) METHODS ==========
+
+  /**
+   * Fetch products for a list of vendorIds, with vendor document joined inline.
+   * Rate application (priceWithRate) is done by the service layer.
+   */
+  async findEnrichedByVendorIds(vendorIds: ObjectId[]): Promise<(Product & { vendor?: Vendor })[]> {
+    try {
+      const db = getGlobalVendorDatabase();
+      const result = await db
+        .collection("products")
+        .aggregate<Product & { vendor?: Vendor }>([
+          { $match: { vendorId: { $in: vendorIds } } },
+          {
+            $lookup: {
+              from: "vendors",
+              localField: "vendorId",
+              foreignField: "_id",
+              as: "vendorArr",
+            },
+          },
+          {
+            $addFields: {
+              vendor: { $arrayElemAt: ["$vendorArr", 0] },
+            },
+          },
+          { $unset: "vendorArr" },
+          { $sort: { name: 1 } },
+        ])
+        .toArray();
+      return result;
+    } catch (error) {
+      logger.error("Failed to fetch enriched products by vendor IDs", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch a single product by id, with vendor document joined inline.
+   */
+  async findEnrichedById(id: string): Promise<(Product & { vendor?: Vendor }) | null> {
+    try {
+      const db = getGlobalVendorDatabase();
+      const result = await db
+        .collection("products")
+        .aggregate<Product & { vendor?: Vendor }>([
+          { $match: { _id: new ObjectId(id) } },
+          {
+            $lookup: {
+              from: "vendors",
+              localField: "vendorId",
+              foreignField: "_id",
+              as: "vendorArr",
+            },
+          },
+          {
+            $addFields: {
+              vendor: { $arrayElemAt: ["$vendorArr", 0] },
+            },
+          },
+          { $unset: "vendorArr" },
+        ])
+        .toArray();
+      return result[0] ?? null;
+    } catch (error) {
+      logger.error("Failed to fetch enriched product by ID", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch products by a single vendorId, with vendor document joined inline.
+   */
+  async findEnrichedByVendorId(vendorId: string): Promise<(Product & { vendor?: Vendor })[]> {
+    try {
+      const db = getGlobalVendorDatabase();
+      const result = await db
+        .collection("products")
+        .aggregate<Product & { vendor?: Vendor }>([
+          { $match: { vendorId: new ObjectId(vendorId) } },
+          {
+            $lookup: {
+              from: "vendors",
+              localField: "vendorId",
+              foreignField: "_id",
+              as: "vendorArr",
+            },
+          },
+          {
+            $addFields: {
+              vendor: { $arrayElemAt: ["$vendorArr", 0] },
+            },
+          },
+          { $unset: "vendorArr" },
+          { $sort: { name: 1 } },
+        ])
+        .toArray();
+      return result;
+    } catch (error) {
+      logger.error("Failed to fetch enriched products by vendor ID", error);
       throw error;
     }
   }

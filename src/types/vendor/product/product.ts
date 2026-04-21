@@ -15,6 +15,8 @@ export const productSchema = z.object({
   vendorName: z.string().optional(),
   description: z.string().min(2, "Min 2 karakter").max(1000, "Max 1000 karakter").optional(),
   imageUrl: z.url().optional(),
+  /** Computed response field: price * (1 + rate/100). Not stored in DB. */
+  priceWithRate: z.number().optional(),
   createdAt: timestampSchema,
   updatedAt: timestampSchema.optional(),
 });

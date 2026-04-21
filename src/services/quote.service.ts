@@ -1,7 +1,7 @@
 import { QuoteRepository } from "@/repositories/quote.repository";
 import { ProductRepository } from "@/repositories/product.repository";
 import { CustomerService } from "@/services/customer.service";
-import type { Quote, QuoteStatus, QuoteItem, QuoteRoom } from "@/types/quotes/quote";
+import { type Quote, type QuoteStatus, type QuoteItem, type QuoteRoom, quoteSchema } from "@/types/quotes/quote";
 import { AppError } from "@/middleware/error-handler";
 import { logger } from "@/utils/logger";
 import { ObjectId } from "mongodb";
@@ -21,19 +21,16 @@ export class QuoteService {
 
   async createQuote(companyId: string, creatorId: string, creatorName: string, currency: Currency): Promise<Quote> {
     const quoteNumber = await this.repository.getNextQuoteNumber(companyId);
-    
-    const quote: Quote = {
+
+    const quote: Quote = quoteSchema.parse({
       companyId,
       quoteNumber,
       creatorId,
       creatorName,
       currency,
-      conversions: { [currency]: 1 } as any, // Base currency rate is always 1
       rooms: [],
       status: "draft",
-      total: 0,
-      createdAt: Timestamp.now(),
-    };
+    });
 
     return await this.repository.create(companyId, quote);
   }
@@ -47,8 +44,8 @@ export class QuoteService {
   }
 
   async updateQuoteCustomer(
-    companyId: string, 
-    id: string, 
+    companyId: string,
+    id: string,
     input: { customerId?: string; newCustomer?: { name: string; surname: string; phoneNumber?: string } }
   ): Promise<Quote> {
     const quote = await this.getQuote(companyId, id);
@@ -105,7 +102,7 @@ export class QuoteService {
     conversions[quote.currency] = 1;
 
     await this.repository.update(companyId, id, { conversions: conversions as any });
-    
+
     return await this.recalculateQuoteTotal(companyId, id);
   }
 
@@ -127,17 +124,47 @@ export class QuoteService {
     return updated!;
   }
 
+  async deleteRoom(companyId: string, id: string, roomId: string): Promise<Quote> {
+    const quote = await this.getQuote(companyId, id);
+    this.ensureEditable(quote);
+
+    const roomExists = quote.rooms.some(r => r.id === roomId);
+    if (!roomExists) {
+      throw new AppError(404, "Room not found", "ROOM_NOT_FOUND");
+    }
+
+    const updatedRooms = quote.rooms.filter(r => r.id !== roomId);
+
+    await this.repository.update(companyId, id, { rooms: updatedRooms });
+    return await this.recalculateQuoteTotal(companyId, id);
+  }
+
+  async updateRoomName(companyId: string, id: string, roomId: string, name: string): Promise<Quote> {
+    const quote = await this.getQuote(companyId, id);
+    this.ensureEditable(quote);
+
+    const room = quote.rooms.find(r => r.id === roomId);
+    if (!room) {
+      throw new AppError(404, "Room not found", "ROOM_NOT_FOUND");
+    }
+
+    room.name = name;
+
+    const updated = await this.repository.update(companyId, id, { rooms: quote.rooms });
+    return updated!;
+  }
+
   async addItemsToRoom(
-    companyId: string, 
-    id: string, 
-    roomId: string, 
+    companyId: string,
+    id: string,
+    roomId: string,
     itemsInput: { productId: string; quantity: number; customPrice?: number }[]
   ): Promise<Quote> {
     const quote = await this.getQuote(companyId, id);
     this.ensureEditable(quote);
 
     if (!quote.conversions || Object.keys(quote.conversions).length <= 1 && !quote.conversions[quote.currency]) {
-       // Technically we initialized it with base=1, but let's check if others are needed
+      // Technically we initialized it with base=1, but let's check if others are needed
     }
 
     const room = quote.rooms.find(r => r.id === roomId);
@@ -175,16 +202,16 @@ export class QuoteService {
     }
 
     room.items.push(...newItems);
-    
+
     await this.repository.update(companyId, id, { rooms: quote.rooms });
     return await this.recalculateQuoteTotal(companyId, id);
   }
 
   async updateItem(
-    companyId: string, 
-    id: string, 
-    roomId: string, 
-    itemId: string, 
+    companyId: string,
+    id: string,
+    roomId: string,
+    itemId: string,
     updates: { quantity?: number; customPrice?: number }
   ): Promise<Quote> {
     const quote = await this.getQuote(companyId, id);

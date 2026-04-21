@@ -33,7 +33,7 @@ const createProductSchema = z.object({
 
 const updateProductSchema = createProductSchema.omit({ vendorId: true }).partial();
 
-// GET /api/products - List products for user's company (permission-filtered)
+// GET /api/products - List products for user's company (permission-filtered, with vendor & priceWithRate)
 productRoutes.get("/", async (c) => {
   const user = c.get("user");
 
@@ -42,22 +42,25 @@ productRoutes.get("/", async (c) => {
   return c.json(successResponse(products));
 });
 
-// GET /api/products/:id - Get product detail
-productRoutes.get("/:id", async (c) => {
-  const id = c.req.param("id");
-
-  const product = await getService().getProduct(id);
-
-  return c.json(successResponse(product));
-});
-
-// GET /api/products/vendor/:vendorId - List products by vendor (all users)
+// GET /api/products/vendor/:vendorId - List products by vendor (with vendor & priceWithRate)
+// NOTE: This route must be declared before /:id to avoid param capture
 productRoutes.get("/vendor/:vendorId", async (c) => {
+  const user = c.get("user");
   const vendorId = c.req.param("vendorId");
 
-  const products = await getService().listProductsByVendor(vendorId);
+  const products = await getService().listProductsByVendor(vendorId, user.companyId!);
 
   return c.json(successResponse(products));
+});
+
+// GET /api/products/:id - Get product detail (with vendor & priceWithRate)
+productRoutes.get("/:id", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+
+  const product = await getService().getProduct(id, user.companyId!);
+
+  return c.json(successResponse(product));
 });
 
 // POST /api/products - Create product (sudo only)

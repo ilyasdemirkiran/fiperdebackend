@@ -8,6 +8,7 @@ import {
   updateQuoteCustomerSchema,
   updateQuoteConversionsSchema,
   addRoomSchema,
+  updateRoomNameSchema,
   addItemsToRoomSchema,
   updateQuoteItemSchema,
   type Quote
@@ -99,6 +100,28 @@ quoteRoutes.post("/:id/rooms", async (c) => {
 
   const quote = await getService().addRoom(user.companyId!, id, name);
   return c.json(successResponse<Quote>(quote), 201);
+});
+
+// PATCH /api/quotes/:id/rooms/:roomId - Update room name
+quoteRoutes.patch("/:id/rooms/:roomId", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+  const roomId = c.req.param("roomId");
+  const body = await c.req.json();
+  const { name } = updateRoomNameSchema.parse(body);
+
+  const quote = await getService().updateRoomName(user.companyId!, id, roomId, name);
+  return c.json(successResponse<Quote>(quote));
+});
+
+// DELETE /api/quotes/:id/rooms/:roomId - Delete room (and all its items)
+quoteRoutes.delete("/:id/rooms/:roomId", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+  const roomId = c.req.param("roomId");
+
+  const quote = await getService().deleteRoom(user.companyId!, id, roomId);
+  return c.json(successResponse<Quote>(quote));
 });
 
 // POST /api/quotes/:id/rooms/:roomId/items - Add items to room
