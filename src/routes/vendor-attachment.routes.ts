@@ -1,10 +1,10 @@
-import { Hono } from "hono";
-import type { Env } from "@/types/hono";
-import { VendorAttachmentService, type UploadAttachmentInput } from "@/services/vendor-attachment.service";
-import { successResponse } from "@/utils/response";
-import { authMiddleware } from "@/middleware/auth";
-import { z } from "zod";
-import { Binary } from "mongodb";
+import {Hono} from "hono";
+import type {Env} from "@/types/hono";
+import {type UploadAttachmentInput, VendorAttachmentService} from "@/services/vendor-attachment.service";
+import {successResponse} from "@/utils/response";
+import {authMiddleware} from "@/middleware/auth";
+import {z} from "zod";
+import {Binary} from "mongodb";
 
 export const vendorAttachmentRoutes = new Hono<Env>();
 
@@ -82,7 +82,6 @@ vendorAttachmentRoutes.get("/:vendorId/attachments/:attachmentId/download", asyn
   });
 });
 
-
 // POST /api/vendors/:vendorId/attachments - Upload PDF (sudo only)
 vendorAttachmentRoutes.post("/:vendorId/attachments", async (c) => {
   const user = c.get("user");
@@ -94,11 +93,11 @@ vendorAttachmentRoutes.post("/:vendorId/attachments", async (c) => {
   const description = formData.get("description") as string || "";
 
   if (!file) {
-    return c.json({ success: false, error: { message: "No file provided" } }, 400);
+    return c.json({success: false, error: {message: "No file provided"}}, 400);
   }
 
   if (!title) {
-    return c.json({ success: false, error: { message: "Title is required" } }, 400);
+    return c.json({success: false, error: {message: "Title is required"}}, 400);
   }
 
   const input: UploadAttachmentInput = {
@@ -145,5 +144,5 @@ vendorAttachmentRoutes.delete("/:vendorId/attachments/:attachmentId", async (c) 
 
   await getService().deleteAttachment(attachmentId, user.role);
 
-  return c.json(successResponse({ message: "Attachment deleted successfully" }));
+  return c.json(successResponse({message: "Attachment deleted successfully"}));
 });

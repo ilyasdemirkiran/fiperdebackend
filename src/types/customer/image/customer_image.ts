@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { timestampSchema } from '@/types/timestamp';
-import { ObjectId } from 'mongodb';
+import {z} from 'zod';
+import {timestampSchema} from '@/types/timestamp';
+import {ObjectId} from 'mongodb';
 
 export const customerImageSchema = z
   .object({
@@ -20,5 +20,5 @@ export const customerImageSchema = z
 export type CustomerImage = z.infer<typeof customerImageSchema>;
 
 // Response type without fileId (for listing)
-export const customerImageMetadataSchema = customerImageSchema.omit({ fileId: true });
+export const customerImageMetadataSchema = customerImageSchema.omit({fileId: true});
 export type CustomerImageMetadata = z.infer<typeof customerImageMetadataSchema>;

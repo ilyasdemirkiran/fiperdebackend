@@ -1,11 +1,13 @@
-import { ObjectId } from "mongodb";
+import {ObjectId} from "mongodb";
 
 /**
  * Recursively converts MongoDB ObjectId to string.
  * Keeps the key as '_id'.
  */
 export function toResponse<T>(obj: T): any {
-  if (obj === null || obj === undefined) return obj;
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
 
   if (obj instanceof ObjectId) {
     return obj.toHexString();

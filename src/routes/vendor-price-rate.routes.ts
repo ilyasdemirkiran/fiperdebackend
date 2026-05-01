@@ -1,10 +1,10 @@
-import { Hono } from "hono";
-import type { Env } from "@/types/hono";
-import { VendorService } from "@/services/vendor.service";
-import { successResponse } from "@/utils/response";
-import { authMiddleware } from "@/middleware/auth";
-import { z } from "zod";
-import { ObjectId } from "mongodb";
+import {Hono} from "hono";
+import type {Env} from "@/types/hono";
+import {VendorService} from "@/services/vendor.service";
+import {successResponse} from "@/utils/response";
+import {authMiddleware} from "@/middleware/auth";
+import {z} from "zod";
+import {ObjectId} from "mongodb";
 
 export const vendorPriceRateRoutes = new Hono<Env>();
 
@@ -49,5 +49,5 @@ vendorPriceRateRoutes.put("/", async (c) => {
 
   await getService().updatePriceRates(user.role, mappedRates);
 
-  return c.json(successResponse({ message: "Price rates updated successfully" }));
+  return c.json(successResponse({message: "Price rates updated successfully"}));
 });

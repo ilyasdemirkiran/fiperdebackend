@@ -1,12 +1,12 @@
-import { CustomerImageRepository } from "@/repositories/customer-image.repository";
-import type { CustomerImage, CustomerImageMetadata } from "@/types/customer/image/customer_image";
-import { AppError } from "@/middleware/error-handler";
-import { logger } from "@/utils/logger";
-import { Timestamp } from "firebase-admin/firestore";
-import { ObjectId } from "mongodb";
-import { UploadSessionRepository } from "@/repositories/upload-session.repository";
-import type { InitUploadInput, UploadSession, UploadChunk } from "@/types/common/upload";
-import type { Readable } from "stream";
+import {CustomerImageRepository} from "@/repositories/customer-image.repository";
+import type {CustomerImage, CustomerImageMetadata} from "@/types/customer/image/customer_image";
+import {AppError} from "@/middleware/error-handler";
+import {logger} from "@/utils/logger";
+import {Timestamp} from "firebase-admin/firestore";
+import {ObjectId} from "mongodb";
+import {UploadSessionRepository} from "@/repositories/upload-session.repository";
+import type {InitUploadInput, UploadChunk, UploadSession} from "@/types/common/upload";
+import type {Readable} from "stream";
 
 export interface UploadImageInput {
   title: string;
@@ -86,7 +86,7 @@ export class CustomerImageService {
 
     const buffer = await this.repository.downloadFromGridFS(companyId, image.fileId);
 
-    return { buffer, metadata: image };
+    return {buffer, metadata: image};
   }
 
   /**
@@ -108,7 +108,7 @@ export class CustomerImageService {
 
     const stream = this.repository.getDownloadStream(companyId, image.fileId);
 
-    return { stream, metadata: image };
+    return {stream, metadata: image};
   }
 
   async listAllImages(
@@ -173,7 +173,7 @@ export class CustomerImageService {
       throw new AppError(500, "Failed to delete image", "DELETE_FAILED");
     }
 
-    logger.info("Image deleted successfully", { imageId, customerId: image.customerId, companyId });
+    logger.info("Image deleted successfully", {imageId, customerId: image.customerId, companyId});
   }
 
   // Resumable Upload Methods
@@ -199,7 +199,7 @@ export class CustomerImageService {
     };
 
     const created = await this.uploadRepository.createSession(companyId, session);
-    return { uploadId: created._id!.toHexString() };
+    return {uploadId: created._id!.toHexString()};
   }
 
   async uploadChunk(
@@ -224,7 +224,7 @@ export class CustomerImageService {
 
     // Refresh session to get updated chunk list
     const updatedSession = await this.uploadRepository.getSession(companyId, uploadId);
-    return { uploadedChunks: updatedSession?.uploadedChunks || [] };
+    return {uploadedChunks: updatedSession?.uploadedChunks || []};
   }
 
   async finalizeUpload(
@@ -247,7 +247,7 @@ export class CustomerImageService {
 
     // Verify size (optional but recommended)
     if (buffer.length !== session.totalSize) {
-      logger.warn(`Upload size mismatch. Expected: ${session.totalSize}, Got: ${buffer.length}`, { uploadId });
+      logger.warn(`Upload size mismatch. Expected: ${session.totalSize}, Got: ${buffer.length}`, {uploadId});
     }
 
     // Create image with GridFS

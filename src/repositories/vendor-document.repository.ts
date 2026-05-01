@@ -1,7 +1,7 @@
-import { Collection, ObjectId } from "mongodb";
-import { getGlobalVendorDatabase } from "@/config/database";
-import type { VendorDocument, VendorDocumentMetadata } from "@/types/vendor/vendor_document";
-import { logger } from "@/utils/logger";
+import {Collection, ObjectId} from "mongodb";
+import {getGlobalVendorDatabase} from "@/config/database";
+import type {VendorDocument, VendorDocumentMetadata} from "@/types/vendor/vendor_document";
+import {logger} from "@/utils/logger";
 
 export class VendorDocumentRepository {
   private getCollection(): Collection<VendorDocument> {
@@ -17,8 +17,8 @@ export class VendorDocumentRepository {
         vendorId: new ObjectId(vendorId),
       };
       const result = await collection.insertOne(docToInsert as any);
-      logger.info("Vendor document created", { documentId: result.insertedId, vendorId });
-      return { ...docToInsert, _id: result.insertedId };
+      logger.info("Vendor document created", {documentId: result.insertedId, vendorId});
+      return {...docToInsert, _id: result.insertedId};
     } catch (error) {
       logger.error("Failed to create vendor document", error);
       throw error;
@@ -28,7 +28,7 @@ export class VendorDocumentRepository {
   async findById(id: string): Promise<VendorDocument | null> {
     try {
       const collection = this.getCollection();
-      return await collection.findOne({ _id: new ObjectId(id) });
+      return await collection.findOne({_id: new ObjectId(id)});
     } catch (error) {
       logger.error("Failed to find vendor document by ID", error);
       throw error;
@@ -39,9 +39,9 @@ export class VendorDocumentRepository {
     try {
       const collection = this.getCollection();
       return await collection
-        .find({ vendorId: new ObjectId(vendorId) })
-        .project<VendorDocumentMetadata>({ data: 0 })
-        .sort({ uploadedAt: -1 })
+        .find({vendorId: new ObjectId(vendorId)})
+        .project<VendorDocumentMetadata>({data: 0})
+        .sort({uploadedAt: -1})
         .toArray();
     } catch (error) {
       logger.error("Failed to fetch vendor documents", error);
@@ -53,8 +53,8 @@ export class VendorDocumentRepository {
     try {
       const collection = this.getCollection();
       return await collection
-        .find({ vendorId: new ObjectId(vendorId) })
-        .sort({ uploadedAt: -1 })
+        .find({vendorId: new ObjectId(vendorId)})
+        .sort({uploadedAt: -1})
         .limit(1)
         .next();
     } catch (error) {
@@ -67,9 +67,9 @@ export class VendorDocumentRepository {
     try {
       const collection = this.getCollection();
       return await collection
-        .find({ vendorId: new ObjectId(vendorId) })
-        .project<VendorDocumentMetadata>({ data: 0 })
-        .sort({ uploadedAt: -1 })
+        .find({vendorId: new ObjectId(vendorId)})
+        .project<VendorDocumentMetadata>({data: 0})
+        .sort({uploadedAt: -1})
         .limit(1)
         .next();
     } catch (error) {
@@ -81,7 +81,7 @@ export class VendorDocumentRepository {
   async delete(id: string): Promise<boolean> {
     try {
       const collection = this.getCollection();
-      const result = await collection.deleteOne({ _id: new ObjectId(id) });
+      const result = await collection.deleteOne({_id: new ObjectId(id)});
       return result.deletedCount > 0;
     } catch (error) {
       logger.error("Failed to delete vendor document", error);
@@ -92,8 +92,8 @@ export class VendorDocumentRepository {
   async deleteByVendorId(vendorId: string): Promise<number> {
     try {
       const collection = this.getCollection();
-      const result = await collection.deleteMany({ vendorId: new ObjectId(vendorId) });
-      logger.info("Vendor documents deleted", { vendorId, count: result.deletedCount });
+      const result = await collection.deleteMany({vendorId: new ObjectId(vendorId)});
+      logger.info("Vendor documents deleted", {vendorId, count: result.deletedCount});
       return result.deletedCount;
     } catch (error) {
       logger.error("Failed to delete vendor documents", error);

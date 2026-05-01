@@ -1,9 +1,9 @@
-import { Hono } from "hono";
-import type { Env } from "@/types/hono";
-import { CustomerImageLabelService } from "@/services/customer-image-label.service";
-import { successResponse } from "@/utils/response";
-import { authMiddleware } from "@/middleware/auth";
-import { z } from "zod";
+import {Hono} from "hono";
+import type {Env} from "@/types/hono";
+import {CustomerImageLabelService} from "@/services/customer-image-label.service";
+import {successResponse} from "@/utils/response";
+import {authMiddleware} from "@/middleware/auth";
+import {z} from "zod";
 
 export const labelRoutes = new Hono<Env>();
 
@@ -63,5 +63,5 @@ labelRoutes.delete("/:id", async (c) => {
   const user = c.get("user");
   const id = c.req.param("id");
   await getService().deleteLabel(user.companyId!, id);
-  return c.json(successResponse({ message: "Label deleted successfully" }));
+  return c.json(successResponse({message: "Label deleted successfully"}));
 });

@@ -1,4 +1,4 @@
-import { ObjectId, Binary } from "mongodb";
+import {Binary, ObjectId} from "mongodb";
 
 export interface UploadSession {
   _id?: ObjectId;

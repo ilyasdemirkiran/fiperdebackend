@@ -1,7 +1,7 @@
-import { Collection, ClientSession, ObjectId } from "mongodb";
-import { getDatabaseForCompany, getClient } from "@/config/database";
-import type { CustomerImageLabel } from "@/types/customer/image/customer_image_label";
-import { logger } from "@/utils/logger";
+import {Collection, ObjectId} from "mongodb";
+import {getClient, getDatabaseForCompany} from "@/config/database";
+import type {CustomerImageLabel} from "@/types/customer/image/customer_image_label";
+import {logger} from "@/utils/logger";
 
 export class CustomerImageLabelRepository {
   private getCollection(companyId: string): Collection<CustomerImageLabel> {
@@ -18,7 +18,7 @@ export class CustomerImageLabelRepository {
     try {
       const collection = this.getCollection(companyId);
       await collection.insertOne(label as any);
-      logger.info("Label created", { labelId: new ObjectId(label._id), companyId: new ObjectId(companyId) });
+      logger.info("Label created", {labelId: new ObjectId(label._id), companyId: new ObjectId(companyId)});
       return label;
     } catch (error) {
       logger.error("Failed to create label", error);
@@ -29,7 +29,7 @@ export class CustomerImageLabelRepository {
   async findById(companyId: string, id: string): Promise<CustomerImageLabel | null> {
     try {
       const collection = this.getCollection(companyId);
-      return await collection.findOne({ _id: new ObjectId(id) } as any);
+      return await collection.findOne({_id: new ObjectId(id)} as any);
     } catch (error) {
       logger.error("Failed to find label by ID", error);
       throw error;
@@ -39,7 +39,7 @@ export class CustomerImageLabelRepository {
   async findAll(companyId: string): Promise<CustomerImageLabel[]> {
     try {
       const collection = this.getCollection(companyId);
-      return await collection.find({}).sort({ _id: -1 }).toArray();
+      return await collection.find({}).sort({_id: -1}).toArray();
     } catch (error) {
       logger.error("Failed to fetch labels", error);
       throw error;
@@ -54,13 +54,13 @@ export class CustomerImageLabelRepository {
     try {
       const collection = this.getCollection(companyId);
       const result = await collection.findOneAndUpdate(
-        { _id: new ObjectId(id) } as any,
-        { $set: updates },
-        { returnDocument: "after" }
+        {_id: new ObjectId(id)} as any,
+        {$set: updates},
+        {returnDocument: "after"}
       );
 
       if (result) {
-        logger.info("Label updated", { labelId: id, companyId });
+        logger.info("Label updated", {labelId: id, companyId});
       }
 
       return result;
@@ -86,8 +86,8 @@ export class CustomerImageLabelRepository {
 
         // Delete the label
         const deleteResult = await labelsCollection.deleteOne(
-          { _id: new ObjectId(labelId) } as any,
-          { session }
+          {_id: new ObjectId(labelId)} as any,
+          {session}
         );
 
         if (deleteResult.deletedCount === 0) {
@@ -96,13 +96,13 @@ export class CustomerImageLabelRepository {
 
         // Remove labelId from all customer_images.labels arrays
         await imagesCollection.updateMany(
-          { labels: new ObjectId(labelId) } as any,
-          { $pull: { labels: new ObjectId(labelId) } } as any,
-          { session }
+          {labels: new ObjectId(labelId)} as any,
+          {$pull: {labels: new ObjectId(labelId)}} as any,
+          {session}
         );
 
         deleted = true;
-        logger.info("Label deleted with transaction", { labelId, companyId });
+        logger.info("Label deleted with transaction", {labelId, companyId});
       });
 
       return deleted;
@@ -117,7 +117,7 @@ export class CustomerImageLabelRepository {
   async exists(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const count = await collection.countDocuments({ _id: new ObjectId(id) } as any);
+      const count = await collection.countDocuments({_id: new ObjectId(id)} as any);
       return count > 0;
     } catch (error) {
       logger.error("Failed to check label existence", error);

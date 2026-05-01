@@ -1,8 +1,8 @@
-import { z } from 'zod';
-import { phoneNumberSchema } from '@/types/phone_number';
-import { isEmpty } from 'es-toolkit/compat';
-import { timestampSchema } from '@/types/timestamp';
-import { ObjectId } from 'mongodb';
+import {z} from 'zod';
+import {phoneNumberSchema} from '@/types/phone_number';
+import {isEmpty} from 'es-toolkit/compat';
+import {timestampSchema} from '@/types/timestamp';
+import {ObjectId} from 'mongodb';
 
 // Base object schema without refinements
 export const vendorBaseSchema = z.object({

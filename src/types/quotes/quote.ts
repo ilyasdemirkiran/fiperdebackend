@@ -1,8 +1,8 @@
-import { z } from "zod";
-import { currencySchema } from "@/types/currency";
-import { timestampSchema } from "@/types/timestamp";
-import { ObjectId } from "mongodb";
-import { Timestamp } from "firebase-admin/firestore";
+import {z} from "zod";
+import {currencySchema} from "@/types/currency";
+import {timestampSchema} from "@/types/timestamp";
+import {ObjectId} from "mongodb";
+import {Timestamp} from "firebase-admin/firestore";
 
 export const quoteStatusSchema = z.enum(["draft", "sent_for_approval", "approved", "denied"]);
 export type QuoteStatus = z.infer<typeof quoteStatusSchema>;

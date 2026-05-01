@@ -1,8 +1,8 @@
-import { z } from "zod";
-import { phoneNumberSchema } from "@/types/phone_number";
-import { isEmpty } from "es-toolkit/compat";
-import { timestampSchema } from "@/types/timestamp";
-import { ObjectId } from "mongodb";
+import {z} from "zod";
+import {phoneNumberSchema} from "@/types/phone_number";
+import {isEmpty} from "es-toolkit/compat";
+import {timestampSchema} from "@/types/timestamp";
+import {ObjectId} from "mongodb";
 
 export const customerStatusSchema = z.enum(["active", "inactive"]);
 
@@ -11,11 +11,11 @@ const customerBaseSchema = z.object({
   _id: z.custom<ObjectId>().optional(),
   status: customerStatusSchema.optional().transform((val) => val ?? "active"),
   name: z
-    .string({ message: "Isim zorunludur" })
+    .string({message: "Isim zorunludur"})
     .min(2, "En az 2 karakter")
     .max(100),
   surname: z
-    .string({ message: "Soyisim zorunludur" })
+    .string({message: "Soyisim zorunludur"})
     .min(2, "En az 2 karakter")
     .max(100),
   phone: phoneNumberSchema.optional().or(z.literal("")),

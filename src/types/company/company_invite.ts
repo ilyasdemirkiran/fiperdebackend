@@ -1,7 +1,7 @@
-import { z } from "zod";
-import { timestampSchema } from "@/types/timestamp";
-import { phoneNumberSchema } from "@/types/phone_number";
-import { ObjectId } from "mongodb";
+import {z} from "zod";
+import {timestampSchema} from "@/types/timestamp";
+import {phoneNumberSchema} from "@/types/phone_number";
+import {ObjectId} from "mongodb";
 
 export const companyInviteStatusSchema = z.enum(["pending", "accepted", "rejected", "cancelled"]);
 export type CompanyInviteStatus = z.infer<typeof companyInviteStatusSchema>;

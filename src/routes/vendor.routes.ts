@@ -1,10 +1,10 @@
-import { Hono } from "hono";
-import type { Env } from "@/types/hono";
-import { VendorService } from "@/services/vendor.service";
-import { successResponse } from "@/utils/response";
-import { authMiddleware } from "@/middleware/auth";
-import { z } from "zod";
-import { phoneNumberSchema } from "@/types/phone_number";
+import {Hono} from "hono";
+import type {Env} from "@/types/hono";
+import {VendorService} from "@/services/vendor.service";
+import {successResponse} from "@/utils/response";
+import {authMiddleware} from "@/middleware/auth";
+import {z} from "zod";
+import {phoneNumberSchema} from "@/types/phone_number";
 
 export const vendorRoutes = new Hono<Env>();
 
@@ -109,7 +109,7 @@ vendorRoutes.delete("/:id", async (c) => {
 
   await getService().deleteVendor(user.role, id);
 
-  return c.json(successResponse({ message: "Vendor deleted successfully" }));
+  return c.json(successResponse({message: "Vendor deleted successfully"}));
 });
 
 // ========== PERMISSION MANAGEMENT ==========
@@ -122,7 +122,7 @@ vendorRoutes.post("/:id/permissions/:companyId", async (c) => {
 
   await getService().grantPermission(user.role, vendorId, companyId);
 
-  return c.json(successResponse({ message: "Permission granted successfully" }), 201);
+  return c.json(successResponse({message: "Permission granted successfully"}), 201);
 });
 
 // DELETE /api/vendors/:id/permissions/:companyId - Revoke access (sudo only)
@@ -133,7 +133,7 @@ vendorRoutes.delete("/:id/permissions/:companyId", async (c) => {
 
   await getService().revokePermission(user.role, vendorId, companyId);
 
-  return c.json(successResponse({ message: "Permission revoked successfully" }));
+  return c.json(successResponse({message: "Permission revoked successfully"}));
 });
 
 // GET /api/vendors/:id/permissions - List companies with access
@@ -142,5 +142,5 @@ vendorRoutes.get("/:id/permissions", async (c) => {
 
   const companyIds = await getService().getCompaniesForVendor(vendorId);
 
-  return c.json(successResponse({ companyIds }));
+  return c.json(successResponse({companyIds}));
 });

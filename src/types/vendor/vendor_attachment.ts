@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { timestampSchema } from '@/types/timestamp';
-import { Binary, ObjectId } from 'mongodb';
+import {z} from 'zod';
+import {timestampSchema} from '@/types/timestamp';
+import {Binary, ObjectId} from 'mongodb';
 
 // Only PDF files are allowed
 export const ALLOWED_ATTACHMENT_MIME_TYPE = 'application/pdf';
@@ -21,5 +21,5 @@ export const vendorAttachmentSchema = z.object({
 export type VendorAttachment = z.infer<typeof vendorAttachmentSchema>;
 
 // Response type without binary data (for listing)
-export const vendorAttachmentMetadataSchema = vendorAttachmentSchema.omit({ data: true });
+export const vendorAttachmentMetadataSchema = vendorAttachmentSchema.omit({data: true});
 export type VendorAttachmentMetadata = z.infer<typeof vendorAttachmentMetadataSchema>;

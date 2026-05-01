@@ -1,13 +1,12 @@
-import { SaleRepository } from "@/repositories/sale.repository";
-import { type Sale, type AddSale, addSaleSchema, type AddPaymentLog, addPaymentLogSchema, type UpdatePaymentLog, updatePaymentLogSchema } from "@/types/customer/sale/sale";
-import type { PaymentLog } from "@/types/customer/sale/payment_log";
-import { AppError } from "@/middleware/error-handler";
-import { logger } from "@/utils/logger";
-import { Timestamp } from "firebase-admin/firestore";
-import type { UserRole } from "@/types/user/fi_user";
-import { ObjectId } from "mongodb";
-import { isAdmin } from "@/types/user/fi_user";
-
+import {SaleRepository} from "@/repositories/sale.repository";
+import {type AddPaymentLog, addPaymentLogSchema, type AddSale, addSaleSchema, type Sale} from "@/types/customer/sale/sale";
+import type {PaymentLog} from "@/types/customer/sale/payment_log";
+import {AppError} from "@/middleware/error-handler";
+import {logger} from "@/utils/logger";
+import {Timestamp} from "firebase-admin/firestore";
+import type {UserRole} from "@/types/user/fi_user";
+import {isAdmin} from "@/types/user/fi_user";
+import {ObjectId} from "mongodb";
 
 export class SaleService {
   private repository: SaleRepository;
@@ -109,7 +108,7 @@ export class SaleService {
       throw new AppError(500, "Failed to delete sale", "DELETE_FAILED");
     }
 
-    logger.info("Sale deleted successfully", { saleId, companyId });
+    logger.info("Sale deleted successfully", {saleId, companyId});
   }
 
   // Payment Log Operations
@@ -153,7 +152,7 @@ export class SaleService {
       throw new AppError(500, "Failed to add payment log", "UPDATE_FAILED");
     }
 
-    logger.info("Payment log added", { saleId, companyId });
+    logger.info("Payment log added", {saleId, companyId});
     return updated;
   }
 
@@ -182,7 +181,7 @@ export class SaleService {
       throw new AppError(500, "Failed to update payment log", "UPDATE_FAILED");
     }
 
-    logger.info("Payment log updated", { logId, saleId, companyId });
+    logger.info("Payment log updated", {logId, saleId, companyId});
     return updated;
   }
 
@@ -210,7 +209,7 @@ export class SaleService {
       throw new AppError(500, "Failed to delete payment log", "DELETE_FAILED");
     }
 
-    logger.info("Payment log deleted", { logId, saleId, companyId });
+    logger.info("Payment log deleted", {logId, saleId, companyId});
     return updated;
   }
 }

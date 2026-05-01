@@ -1,10 +1,10 @@
-import { Hono } from "hono";
-import { CompanyService } from "@/services/company.service";
-import { authMiddleware } from "@/middleware/auth";
-import { successResponse } from "@/utils/response";
-import { z } from "zod";
-import { phoneNumberSchema } from "@/types/phone_number";
-import { type Env } from "@/types/hono";
+import {Hono} from "hono";
+import {CompanyService} from "@/services/company.service";
+import {authMiddleware} from "@/middleware/auth";
+import {successResponse} from "@/utils/response";
+import {z} from "zod";
+import {phoneNumberSchema} from "@/types/phone_number";
+import {type Env} from "@/types/hono";
 
 export const companyRoutes = new Hono<Env>();
 const companyService = new CompanyService();
@@ -18,7 +18,7 @@ const createCompanySchema = z.object({
 companyRoutes.post("/", async (c) => {
   const user = c.get("user");
   const body = await c.req.json();
-  const { name } = createCompanySchema.parse(body);
+  const {name} = createCompanySchema.parse(body);
 
   // _id is string here
   const company = await companyService.createCompany(user._id!, name);
@@ -34,11 +34,11 @@ companyRoutes.post("/invite", async (c) => {
   const user = c.get("user");
 
   if (!user.companyId) {
-    return c.json({ success: false, error: { message: "Bir şirkete üye değilsiniz" } }, 400);
+    return c.json({success: false, error: {message: "Bir şirkete üye değilsiniz"}}, 400);
   }
 
   const body = await c.req.json();
-  const { phone } = inviteUserSchema.parse(body);
+  const {phone} = inviteUserSchema.parse(body);
 
   const invite = await companyService.inviteUser(user._id!, user.companyId, phone);
 
@@ -53,11 +53,11 @@ companyRoutes.post("/invites/:id/respond", async (c) => {
   const user = c.get("user");
   const inviteId = c.req.param("id");
   const body = await c.req.json();
-  const { accept } = respondInviteSchema.parse(body);
+  const {accept} = respondInviteSchema.parse(body);
 
   await companyService.respondToInvite(user._id!, inviteId, accept);
 
-  return c.json(successResponse({ success: true }));
+  return c.json(successResponse({success: true}));
 });
 
 // GET /companies/invites - List all invites for the user's company
@@ -65,7 +65,7 @@ companyRoutes.get("/invites", async (c) => {
   const user = c.get("user");
 
   if (!user.companyId) {
-    return c.json({ success: false, error: { message: "Bir şirkete üye değilsiniz" } }, 400);
+    return c.json({success: false, error: {message: "Bir şirkete üye değilsiniz"}}, 400);
   }
 
   const invites = await companyService.getCompanyInvites(user._id!, user.companyId);
@@ -97,7 +97,7 @@ const updateCompanyNameSchema = z.object({
 companyRoutes.put("/name", async (c) => {
   const user = c.get("user");
   const body = await c.req.json();
-  const { name } = updateCompanyNameSchema.parse(body);
+  const {name} = updateCompanyNameSchema.parse(body);
   const company = await companyService.updateCompanyName(user._id!, name);
   return c.json(successResponse(company));
 });
@@ -106,14 +106,14 @@ companyRoutes.put("/name", async (c) => {
 companyRoutes.delete("/me", async (c) => {
   const user = c.get("user");
   await companyService.deleteCompany(user._id!);
-  return c.json(successResponse({ success: true, message: "Company deleted successfully" }));
+  return c.json(successResponse({success: true, message: "Company deleted successfully"}));
 });
 
 // POST /companies/leave - Leave current company
 companyRoutes.post("/leave", async (c) => {
   const user = c.get("user");
   await companyService.leaveCompany(user._id!);
-  return c.json(successResponse({ success: true }));
+  return c.json(successResponse({success: true}));
 });
 
 // DELETE /companies/invites/:inviteId - Delete an invite
@@ -121,7 +121,7 @@ companyRoutes.delete("/invites/:inviteId", async (c) => {
   const user = c.get("user");
   const inviteId = c.req.param("inviteId");
   await companyService.deleteInvite(user._id!, inviteId);
-  return c.json(successResponse({ success: true }));
+  return c.json(successResponse({success: true}));
 });
 
 // GET /companies/:id/users - Get users of a company
@@ -138,7 +138,7 @@ companyRoutes.post("/:id/users/:userId/promote", async (c) => {
   const companyId = c.req.param("id");
   const targetUserId = c.req.param("userId");
   await companyService.promoteUser(user._id!, companyId, targetUserId);
-  return c.json(successResponse({ success: true }));
+  return c.json(successResponse({success: true}));
 });
 
 // POST /companies/:id/users/:userId/demote - Demote user from admin
@@ -147,7 +147,7 @@ companyRoutes.post("/:id/users/:userId/demote", async (c) => {
   const companyId = c.req.param("id");
   const targetUserId = c.req.param("userId");
   await companyService.demoteUser(user._id!, companyId, targetUserId);
-  return c.json(successResponse({ success: true }));
+  return c.json(successResponse({success: true}));
 });
 
 // DELETE /companies/:id/users/:userId - Remove user from company
@@ -156,5 +156,5 @@ companyRoutes.delete("/:id/users/:userId", async (c) => {
   const companyId = c.req.param("id");
   const targetUserId = c.req.param("userId");
   await companyService.removeUserFromCompany(user._id!, companyId, targetUserId);
-  return c.json(successResponse({ success: true }));
+  return c.json(successResponse({success: true}));
 });

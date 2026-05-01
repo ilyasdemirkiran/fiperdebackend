@@ -1,9 +1,8 @@
-import { Hono } from "hono";
-import type { Env } from "@/types/hono";
-import { PriceListRequestService } from "@/services/price-list-request.service";
-import { successResponse } from "@/utils/response";
-import { authMiddleware } from "@/middleware/auth";
-import { z } from "zod";
+import {Hono} from "hono";
+import type {Env} from "@/types/hono";
+import {PriceListRequestService} from "@/services/price-list-request.service";
+import {successResponse} from "@/utils/response";
+import {authMiddleware} from "@/middleware/auth";
 
 export const priceListRequestRoutes = new Hono<Env>();
 
@@ -29,11 +28,11 @@ priceListRequestRoutes.post("/", async (c) => {
   const companyName = formData.get("companyName") as string || "";
 
   if (!file) {
-    return c.json({ success: false, error: { message: "File is required" } }, 400);
+    return c.json({success: false, error: {message: "File is required"}}, 400);
   }
 
   if (!vendorName || vendorName.trim().length < 2) {
-    return c.json({ success: false, error: { message: "Vendor name is required (min 2 characters)" } }, 400);
+    return c.json({success: false, error: {message: "Vendor name is required (min 2 characters)"}}, 400);
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());

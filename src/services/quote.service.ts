@@ -1,12 +1,10 @@
-import { QuoteRepository } from "@/repositories/quote.repository";
-import { ProductRepository } from "@/repositories/product.repository";
-import { CustomerService } from "@/services/customer.service";
-import { type Quote, type QuoteStatus, type QuoteItem, type QuoteRoom, quoteSchema } from "@/types/quotes/quote";
-import { AppError } from "@/middleware/error-handler";
-import { logger } from "@/utils/logger";
-import { ObjectId } from "mongodb";
-import { Timestamp } from "firebase-admin/firestore";
-import type { Currency } from "@/types/currency";
+import {QuoteRepository} from "@/repositories/quote.repository";
+import {ProductRepository} from "@/repositories/product.repository";
+import {CustomerService} from "@/services/customer.service";
+import {type Quote, type QuoteItem, type QuoteRoom, quoteSchema} from "@/types/quotes/quote";
+import {AppError} from "@/middleware/error-handler";
+import {ObjectId} from "mongodb";
+import type {Currency} from "@/types/currency";
 
 export class QuoteService {
   private repository: QuoteRepository;
@@ -84,7 +82,7 @@ export class QuoteService {
     this.ensureEditable(quote);
 
     // If currency changes, we need to reset conversions or keep only the new base as 1
-    const conversions = { [currency]: 1 };
+    const conversions = {[currency]: 1};
 
     const updated = await this.repository.update(companyId, id, {
       currency,
@@ -101,7 +99,7 @@ export class QuoteService {
     // Ensure base currency rate is 1
     conversions[quote.currency] = 1;
 
-    await this.repository.update(companyId, id, { conversions: conversions as any });
+    await this.repository.update(companyId, id, {conversions: conversions as any});
 
     return await this.recalculateQuoteTotal(companyId, id);
   }
@@ -135,7 +133,7 @@ export class QuoteService {
 
     const updatedRooms = quote.rooms.filter(r => r.id !== roomId);
 
-    await this.repository.update(companyId, id, { rooms: updatedRooms });
+    await this.repository.update(companyId, id, {rooms: updatedRooms});
     return await this.recalculateQuoteTotal(companyId, id);
   }
 
@@ -150,7 +148,7 @@ export class QuoteService {
 
     room.name = name;
 
-    const updated = await this.repository.update(companyId, id, { rooms: quote.rooms });
+    const updated = await this.repository.update(companyId, id, {rooms: quote.rooms});
     return updated!;
   }
 
@@ -203,7 +201,7 @@ export class QuoteService {
 
     room.items.push(...newItems);
 
-    await this.repository.update(companyId, id, { rooms: quote.rooms });
+    await this.repository.update(companyId, id, {rooms: quote.rooms});
     return await this.recalculateQuoteTotal(companyId, id);
   }
 
@@ -218,20 +216,28 @@ export class QuoteService {
     this.ensureEditable(quote);
 
     const room = quote.rooms.find(r => r.id === roomId);
-    if (!room) throw new AppError(404, "Room not found", "ROOM_NOT_FOUND");
+    if (!room) {
+      throw new AppError(404, "Room not found", "ROOM_NOT_FOUND");
+    }
 
     const item = room.items.find(i => i.id === itemId);
-    if (!item) throw new AppError(404, "Item not found", "ITEM_NOT_FOUND");
+    if (!item) {
+      throw new AppError(404, "Item not found", "ITEM_NOT_FOUND");
+    }
 
-    if (updates.quantity !== undefined) item.quantity = updates.quantity;
-    if (updates.customPrice !== undefined) item.unitPrice = updates.customPrice;
+    if (updates.quantity !== undefined) {
+      item.quantity = updates.quantity;
+    }
+    if (updates.customPrice !== undefined) {
+      item.unitPrice = updates.customPrice;
+    }
 
     // Recalculate item prices
     const conversionRate = quote.conversions[item.originalCurrency];
     item.convertedUnitPrice = item.unitPrice * conversionRate;
     item.totalPrice = item.quantity * item.convertedUnitPrice;
 
-    await this.repository.update(companyId, id, { rooms: quote.rooms });
+    await this.repository.update(companyId, id, {rooms: quote.rooms});
     return await this.recalculateQuoteTotal(companyId, id);
   }
 
@@ -240,11 +246,13 @@ export class QuoteService {
     this.ensureEditable(quote);
 
     const room = quote.rooms.find(r => r.id === roomId);
-    if (!room) throw new AppError(404, "Room not found", "ROOM_NOT_FOUND");
+    if (!room) {
+      throw new AppError(404, "Room not found", "ROOM_NOT_FOUND");
+    }
 
     room.items = room.items.filter(i => i.id !== itemId);
 
-    await this.repository.update(companyId, id, { rooms: quote.rooms });
+    await this.repository.update(companyId, id, {rooms: quote.rooms});
     return await this.recalculateQuoteTotal(companyId, id);
   }
 
@@ -265,7 +273,7 @@ export class QuoteService {
       throw new AppError(400, "Quote total must be greater than 0.", "VALIDATION_ERROR");
     }
 
-    const updated = await this.repository.update(companyId, id, { status: "sent_for_approval" });
+    const updated = await this.repository.update(companyId, id, {status: "sent_for_approval"});
     return updated!;
   }
 
@@ -275,7 +283,7 @@ export class QuoteService {
       throw new AppError(400, "Only quotes sent for approval can be approved.", "INVALID_STATUS");
     }
 
-    const updated = await this.repository.update(companyId, id, { status: "approved" });
+    const updated = await this.repository.update(companyId, id, {status: "approved"});
     return updated!;
   }
 
@@ -285,18 +293,20 @@ export class QuoteService {
       throw new AppError(400, "Only quotes sent for approval can be denied.", "INVALID_STATUS");
     }
 
-    const updated = await this.repository.update(companyId, id, { status: "denied" });
+    const updated = await this.repository.update(companyId, id, {status: "denied"});
     return updated!;
   }
 
   async listQuotes(companyId: string, userId: string, role: string): Promise<Quote[]> {
     const isAdmin = role === "admin" || role === "sudo";
-    return await this.repository.findAll(companyId, isAdmin ? {} : { creatorId: userId });
+    return await this.repository.findAll(companyId, isAdmin ? {} : {creatorId: userId});
   }
 
   private async recalculateQuoteTotal(companyId: string, id: string): Promise<Quote> {
     const quote = await this.repository.findById(companyId, id);
-    if (!quote) return null as any;
+    if (!quote) {
+      return null as any;
+    }
 
     let grandTotal = 0;
 

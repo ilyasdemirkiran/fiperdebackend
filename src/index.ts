@@ -1,26 +1,26 @@
-import { Hono } from "hono";
-import { cors } from "hono/cors";
-import { env } from "@/config/env";
-import { connectDatabase } from "@/config/database";
-import { initializeFirebase } from "@/config/firebase";
-import { customerRoutes } from "@/routes/customer.routes";
-import { labelRoutes } from "@/routes/customer-image-label.routes";
-import { customerImageRoutes } from "@/routes/customer-image.routes";
-import { saleRoutes } from "@/routes/sale.routes";
-import { vendorRoutes } from "@/routes/vendor.routes";
-import { productRoutes } from "@/routes/product.routes";
-import { vendorAttachmentRoutes } from "@/routes/vendor-attachment.routes";
-import { managementRoutes } from "@/routes/management.routes";
-import { priceListRequestRoutes } from "@/routes/price-list-request.routes";
-import { errorHandler } from "@/middleware/error-handler";
-import { botGuard, rateLimiter } from "@/middleware/security";
-import { logger, runWithContext } from "@/utils/logger";
-import { successResponse } from "@/utils/response";
-import { authRoutes } from "@/routes/auth.routes";
-import { companyRoutes } from "@/routes/company.routes";
-import { vendorPriceRateRoutes } from "@/routes/vendor-price-rate.routes";
-import { publicRoutes } from "@/routes/public.routes";
-import { quoteRoutes } from "@/routes/quote.routes";
+import {Hono} from "hono";
+import {cors} from "hono/cors";
+import {env} from "@/config/env";
+import {connectDatabase} from "@/config/database";
+import {initializeFirebase} from "@/config/firebase";
+import {customerRoutes} from "@/routes/customer.routes";
+import {labelRoutes} from "@/routes/customer-image-label.routes";
+import {customerImageRoutes} from "@/routes/customer-image.routes";
+import {saleRoutes} from "@/routes/sale.routes";
+import {vendorRoutes} from "@/routes/vendor.routes";
+import {productRoutes} from "@/routes/product.routes";
+import {vendorAttachmentRoutes} from "@/routes/vendor-attachment.routes";
+import {managementRoutes} from "@/routes/management.routes";
+import {priceListRequestRoutes} from "@/routes/price-list-request.routes";
+import {errorHandler} from "@/middleware/error-handler";
+import {botGuard, rateLimiter} from "@/middleware/security";
+import {logger, runWithContext} from "@/utils/logger";
+import {successResponse} from "@/utils/response";
+import {authRoutes} from "@/routes/auth.routes";
+import {companyRoutes} from "@/routes/company.routes";
+import {vendorPriceRateRoutes} from "@/routes/vendor-price-rate.routes";
+import {publicRoutes} from "@/routes/public.routes";
+import {quoteRoutes} from "@/routes/quote.routes";
 
 const app = new Hono();
 
@@ -36,45 +36,45 @@ app.use("*", rateLimiter);
 
 // Request logging middleware
 app.use("*", async (c, next) => {
-    return runWithContext(async () => {
-        const startTime = Date.now();
-        logger.request(c.req.method, c.req.path);
+  return runWithContext(async () => {
+    const startTime = Date.now();
+    logger.request(c.req.method, c.req.path);
 
-        await next();
+    await next();
 
-        const duration = Date.now() - startTime;
-        logger.response(c.req.method, c.req.path, c.res.status, duration);
-    });
+    const duration = Date.now() - startTime;
+    logger.response(c.req.method, c.req.path, c.res.status, duration);
+  });
 });
 
 // Health check endpoint
 app.get("/health", (c) => {
-    return c.json(
-        successResponse({
-            status: "healthy",
-            timestamp: new Date().toISOString(),
-            version: "1.0.0",
-        })
-    );
+  return c.json(
+    successResponse({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      version: "1.0.0",
+    })
+  );
 });
 
 app.get("/", (c) => {
-    return c.json(
-        successResponse({
-            status: "healthy",
-            timestamp: new Date().toISOString(),
-            version: "1.0.0",
-        })
-    );
+  return c.json(
+    successResponse({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      version: "1.0.0",
+    })
+  );
 });
 
 // Fallback for /api
 app.get("/api", (c) => {
-    return c.json(
-        successResponse({
-            message: "API is running",
-        })
-    );
+  return c.json(
+    successResponse({
+      message: "API is running",
+    })
+  );
 });
 
 // Mount routes
@@ -95,26 +95,26 @@ app.route("/api/quotes", quoteRoutes);
 
 // Initialize services
 async function initialize() {
-    try {
-        logger.info("🚀 Starting Fiperde Backend...");
+  try {
+    logger.info("🚀 Starting Fiperde Backend...");
 
-        // Initialize Firebase Admin SDK
-        initializeFirebase();
+    // Initialize Firebase Admin SDK
+    initializeFirebase();
 
-        // Connect to MongoDB
-        await connectDatabase();
+    // Connect to MongoDB
+    await connectDatabase();
 
-        logger.info(`✅ Server ready on port ${env.PORT}`);
-    } catch (error) {
-        logger.error("Failed to initialize server", error);
-        process.exit(1);
-    }
+    logger.info(`✅ Server ready on port ${env.PORT}`);
+  } catch (error) {
+    logger.error("Failed to initialize server", error);
+    process.exit(1);
+  }
 }
 
 // Start server
 await initialize();
 
 export default {
-    port: env.PORT,
-    fetch: app.fetch,
+  port: env.PORT,
+  fetch: app.fetch,
 };

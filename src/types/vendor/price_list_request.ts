@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { timestampSchema } from '@/types/timestamp';
-import { Binary, ObjectId } from 'mongodb';
+import {z} from 'zod';
+import {timestampSchema} from '@/types/timestamp';
+import {Binary, ObjectId} from 'mongodb';
 
 // Allowed file types for price list requests
 export const PRICE_LIST_ALLOWED_MIME_TYPES = [
@@ -41,5 +41,5 @@ export const priceListRequestSchema = z.object({
 export type PriceListRequest = z.infer<typeof priceListRequestSchema>;
 
 // Response type without binary data (for listing)
-export const priceListRequestMetadataSchema = priceListRequestSchema.omit({ data: true });
+export const priceListRequestMetadataSchema = priceListRequestSchema.omit({data: true});
 export type PriceListRequestMetadata = z.infer<typeof priceListRequestMetadataSchema>;

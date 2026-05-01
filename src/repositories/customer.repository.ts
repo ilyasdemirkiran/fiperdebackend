@@ -1,7 +1,7 @@
-import { Collection, ObjectId, ClientSession } from "mongodb";
-import { getDatabaseForCompany } from "@/config/database";
-import type { Customer, CustomerDb, CustomerStatus } from "@/types/customer/customer";
-import { logger } from "@/utils/logger";
+import {ClientSession, Collection, ObjectId} from "mongodb";
+import {getDatabaseForCompany} from "@/config/database";
+import type {CustomerDb, CustomerStatus} from "@/types/customer/customer";
+import {logger} from "@/utils/logger";
 
 export class CustomerRepository {
   private getCollection(companyId: string): Collection<CustomerDb> {
@@ -13,7 +13,7 @@ export class CustomerRepository {
     try {
       const collection = this.getCollection(companyId);
       await collection.insertOne(customer as any);
-      logger.info("Customer created", { customerId: customer._id, companyId });
+      logger.info("Customer created", {customerId: customer._id, companyId});
       return customer;
     } catch (error) {
       logger.error("Failed to create customer", error);
@@ -24,7 +24,7 @@ export class CustomerRepository {
   async findById(companyId: string, id: string): Promise<CustomerDb | null> {
     try {
       const collection = this.getCollection(companyId);
-      const customer = await collection.findOne({ _id: new ObjectId(id) } as any);
+      const customer = await collection.findOne({_id: new ObjectId(id)} as any);
       return customer;
     } catch (error) {
       logger.error("Failed to find customer by ID", error);
@@ -41,14 +41,14 @@ export class CustomerRepository {
       }
 
       const pipeline: any[] = [
-        { $match: query },
+        {$match: query},
         {
           $lookup: {
             from: "customer_images",
-            let: { customerId: { $toString: "$_id" } },
+            let: {customerId: {$toString: "$_id"}},
             pipeline: [
-              { $match: { $expr: { $eq: ["$customerId", "$$customerId"] } } },
-              { $count: "count" },
+              {$match: {$expr: {$eq: ["$customerId", "$$customerId"]}}},
+              {$count: "count"},
             ],
             as: "imageStats",
           },
@@ -56,12 +56,12 @@ export class CustomerRepository {
         {
           $addFields: {
             imageCount: {
-              $ifNull: [{ $arrayElemAt: ["$imageStats.count", 0] }, 0],
+              $ifNull: [{$arrayElemAt: ["$imageStats.count", 0]}, 0],
             },
           },
         },
-        { $project: { imageStats: 0 } },
-        { $sort: { _id: -1 as const } },
+        {$project: {imageStats: 0}},
+        {$sort: {_id: -1 as const}},
       ];
 
       const customers = await collection.aggregate<CustomerDb>(pipeline).toArray();
@@ -84,7 +84,7 @@ export class CustomerRepository {
   ): Promise<{ customers: CustomerDb[]; total: number }> {
     try {
       const collection = this.getCollection(companyId);
-      const { page, limit, status, search } = options;
+      const {page, limit, status, search} = options;
       const skip = (page - 1) * limit;
 
       // Build query
@@ -96,8 +96,8 @@ export class CustomerRepository {
 
       if (search) {
         query.$or = [
-          { name: { $regex: search, $options: "i" } },
-          { surname: { $regex: search, $options: "i" } },
+          {name: {$regex: search, $options: "i"}},
+          {surname: {$regex: search, $options: "i"}},
         ];
       }
 
@@ -105,16 +105,16 @@ export class CustomerRepository {
       const [customers, total] = await Promise.all([
         collection
           .find(query)
-          .sort({ createdAt: -1 })
+          .sort({createdAt: -1})
           .skip(skip)
           .limit(limit)
           .toArray(),
         collection.countDocuments(query),
       ]);
 
-      logger.debug("Customers fetched", { companyId, count: customers.length, total });
+      logger.debug("Customers fetched", {companyId, count: customers.length, total});
 
-      return { customers, total };
+      return {customers, total};
     } catch (error) {
       logger.error("Failed to fetch customers", error);
       throw error;
@@ -129,13 +129,13 @@ export class CustomerRepository {
     try {
       const collection = this.getCollection(companyId);
       const result = await collection.findOneAndUpdate(
-        { _id: new ObjectId(id) } as any,
-        { $set: { ...updates, updatedAt: new Date() } },
-        { returnDocument: "after" }
+        {_id: new ObjectId(id)} as any,
+        {$set: {...updates, updatedAt: new Date()}},
+        {returnDocument: "after"}
       );
 
       if (result) {
-        logger.info("Customer updated", { customerId: id, companyId });
+        logger.info("Customer updated", {customerId: id, companyId});
       }
 
       return result;
@@ -148,11 +148,11 @@ export class CustomerRepository {
   async delete(companyId: string, id: string, session?: ClientSession): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const result = await collection.deleteOne({ _id: new ObjectId(id) } as any, { session });
+      const result = await collection.deleteOne({_id: new ObjectId(id)} as any, {session});
       const deleted = result.deletedCount > 0;
 
       if (deleted) {
-        logger.info("Customer deleted", { customerId: id, companyId });
+        logger.info("Customer deleted", {customerId: id, companyId});
       }
 
       return deleted;
@@ -165,7 +165,7 @@ export class CustomerRepository {
   async exists(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const count = await collection.countDocuments({ _id: new ObjectId(id) } as any);
+      const count = await collection.countDocuments({_id: new ObjectId(id)} as any);
       return count > 0;
     } catch (error) {
       logger.error("Failed to check customer existence", error);

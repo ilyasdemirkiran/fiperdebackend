@@ -1,9 +1,9 @@
-import { UserRepository } from "@/repositories/user.repository";
-import { verifyFirebaseToken } from "@/config/firebase";
-import { AppError } from "@/middleware/error-handler";
-import type { FIUser } from "@/types/user/fi_user";
-import { Timestamp } from "firebase-admin/firestore";
-import { logger } from "@/utils/logger";
+import {UserRepository} from "@/repositories/user.repository";
+import {verifyFirebaseToken} from "@/config/firebase";
+import {AppError} from "@/middleware/error-handler";
+import type {FIUser} from "@/types/user/fi_user";
+import {Timestamp} from "firebase-admin/firestore";
+import {logger} from "@/utils/logger";
 
 export class AuthService {
   private userRepo: UserRepository;
@@ -14,7 +14,7 @@ export class AuthService {
 
   async registerUser(token: string, data: { name: string; surname: string }): Promise<FIUser> {
     const decoded = await verifyFirebaseToken(token);
-    const { uid, phone_number } = decoded;
+    const {uid, phone_number} = decoded;
 
     if (!phone_number) {
       throw new AppError(400, "Phone number required in token", "INVALID_TOKEN");
@@ -22,7 +22,7 @@ export class AuthService {
 
     const existing = await this.userRepo.findById(uid);
     if (existing) {
-      logger.info("User already exists, returning existing user", { uid });
+      logger.info("User already exists, returning existing user", {uid});
       return existing;
     }
 
@@ -42,7 +42,7 @@ export class AuthService {
     };
 
     const created = await this.userRepo.create(newUser);
-    logger.info("Registered new user", { uid });
+    logger.info("Registered new user", {uid});
     return created;
   }
 
@@ -50,10 +50,10 @@ export class AuthService {
     const user = await this.userRepo.findByPhoneNumber(phoneNumber);
 
     if (!user) {
-      return { registered: false, hasCompany: false };
+      return {registered: false, hasCompany: false};
     }
 
-    return { registered: true, hasCompany: !!user.companyId };
+    return {registered: true, hasCompany: !!user.companyId};
   }
 
   async getUserById(userId: string): Promise<FIUser> {
@@ -91,18 +91,18 @@ export class AuthService {
 
     if (user.companyId) {
       // Check if user is the company owner
-      const { CompanyRepository } = await import("@/repositories/company.repository");
+      const {CompanyRepository} = await import("@/repositories/company.repository");
       const companyRepo = new CompanyRepository();
       const company = await companyRepo.findById(user.companyId);
 
       if (company && company.creatorUserId === userId) {
         // Owner deleting account -> Delete entire company first
-        const { CompanyService } = await import("./company.service");
+        const {CompanyService} = await import("./company.service");
         const companyService = new CompanyService();
         await companyService.deleteCompany(userId);
       } else {
         // Regular member -> Remove from company
-        const { CompanyRepository } = await import("@/repositories/company.repository");
+        const {CompanyRepository} = await import("@/repositories/company.repository");
         const companyRepo = new CompanyRepository(); // Instantiate again or reuse if refactored
         await companyRepo.removeUser(user.companyId, userId);
       }
@@ -113,14 +113,14 @@ export class AuthService {
 
     // Also delete from Firebase Auth (optional, but good practice if you have the SDK setup for it)
     try {
-      const { getAuth } = await import("firebase-admin/auth");
+      const {getAuth} = await import("firebase-admin/auth");
       await getAuth().deleteUser(userId);
-      logger.info("Deleted user from Firebase Auth", { uid: userId });
+      logger.info("Deleted user from Firebase Auth", {uid: userId});
     } catch (error) {
       logger.error("Failed to delete user from Firebase Auth", error);
       // Continue even if Firebase deletion fails
     }
 
-    logger.info("Account deleted", { userId });
+    logger.info("Account deleted", {userId});
   }
 }

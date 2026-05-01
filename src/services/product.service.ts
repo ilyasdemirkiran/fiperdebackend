@@ -1,14 +1,14 @@
-import { ProductRepository } from "@/repositories/product.repository";
-import { VendorPermissionRepository } from "@/repositories/vendor-permission.repository";
-import { VendorRepository } from "@/repositories/vendor.repository";
-import { VendorPriceRateRepository } from "@/repositories/vendor-price-rate.repository";
-import type { Product } from "@/types/vendor/product/product";
-import type { Vendor } from "@/types/vendor/vendor";
-import { AppError } from "@/middleware/error-handler";
-import { logger } from "@/utils/logger";
-import type { UserRole } from "@/types/user/fi_user";
-import { Timestamp } from "firebase-admin/firestore";
-import { ObjectId } from "mongodb";
+import {ProductRepository} from "@/repositories/product.repository";
+import {VendorPermissionRepository} from "@/repositories/vendor-permission.repository";
+import {VendorRepository} from "@/repositories/vendor.repository";
+import {VendorPriceRateRepository} from "@/repositories/vendor-price-rate.repository";
+import type {Product} from "@/types/vendor/product/product";
+import type {Vendor} from "@/types/vendor/vendor";
+import {AppError} from "@/middleware/error-handler";
+import {logger} from "@/utils/logger";
+import type {UserRole} from "@/types/user/fi_user";
+import {Timestamp} from "firebase-admin/firestore";
+import {ObjectId} from "mongodb";
 
 export class ProductService {
   private repository: ProductRepository;
@@ -187,6 +187,6 @@ export class ProductService {
       throw new AppError(500, "Failed to delete product", "DELETE_FAILED");
     }
 
-    logger.info("Product deleted successfully", { productId: id });
+    logger.info("Product deleted successfully", {productId: id});
   }
 }

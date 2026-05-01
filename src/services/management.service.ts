@@ -1,15 +1,15 @@
-import { ManagementRepository } from "@/repositories/management.repository";
-import { VendorRepository } from "@/repositories/vendor.repository";
-import { ProductRepository } from "@/repositories/product.repository";
-import { VendorPermissionRepository } from "@/repositories/vendor-permission.repository";
-import { VendorDocumentRepository } from "@/repositories/vendor-document.repository";
-import type { CompanyWithUsers, VendorWithProducts } from "@/types/management/management";
-import type { Vendor } from "@/types/vendor/vendor";
-import type { Product } from "@/types/vendor/product/product";
-import type { UserRole } from "@/types/user/fi_user";
-import { AppError } from "@/middleware/error-handler";
-import { logger } from "@/utils/logger";
-import { Timestamp } from "firebase-admin/firestore";
+import {ManagementRepository} from "@/repositories/management.repository";
+import {VendorRepository} from "@/repositories/vendor.repository";
+import {ProductRepository} from "@/repositories/product.repository";
+import {VendorPermissionRepository} from "@/repositories/vendor-permission.repository";
+import {VendorDocumentRepository} from "@/repositories/vendor-document.repository";
+import type {CompanyWithUsers, VendorWithProducts} from "@/types/management/management";
+import type {Vendor} from "@/types/vendor/vendor";
+import type {Product} from "@/types/vendor/product/product";
+import type {UserRole} from "@/types/user/fi_user";
+import {AppError} from "@/middleware/error-handler";
+import {logger} from "@/utils/logger";
+import {Timestamp} from "firebase-admin/firestore";
 
 export class ManagementService {
   private repository: ManagementRepository;
@@ -44,7 +44,7 @@ export class ManagementService {
     const companiesWithUsers: CompanyWithUsers[] = await Promise.all(
       companies.map(async (company) => {
         const users = await this.repository.findUsersByIds(company.userIds);
-        return { ...company, users };
+        return {...company, users};
       })
     );
 
@@ -55,14 +55,14 @@ export class ManagementService {
     this.assertSudo(role);
 
     await this.repository.updateUserRole(userId, "admin");
-    logger.info("User promoted to admin", { companyId, userId });
+    logger.info("User promoted to admin", {companyId, userId});
   }
 
   async demoteFromAdmin(role: UserRole, companyId: string, userId: string): Promise<void> {
     this.assertSudo(role);
 
     await this.repository.updateUserRole(userId, "user");
-    logger.info("User demoted from admin", { companyId, userId });
+    logger.info("User demoted from admin", {companyId, userId});
   }
 
   // =====================
@@ -85,7 +85,7 @@ export class ManagementService {
 
     const products = await this.repository.findProductsByVendorId(vendorId);
 
-    return { ...vendor, products };
+    return {...vendor, products};
   }
 
   async createVendor(
@@ -164,7 +164,7 @@ export class ManagementService {
       await this.permissionRepo.removePermission(vendorId, companyId);
     }
 
-    logger.info("Vendor access updated via permissions", { vendorId, added: toAdd, removed: toRemove });
+    logger.info("Vendor access updated via permissions", {vendorId, added: toAdd, removed: toRemove});
   }
 
   /**
@@ -223,7 +223,7 @@ export class ManagementService {
       throw new AppError(404, "Product not found", "PRODUCT_NOT_FOUND");
     }
 
-    logger.info("Product deleted", { productId });
+    logger.info("Product deleted", {productId});
   }
 
   async bulkCreateProducts(
@@ -255,7 +255,7 @@ export class ManagementService {
     this.assertSudo(role);
 
     const deletedCount = await this.productRepo.bulkDelete(productIds, vendorId);
-    logger.info("Products bulk deleted", { vendorId, requestedCount: productIds.length, deletedCount });
+    logger.info("Products bulk deleted", {vendorId, requestedCount: productIds.length, deletedCount});
     return deletedCount;
   }
 
@@ -267,7 +267,7 @@ export class ManagementService {
     this.assertSudo(role);
 
     const modifiedCount = await this.productRepo.bulkUpdate(updates, vendorId);
-    logger.info("Products bulk updated", { vendorId, requestedCount: updates.length, modifiedCount });
+    logger.info("Products bulk updated", {vendorId, requestedCount: updates.length, modifiedCount});
     return modifiedCount;
   }
 }

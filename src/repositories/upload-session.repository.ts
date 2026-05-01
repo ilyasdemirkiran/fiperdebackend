@@ -1,7 +1,7 @@
-import { Collection, ObjectId, Binary, ClientSession } from "mongodb";
-import { getDatabaseForCompany } from "@/config/database";
-import type { UploadSession, UploadChunk } from "@/types/common/upload";
-import { logger } from "@/utils/logger";
+import {ClientSession, Collection, ObjectId} from "mongodb";
+import {getDatabaseForCompany} from "@/config/database";
+import type {UploadChunk, UploadSession} from "@/types/common/upload";
+import {logger} from "@/utils/logger";
 
 export class UploadSessionRepository {
   private getSessionCollection(companyId: string): Collection<UploadSession> {
@@ -29,7 +29,7 @@ export class UploadSessionRepository {
   async getSession(companyId: string, uploadId: string): Promise<UploadSession | null> {
     try {
       const collection = this.getSessionCollection(companyId);
-      return await collection.findOne({ _id: new ObjectId(uploadId) } as any);
+      return await collection.findOne({_id: new ObjectId(uploadId)} as any);
     } catch (error) {
       logger.error("Failed to get upload session", error);
       throw error;
@@ -40,18 +40,18 @@ export class UploadSessionRepository {
     try {
       const collection = this.getChunkCollection(companyId);
       await collection.updateOne(
-        { uploadId: chunk.uploadId, index: chunk.index },
-        { $set: chunk },
-        { upsert: true }
+        {uploadId: chunk.uploadId, index: chunk.index},
+        {$set: chunk},
+        {upsert: true}
       );
 
       // Update session uploadedChunks list
       const sessionCollection = this.getSessionCollection(companyId);
       await sessionCollection.updateOne(
-        { _id: chunk.uploadId } as any,
+        {_id: chunk.uploadId} as any,
         {
-          $addToSet: { uploadedChunks: chunk.index },
-          $set: { updatedAt: new Date() }
+          $addToSet: {uploadedChunks: chunk.index},
+          $set: {updatedAt: new Date()}
         }
       );
     } catch (error) {
@@ -63,7 +63,7 @@ export class UploadSessionRepository {
   async getChunks(companyId: string, uploadId: ObjectId): Promise<UploadChunk[]> {
     try {
       const collection = this.getChunkCollection(companyId);
-      return await collection.find({ uploadId }).sort({ index: 1 }).toArray();
+      return await collection.find({uploadId}).sort({index: 1}).toArray();
     } catch (error) {
       logger.error("Failed to get upload chunks", error);
       throw error;
@@ -76,8 +76,8 @@ export class UploadSessionRepository {
       const chunkCollection = this.getChunkCollection(companyId);
       const oid = new ObjectId(uploadId);
 
-      await sessionCollection.deleteOne({ _id: oid } as any, { session });
-      await chunkCollection.deleteMany({ uploadId: oid } as any, { session });
+      await sessionCollection.deleteOne({_id: oid} as any, {session});
+      await chunkCollection.deleteMany({uploadId: oid} as any, {session});
     } catch (error) {
       logger.error("Failed to delete upload session data", error);
       throw error;

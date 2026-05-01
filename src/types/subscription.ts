@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { Timestamp } from "firebase-admin/firestore";
+import {z} from "zod";
+import {Timestamp} from "firebase-admin/firestore";
 
 export const subscriptionStatusSchema = z.enum(['trial', 'active', 'expired', 'none', 'cancelled']);
 export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;

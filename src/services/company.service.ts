@@ -1,15 +1,13 @@
-import { CompanyRepository } from "@/repositories/company.repository";
-import { CompanyInviteRepository } from "@/repositories/company-invite.repository";
-import { UserRepository } from "@/repositories/user.repository";
-import { AppError } from "@/middleware/error-handler";
-import { ObjectId } from "mongodb";
-import { Timestamp } from "firebase-admin/firestore";
-import type { Company } from "@/types/company/company";
-import type { CompanyInvite } from "@/types/company/company_invite";
-import type { FIUser } from "@/types/user/fi_user";
-import { logger } from "@/utils/logger";
-import { isAdmin } from "@/types/user/fi_user";
-
+import {CompanyRepository} from "@/repositories/company.repository";
+import {CompanyInviteRepository} from "@/repositories/company-invite.repository";
+import {UserRepository} from "@/repositories/user.repository";
+import {AppError} from "@/middleware/error-handler";
+import {Timestamp} from "firebase-admin/firestore";
+import type {Company} from "@/types/company/company";
+import type {CompanyInvite} from "@/types/company/company_invite";
+import type {FIUser} from "@/types/user/fi_user";
+import {isAdmin} from "@/types/user/fi_user";
+import {logger} from "@/utils/logger";
 
 export class CompanyService {
   private companyRepo: CompanyRepository;
@@ -24,8 +22,12 @@ export class CompanyService {
 
   async createCompany(userId: string, name: string): Promise<Company> {
     const user = await this.userRepo.findById(userId);
-    if (!user) throw new AppError(404, "User not found");
-    if (user.companyId) throw new AppError(400, "User already has a company");
+    if (!user) {
+      throw new AppError(404, "User not found");
+    }
+    if (user.companyId) {
+      throw new AppError(400, "User already has a company");
+    }
 
     // Creator becomes admin
     const company: Omit<Company, "_id"> = {
@@ -37,9 +39,9 @@ export class CompanyService {
     };
 
     const insertedCompany = await this.companyRepo.create(company);
-    await this.userRepo.update(userId, { companyId: insertedCompany._id.toHexString(), role: "admin" } as any);
+    await this.userRepo.update(userId, {companyId: insertedCompany._id.toHexString(), role: "admin"} as any);
 
-    logger.info("Company created", { companyId: insertedCompany._id.toHexString(), userId });
+    logger.info("Company created", {companyId: insertedCompany._id.toHexString(), userId});
     return insertedCompany;
   }
 
@@ -49,13 +51,21 @@ export class CompanyService {
     phone: string
   ): Promise<CompanyInvite> {
     const inviter = await this.userRepo.findById(inviterId);
-    if (!inviter) throw new AppError(404, "Inviter not found");
-    if (inviter.companyId !== companyId) throw new AppError(403, "Not authorized to invite for this company");
-    if (inviter.role === "user") throw new AppError(403, "User role cannot invite");
+    if (!inviter) {
+      throw new AppError(404, "Inviter not found");
+    }
+    if (inviter.companyId !== companyId) {
+      throw new AppError(403, "Not authorized to invite for this company");
+    }
+    if (inviter.role === "user") {
+      throw new AppError(403, "User role cannot invite");
+    }
 
     // Check if already invited (pending)
     const existingInvite = await this.inviteRepo.findPendingByPhoneAndCompany(phone, companyId);
-    if (existingInvite) throw new AppError(400, "User already invited");
+    if (existingInvite) {
+      throw new AppError(400, "User already invited");
+    }
 
     // Check if user exists to fill invitedUserId
     const invitedUser = await this.userRepo.findByPhoneNumber(phone);
@@ -73,14 +83,18 @@ export class CompanyService {
     };
 
     const invite = await this.inviteRepo.create(inviteData);
-    logger.info("User invited", { companyId, phone });
+    logger.info("User invited", {companyId, phone});
     return invite;
   }
 
   async respondToInvite(userId: string, inviteId: string, accept: boolean): Promise<void> {
     const invite = await this.inviteRepo.findById(inviteId);
-    if (!invite) throw new AppError(404, "Invite not found");
-    if (invite.status !== "pending") throw new AppError(400, "Invite no longer pending");
+    if (!invite) {
+      throw new AppError(404, "Invite not found");
+    }
+    if (invite.status !== "pending") {
+      throw new AppError(400, "Invite no longer pending");
+    }
 
     // If invitedUserId was set, verify
     if (invite.invitedUserId && invite.invitedUserId !== userId) {
@@ -90,7 +104,9 @@ export class CompanyService {
     // If not set, verify phone matches user
     if (!invite.invitedUserId) {
       const user = await this.userRepo.findById(userId);
-      if (!user) throw new AppError(404, "User not found");
+      if (!user) {
+        throw new AppError(404, "User not found");
+      }
 
       // Normalize comparison (remove spaces etc)
       if (user.phoneNumber !== invite.invitedPhoneNumber) {
@@ -100,36 +116,46 @@ export class CompanyService {
 
     if (!accept) {
       await this.inviteRepo.updateStatus(inviteId, "rejected");
-      logger.info("Invite rejected", { inviteId, userId });
+      logger.info("Invite rejected", {inviteId, userId});
       return;
     }
 
     const user = await this.userRepo.findById(userId);
-    if (user?.companyId) throw new AppError(400, "You are already in a company");
+    if (user?.companyId) {
+      throw new AppError(400, "You are already in a company");
+    }
 
     // Accept logic - invite.companyId is string (hex)
     await this.inviteRepo.updateStatus(inviteId, "accepted");
     await this.companyRepo.addUser(invite.companyId, userId);
-    await this.userRepo.update(userId, { companyId: invite.companyId, role: "user" });
+    await this.userRepo.update(userId, {companyId: invite.companyId, role: "user"});
 
-    logger.info("Invite accepted", { inviteId, userId, companyId: invite.companyId });
+    logger.info("Invite accepted", {inviteId, userId, companyId: invite.companyId});
   }
 
   async getCompanyInvites(userId: string, companyId: string): Promise<CompanyInvite[]> {
     const user = await this.userRepo.findById(userId);
-    if (!user) throw new AppError(404, "User not found");
+    if (!user) {
+      throw new AppError(404, "User not found");
+    }
     console.log(user.companyId, companyId)
-    if (user.companyId !== companyId) throw new AppError(403, "Not authorized");
+    if (user.companyId !== companyId) {
+      throw new AppError(403, "Not authorized");
+    }
 
     return await this.inviteRepo.findByCompanyId(companyId);
   }
 
   async getMyInvites(userId: string): Promise<CompanyInvite[]> {
     const user = await this.userRepo.findById(userId);
-    if (!user) throw new AppError(404, "User not found");
+    if (!user) {
+      throw new AppError(404, "User not found");
+    }
 
     const invites = await this.inviteRepo.findPendingByPhone(user.phoneNumber);
-    if (invites.length === 0) return [];
+    if (invites.length === 0) {
+      return [];
+    }
 
     const companyIds = [...new Set(invites.map((i) => i.companyId))];
     const companies = await this.companyRepo.findByIds(companyIds);
@@ -144,7 +170,9 @@ export class CompanyService {
 
   async getMyCompany(userId: string): Promise<Company | null> {
     const user = await this.userRepo.findById(userId);
-    if (!user) throw new AppError(404, "User not found");
+    if (!user) {
+      throw new AppError(404, "User not found");
+    }
 
     console.log(user.companyId);
     const company = await this.companyRepo.findById(user.companyId ?? '');
@@ -154,8 +182,12 @@ export class CompanyService {
 
   async getCompanyUsers(userId: string, companyId: string): Promise<FIUser[]> {
     const user = await this.userRepo.findById(userId);
-    if (!user) throw new AppError(404, "User not found");
-    if (user.companyId !== companyId) throw new AppError(403, "Not authorized");
+    if (!user) {
+      throw new AppError(404, "User not found");
+    }
+    if (user.companyId !== companyId) {
+      throw new AppError(403, "Not authorized");
+    }
 
     return await this.userRepo.findByCompanyId(companyId);
   }
@@ -167,7 +199,9 @@ export class CompanyService {
     }
 
     const company = await this.companyRepo.findById(companyId);
-    if (!company) throw new AppError(404, "Company not found");
+    if (!company) {
+      throw new AppError(404, "Company not found");
+    }
 
     if (company.creatorUserId === targetUserId) {
       throw new AppError(400, "Cannot change role of company owner");
@@ -178,8 +212,8 @@ export class CompanyService {
       throw new AppError(404, "Target user not found in company");
     }
 
-    await this.userRepo.update(targetUserId, { role: "admin" });
-    logger.info("User promoted", { companyId, targetUserId, requesterId });
+    await this.userRepo.update(targetUserId, {role: "admin"});
+    logger.info("User promoted", {companyId, targetUserId, requesterId});
   }
 
   async demoteUser(requesterId: string, companyId: string, targetUserId: string): Promise<void> {
@@ -189,7 +223,9 @@ export class CompanyService {
     }
 
     const company = await this.companyRepo.findById(companyId);
-    if (!company) throw new AppError(404, "Company not found");
+    if (!company) {
+      throw new AppError(404, "Company not found");
+    }
 
     if (company.creatorUserId === targetUserId) {
       throw new AppError(400, "Cannot change role of company owner");
@@ -200,8 +236,8 @@ export class CompanyService {
       throw new AppError(404, "Target user not found in company");
     }
 
-    await this.userRepo.update(targetUserId, { role: "user" });
-    logger.info("User demoted", { companyId, targetUserId, requesterId });
+    await this.userRepo.update(targetUserId, {role: "user"});
+    logger.info("User demoted", {companyId, targetUserId, requesterId});
   }
 
   async removeUserFromCompany(requesterId: string, companyId: string, targetUserId: string): Promise<void> {
@@ -211,7 +247,9 @@ export class CompanyService {
     }
 
     const company = await this.companyRepo.findById(companyId);
-    if (!company) throw new AppError(404, "Company not found");
+    if (!company) {
+      throw new AppError(404, "Company not found");
+    }
 
     if (company.creatorUserId === targetUserId) {
       throw new AppError(400, "Cannot remove company owner");
@@ -223,28 +261,34 @@ export class CompanyService {
     }
 
     await this.companyRepo.removeUser(companyId, targetUserId);
-    await this.userRepo.update(targetUserId, { companyId: undefined, role: "user" });
+    await this.userRepo.update(targetUserId, {companyId: undefined, role: "user"});
 
-    logger.info("User removed from company", { companyId, targetUserId, requesterId });
+    logger.info("User removed from company", {companyId, targetUserId, requesterId});
   }
 
   async leaveCompany(userId: string): Promise<void> {
     const user = await this.userRepo.findById(userId);
-    if (!user) throw new AppError(404, "User not found");
-    if (!user.companyId) throw new AppError(400, "User is not in a company");
+    if (!user) {
+      throw new AppError(404, "User not found");
+    }
+    if (!user.companyId) {
+      throw new AppError(400, "User is not in a company");
+    }
 
     const companyId = user.companyId;
     const company = await this.companyRepo.findById(companyId);
-    if (!company) throw new AppError(404, "Company not found");
+    if (!company) {
+      throw new AppError(404, "Company not found");
+    }
 
     if (company.creatorUserId === userId) {
       throw new AppError(400, "Company owner cannot leave the company");
     }
 
     await this.companyRepo.removeUser(companyId, userId);
-    await this.userRepo.update(userId, { companyId: undefined, role: "user" });
+    await this.userRepo.update(userId, {companyId: undefined, role: "user"});
 
-    logger.info("User left company", { companyId, userId });
+    logger.info("User left company", {companyId, userId});
   }
 
   async deleteInvite(requesterId: string, inviteId: string): Promise<void> {
@@ -254,40 +298,58 @@ export class CompanyService {
     }
 
     const invite = await this.inviteRepo.findById(inviteId);
-    if (!invite) throw new AppError(404, "Invite not found");
+    if (!invite) {
+      throw new AppError(404, "Invite not found");
+    }
 
     if (invite.companyId !== requester.companyId) {
       throw new AppError(403, "Invite belongs to another company");
     }
 
     await this.inviteRepo.delete(inviteId);
-    logger.info("Invite deleted", { inviteId, requesterId });
+    logger.info("Invite deleted", {inviteId, requesterId});
   }
 
   async updateCompanyName(userId: string, name: string): Promise<Company> {
     const user = await this.userRepo.findById(userId);
-    if (!user) throw new AppError(404, "User not found");
-    if (!user.companyId) throw new AppError(400, "User is not in a company");
-    if (!isAdmin(user.role)) throw new AppError(403, "Only admins can update company name");
+    if (!user) {
+      throw new AppError(404, "User not found");
+    }
+    if (!user.companyId) {
+      throw new AppError(400, "User is not in a company");
+    }
+    if (!isAdmin(user.role)) {
+      throw new AppError(403, "Only admins can update company name");
+    }
 
     const company = await this.companyRepo.findById(user.companyId);
-    if (!company) throw new AppError(404, "Company not found");
+    if (!company) {
+      throw new AppError(404, "Company not found");
+    }
 
-    const updated = await this.companyRepo.update(user.companyId, { name });
-    if (!updated) throw new AppError(500, "Failed to update company");
+    const updated = await this.companyRepo.update(user.companyId, {name});
+    if (!updated) {
+      throw new AppError(500, "Failed to update company");
+    }
 
-    logger.info("Company name updated", { companyId: user.companyId, name, userId });
+    logger.info("Company name updated", {companyId: user.companyId, name, userId});
     return updated;
   }
 
   async deleteCompany(userId: string): Promise<void> {
     const user = await this.userRepo.findById(userId);
-    if (!user) throw new AppError(404, "User not found");
-    if (!user.companyId) throw new AppError(400, "User is not in a company");
+    if (!user) {
+      throw new AppError(404, "User not found");
+    }
+    if (!user.companyId) {
+      throw new AppError(400, "User is not in a company");
+    }
 
     const companyId = user.companyId;
     const company = await this.companyRepo.findById(companyId);
-    if (!company) throw new AppError(404, "Company not found");
+    if (!company) {
+      throw new AppError(404, "Company not found");
+    }
 
     if (company.creatorUserId !== userId) {
       throw new AppError(403, "Only the company owner can delete the company");
@@ -296,16 +358,16 @@ export class CompanyService {
     // 1. Reset all users in the company
     const users = await this.userRepo.findByCompanyId(companyId);
     for (const u of users) {
-      await this.userRepo.update(u._id, { companyId: undefined, role: "user" });
+      await this.userRepo.update(u._id, {companyId: undefined, role: "user"});
     }
 
     // 2. Drop the company database
-    const { dropCompanyDatabase } = await import("@/config/database");
+    const {dropCompanyDatabase} = await import("@/config/database");
     await dropCompanyDatabase(companyId);
 
     // 3. Delete the company document
     await this.companyRepo.delete(companyId);
 
-    logger.info("Company deleted", { companyId, deletedBy: userId });
+    logger.info("Company deleted", {companyId, deletedBy: userId});
   }
 }

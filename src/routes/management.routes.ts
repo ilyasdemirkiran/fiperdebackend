@@ -1,12 +1,12 @@
-import { Hono } from "hono";
-import type { Env } from "@/types/hono";
-import { ManagementService } from "@/services/management.service";
-import { VendorService } from "@/services/vendor.service";
-import { PriceListRequestService } from "@/services/price-list-request.service";
-import { successResponse } from "@/utils/response";
-import { toResponse, toResponseArray } from "@/utils/response-transformer";
-import { authMiddleware } from "@/middleware/auth";
-import { z } from "zod";
+import {Hono} from "hono";
+import type {Env} from "@/types/hono";
+import {ManagementService} from "@/services/management.service";
+import {VendorService} from "@/services/vendor.service";
+import {PriceListRequestService} from "@/services/price-list-request.service";
+import {successResponse} from "@/utils/response";
+import {toResponse, toResponseArray} from "@/utils/response-transformer";
+import {authMiddleware} from "@/middleware/auth";
+import {z} from "zod";
 
 export const managementRoutes = new Hono<Env>();
 
@@ -56,7 +56,7 @@ managementRoutes.post("/companies/:id/promote/:userId", async (c) => {
   const userId = c.req.param("userId");
 
   await getManagementService().promoteToAdmin(user.role, companyId, userId);
-  return c.json(successResponse({ message: "User promoted to admin" }));
+  return c.json(successResponse({message: "User promoted to admin"}));
 });
 
 // POST /management/companies/:id/demote/:userId - Demote user from admin
@@ -66,7 +66,7 @@ managementRoutes.post("/companies/:id/demote/:userId", async (c) => {
   const userId = c.req.param("userId");
 
   await getManagementService().demoteFromAdmin(user.role, companyId, userId);
-  return c.json(successResponse({ message: "User demoted from admin" }));
+  return c.json(successResponse({message: "User demoted from admin"}));
 });
 
 // =====================
@@ -124,7 +124,7 @@ managementRoutes.delete("/vendors/:id", async (c) => {
   const vendorId = c.req.param("id");
 
   await getManagementService().deleteVendor(user.role, vendorId);
-  return c.json(successResponse({ message: "Vendor deleted" }));
+  return c.json(successResponse({message: "Vendor deleted"}));
 });
 
 const accessSchema = z.object({
@@ -136,10 +136,10 @@ managementRoutes.put("/vendors/:id/access", async (c) => {
   const user = c.get("user");
   const vendorId = c.req.param("id");
   const body = await c.req.json();
-  const { companyIds } = accessSchema.parse(body);
+  const {companyIds} = accessSchema.parse(body);
 
   await getManagementService().setVendorAccess(user.role, vendorId, companyIds);
-  return c.json(successResponse({ message: "Vendor access updated" }));
+  return c.json(successResponse({message: "Vendor access updated"}));
 });
 
 // GET /management/vendor-permissions - Get all vendor permissions
@@ -174,7 +174,7 @@ managementRoutes.post("/vendors/:id/documents", async (c) => {
   const description = formData.get("description") as string || "";
 
   if (!file) {
-    return c.json({ success: false, error: { message: "File is required" } }, 400);
+    return c.json({success: false, error: {message: "File is required"}}, 400);
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -220,7 +220,7 @@ managementRoutes.delete("/documents/:id", async (c) => {
   const documentId = c.req.param("id");
 
   await getVendorService().deleteDocument(user.role, documentId);
-  return c.json(successResponse({ message: "Document deleted" }));
+  return c.json(successResponse({message: "Document deleted"}));
 });
 
 // =====================
@@ -264,7 +264,7 @@ managementRoutes.delete("/products/:id", async (c) => {
   const productId = c.req.param("id");
 
   await getManagementService().deleteProduct(user.role, productId);
-  return c.json(successResponse({ message: "Product deleted" }));
+  return c.json(successResponse({message: "Product deleted"}));
 });
 
 // =====================
@@ -280,7 +280,7 @@ managementRoutes.post("/vendors/:vendorId/products/bulk", async (c) => {
   const user = c.get("user");
   const vendorId = c.req.param("vendorId");
   const body = await c.req.json();
-  const { products } = bulkProductSchema.parse(body);
+  const {products} = bulkProductSchema.parse(body);
 
   const created = await getManagementService().bulkCreateProducts(user.role, vendorId, products);
   return c.json(successResponse(toResponseArray(created)), 201);
@@ -295,10 +295,10 @@ managementRoutes.delete("/vendors/:vendorId/products/bulk", async (c) => {
   const user = c.get("user");
   const vendorId = c.req.param("vendorId");
   const body = await c.req.json();
-  const { productIds } = bulkDeleteSchema.parse(body);
+  const {productIds} = bulkDeleteSchema.parse(body);
 
   const deletedCount = await getManagementService().bulkDeleteProducts(user.role, vendorId, productIds);
-  return c.json(successResponse({ message: `${deletedCount} ürün silindi`, deletedCount }));
+  return c.json(successResponse({message: `${deletedCount} ürün silindi`, deletedCount}));
 });
 
 const bulkUpdateSchema = z.object({
@@ -313,10 +313,10 @@ managementRoutes.put("/vendors/:vendorId/products/bulk", async (c) => {
   const user = c.get("user");
   const vendorId = c.req.param("vendorId");
   const body = await c.req.json();
-  const { updates } = bulkUpdateSchema.parse(body);
+  const {updates} = bulkUpdateSchema.parse(body);
 
   const modifiedCount = await getManagementService().bulkUpdateProducts(user.role, vendorId, updates);
-  return c.json(successResponse({ message: `${modifiedCount} ürün güncellendi`, modifiedCount }));
+  return c.json(successResponse({message: `${modifiedCount} ürün güncellendi`, modifiedCount}));
 });
 
 // =====================
@@ -374,7 +374,7 @@ managementRoutes.put("/price-list-requests/:id/complete", async (c) => {
   const result = await getPriceListService().completeRequest(
     user.role,
     requestId,
-    { userId: user._id?.toString() || "", name: user.name }
+    {userId: user._id?.toString() || "", name: user.name}
   );
 
   return c.json(successResponse(result));
@@ -386,5 +386,5 @@ managementRoutes.delete("/price-list-requests/:id", async (c) => {
   const requestId = c.req.param("id");
 
   await getPriceListService().deleteRequest(user.role, requestId);
-  return c.json(successResponse({ message: "Request deleted" }));
+  return c.json(successResponse({message: "Request deleted"}));
 });

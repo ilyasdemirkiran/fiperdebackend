@@ -1,18 +1,18 @@
-import { VendorRepository } from "@/repositories/vendor.repository";
-import { VendorPermissionRepository } from "@/repositories/vendor-permission.repository";
-import { ProductRepository } from "@/repositories/product.repository";
-import { VendorDocumentRepository } from "@/repositories/vendor-document.repository";
-import { VendorPriceRateRepository } from "@/repositories/vendor-price-rate.repository";
-import type { Vendor } from "@/types/vendor/vendor";
-import type { VendorDocument, VendorDocumentMetadata } from "@/types/vendor/vendor_document";
-import { ALLOWED_DOCUMENT_MIME_TYPES } from "@/types/vendor/vendor_document";
-import type { VendorPriceRate } from "@/types/vendor/vendor_price_rate";
-import { AppError } from "@/middleware/error-handler";
-import { logger } from "@/utils/logger";
-import type { UserRole } from "@/types/user/fi_user";
-import { isAdmin } from "@/types/user/fi_user";
-import { Timestamp } from "firebase-admin/firestore";
-import { Binary, ObjectId } from "mongodb";
+import {VendorRepository} from "@/repositories/vendor.repository";
+import {VendorPermissionRepository} from "@/repositories/vendor-permission.repository";
+import {ProductRepository} from "@/repositories/product.repository";
+import {VendorDocumentRepository} from "@/repositories/vendor-document.repository";
+import {VendorPriceRateRepository} from "@/repositories/vendor-price-rate.repository";
+import type {Vendor} from "@/types/vendor/vendor";
+import type {VendorDocument, VendorDocumentMetadata} from "@/types/vendor/vendor_document";
+import {ALLOWED_DOCUMENT_MIME_TYPES} from "@/types/vendor/vendor_document";
+import type {VendorPriceRate} from "@/types/vendor/vendor_price_rate";
+import {AppError} from "@/middleware/error-handler";
+import {logger} from "@/utils/logger";
+import type {UserRole} from "@/types/user/fi_user";
+import {isAdmin} from "@/types/user/fi_user";
+import {Timestamp} from "firebase-admin/firestore";
+import {Binary, ObjectId} from "mongodb";
 
 export class VendorService {
   private repository: VendorRepository;
@@ -121,7 +121,7 @@ export class VendorService {
       this.documentRepository.deleteByVendorId(id),
     ]);
 
-    logger.info("Vendor deleted with cascade", { vendorId: id });
+    logger.info("Vendor deleted with cascade", {vendorId: id});
   }
 
   // ========== PERMISSION MANAGEMENT ==========
@@ -140,7 +140,7 @@ export class VendorService {
     }
 
     await this.permissionRepository.addPermission(vendorId, companyId);
-    logger.info("Vendor permission granted", { vendorId, companyId });
+    logger.info("Vendor permission granted", {vendorId, companyId});
   }
 
   async revokePermission(role: UserRole, vendorId: string, companyId: string): Promise<void> {
@@ -152,7 +152,7 @@ export class VendorService {
       throw new AppError(404, "Permission not found", "PERMISSION_NOT_FOUND");
     }
 
-    logger.info("Vendor permission revoked", { vendorId, companyId });
+    logger.info("Vendor permission revoked", {vendorId, companyId});
   }
 
   async getCompaniesForVendor(vendorId: string): Promise<string[]> {
@@ -236,7 +236,7 @@ export class VendorService {
     const created = await this.documentRepository.create(documentData as any, vendorId);
 
     // Return metadata without binary data
-    const { data, ...metadata } = created;
+    const {data, ...metadata} = created;
     return metadata;
   }
 
@@ -250,7 +250,7 @@ export class VendorService {
       return null;
     }
 
-    const { data, ...metadata } = document;
+    const {data, ...metadata} = document;
     return {
       metadata,
       buffer: Buffer.from(data.buffer),
@@ -282,7 +282,7 @@ export class VendorService {
       throw new AppError(404, "Document not found", "DOCUMENT_NOT_FOUND");
     }
 
-    const { data, ...metadata } = document;
+    const {data, ...metadata} = document;
     return {
       metadata,
       buffer: Buffer.from(data.buffer),
@@ -300,6 +300,6 @@ export class VendorService {
       throw new AppError(404, "Document not found", "DOCUMENT_NOT_FOUND");
     }
 
-    logger.info("Vendor document deleted", { documentId });
+    logger.info("Vendor document deleted", {documentId});
   }
 }

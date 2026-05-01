@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { timestampSchema } from '@/types/timestamp';
-import { Binary, ObjectId } from 'mongodb';
+import {z} from 'zod';
+import {timestampSchema} from '@/types/timestamp';
+import {Binary, ObjectId} from 'mongodb';
 
 // Allowed document types: PDF and Excel
 export const ALLOWED_DOCUMENT_MIME_TYPES = [
@@ -32,5 +32,5 @@ export const vendorDocumentSchema = z.object({
 export type VendorDocument = z.infer<typeof vendorDocumentSchema>;
 
 // Response type without binary data (for listing)
-export const vendorDocumentMetadataSchema = vendorDocumentSchema.omit({ data: true });
+export const vendorDocumentMetadataSchema = vendorDocumentSchema.omit({data: true});
 export type VendorDocumentMetadata = z.infer<typeof vendorDocumentMetadataSchema>;

@@ -1,5 +1,5 @@
-import { Timestamp } from "firebase-admin/firestore";
-import { z } from "zod";
+import {Timestamp} from "firebase-admin/firestore";
+import {z} from "zod";
 
 // Flexible timestamp schema that accepts:
 // - Firebase Timestamp instances

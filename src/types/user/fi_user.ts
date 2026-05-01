@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { timestampSchema } from '@/types/timestamp';
-import { phoneNumberSchema } from '@/types/phone_number';
+import {z} from 'zod';
+import {timestampSchema} from '@/types/timestamp';
+import {phoneNumberSchema} from '@/types/phone_number';
 
 export const userRoleSchema = z.enum(['sudo', 'admin', 'user']);
 

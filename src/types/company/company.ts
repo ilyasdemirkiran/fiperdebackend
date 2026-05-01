@@ -1,6 +1,6 @@
-import { z } from "zod";
-import { timestampSchema } from "@/types/timestamp";
-import { ObjectId } from "mongodb";
+import {z} from "zod";
+import {timestampSchema} from "@/types/timestamp";
+import {ObjectId} from "mongodb";
 
 export const companySchema = z.object({
   _id: z.custom<ObjectId>(),

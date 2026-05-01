@@ -1,7 +1,7 @@
-import { Collection, ObjectId } from "mongodb";
-import { getCoreDatabase } from "@/config/database";
-import type { Company } from "@/types/company/company";
-import { logger } from "@/utils/logger";
+import {Collection, ObjectId} from "mongodb";
+import {getCoreDatabase} from "@/config/database";
+import type {Company} from "@/types/company/company";
+import {logger} from "@/utils/logger";
 
 export class CompanyRepository {
   private getCollection(): Collection<Company> {
@@ -11,7 +11,7 @@ export class CompanyRepository {
   async create(company: Omit<Company, "_id">): Promise<Company> {
     try {
       const result = await this.getCollection().insertOne(company as any);
-      logger.info("Company created", { companyId: result.insertedId });
+      logger.info("Company created", {companyId: result.insertedId});
       return {
         ...company,
         _id: result.insertedId
@@ -24,7 +24,7 @@ export class CompanyRepository {
 
   async findById(id: string): Promise<Company | null> {
     try {
-      const doc = await this.getCollection().findOne({ _id: new ObjectId(id) } as any);
+      const doc = await this.getCollection().findOne({_id: new ObjectId(id)} as any);
       return doc as Company | null;
     } catch (error) {
       logger.error("Failed to find company by ID", error);
@@ -35,7 +35,7 @@ export class CompanyRepository {
   async findByIds(ids: string[]): Promise<Company[]> {
     try {
       const docs = await this.getCollection()
-        .find({ _id: { $in: ids.map(id => new ObjectId(id)) } } as any)
+        .find({_id: {$in: ids.map(id => new ObjectId(id))}} as any)
         .toArray();
       return docs as Company[];
     } catch (error) {
@@ -47,8 +47,8 @@ export class CompanyRepository {
   async addUser(companyId: string, userId: string): Promise<void> {
     try {
       await this.getCollection().updateOne(
-        { _id: new ObjectId(companyId) } as any,
-        { $addToSet: { userIds: userId } }
+        {_id: new ObjectId(companyId)} as any,
+        {$addToSet: {userIds: userId}}
       );
     } catch (error) {
       logger.error("Failed to add user to company", error);
@@ -59,8 +59,8 @@ export class CompanyRepository {
   async removeUser(companyId: string, userId: string): Promise<void> {
     try {
       await this.getCollection().updateOne(
-        { _id: new ObjectId(companyId) } as any,
-        { $pull: { userIds: userId } }
+        {_id: new ObjectId(companyId)} as any,
+        {$pull: {userIds: userId}}
       );
     } catch (error) {
       logger.error("Failed to remove user from company", error);
@@ -71,9 +71,9 @@ export class CompanyRepository {
   async update(companyId: string, updates: Partial<Company>): Promise<Company | null> {
     try {
       const result = await this.getCollection().findOneAndUpdate(
-        { _id: new ObjectId(companyId) } as any,
-        { $set: updates },
-        { returnDocument: "after" }
+        {_id: new ObjectId(companyId)} as any,
+        {$set: updates},
+        {returnDocument: "after"}
       );
       return result as Company | null;
     } catch (error) {
@@ -84,8 +84,8 @@ export class CompanyRepository {
 
   async delete(companyId: string): Promise<boolean> {
     try {
-      const result = await this.getCollection().deleteOne({ _id: new ObjectId(companyId) } as any);
-      logger.info("Company deleted", { companyId });
+      const result = await this.getCollection().deleteOne({_id: new ObjectId(companyId)} as any);
+      logger.info("Company deleted", {companyId});
       return result.deletedCount > 0;
     } catch (error) {
       logger.error("Failed to delete company", error);

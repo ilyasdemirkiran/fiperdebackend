@@ -1,8 +1,8 @@
-import { Collection, ObjectId } from "mongodb";
-import { getGlobalVendorDatabase } from "@/config/database";
-import type { VendorPermission } from "@/types/vendor/vendor_permission";
-import { logger } from "@/utils/logger";
-import { Timestamp } from "firebase-admin/firestore";
+import {Collection, ObjectId} from "mongodb";
+import {getGlobalVendorDatabase} from "@/config/database";
+import type {VendorPermission} from "@/types/vendor/vendor_permission";
+import {logger} from "@/utils/logger";
+import {Timestamp} from "firebase-admin/firestore";
 
 export class VendorPermissionRepository {
   private getCollection(): Collection<VendorPermission> {
@@ -21,8 +21,8 @@ export class VendorPermissionRepository {
       };
 
       const result = await collection.insertOne(permission as any);
-      logger.info("Vendor permission added", { vendorId, companyId });
-      return { ...permission, _id: result.insertedId } as VendorPermission;
+      logger.info("Vendor permission added", {vendorId, companyId});
+      return {...permission, _id: result.insertedId} as VendorPermission;
     } catch (error) {
       logger.error("Failed to add vendor permission", error);
       throw error;
@@ -39,7 +39,7 @@ export class VendorPermissionRepository {
       const deleted = result.deletedCount > 0;
 
       if (deleted) {
-        logger.info("Vendor permission removed", { vendorId, companyId });
+        logger.info("Vendor permission removed", {vendorId, companyId});
       }
 
       return deleted;
@@ -57,7 +57,7 @@ export class VendorPermissionRepository {
     try {
       const collection = this.getCollection();
       const permissions = await collection
-        .find({ companyId: new ObjectId(companyId) }, { projection: { vendorId: 1, _id: 0 } })
+        .find({companyId: new ObjectId(companyId)}, {projection: {vendorId: 1, _id: 0}})
         .toArray();
 
       return permissions.map((p) => p.vendorId.toHexString());
@@ -71,7 +71,7 @@ export class VendorPermissionRepository {
     try {
       const collection = this.getCollection();
       const permissions = await collection
-        .find({ vendorId: new ObjectId(vendorId) }, { projection: { companyId: 1, _id: 0 } })
+        .find({vendorId: new ObjectId(vendorId)}, {projection: {companyId: 1, _id: 0}})
         .toArray();
 
       return permissions.map((p) => p.companyId.toHexString());
@@ -98,8 +98,8 @@ export class VendorPermissionRepository {
   async removeAllPermissionsForVendor(vendorId: string): Promise<number> {
     try {
       const collection = this.getCollection();
-      const result = await collection.deleteMany({ vendorId: new ObjectId(vendorId) });
-      logger.info("All permissions removed for vendor", { vendorId, count: result.deletedCount });
+      const result = await collection.deleteMany({vendorId: new ObjectId(vendorId)});
+      logger.info("All permissions removed for vendor", {vendorId, count: result.deletedCount});
       return result.deletedCount;
     } catch (error) {
       logger.error("Failed to remove all permissions for vendor", error);

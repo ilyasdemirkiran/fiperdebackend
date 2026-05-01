@@ -1,26 +1,26 @@
-import { z } from "zod";
-import { currencySchema } from "@/types/currency";
-import { paymentLogSchema } from "@/types/customer/sale/payment_log";
-import { timestampSchema } from "@/types/timestamp";
-import { ObjectId } from "mongodb";
+import {z} from "zod";
+import {currencySchema} from "@/types/currency";
+import {paymentLogSchema} from "@/types/customer/sale/payment_log";
+import {timestampSchema} from "@/types/timestamp";
+import {ObjectId} from "mongodb";
 
 export const saleStatusSchema = z.enum(["pending", "completed", "deleted"]);
 
 export const saleSchema = z.object({
   _id: z.custom<ObjectId>().optional(),
   customerId: z
-    .string({ message: "Müşteri ID'si zorunludur" })
+    .string({message: "Müşteri ID'si zorunludur"})
     .min(1, "Müşteri ID'si boş olamaz"),
   createdByUserId: z
-    .string({ message: "Kullanıcı ID'si zorunludur" })
+    .string({message: "Kullanıcı ID'si zorunludur"})
     .min(1, "Kullanıcı ID'si boş olamaz"),
   createdByUserName: z.string().optional(),
   totalAmount: z.coerce
-    .number<number>({ message: "Toplam tutar zorunludur" })
+    .number<number>({message: "Toplam tutar zorunludur"})
     .positive("Toplam tutar pozitif olmalıdır")
     .transform((val) => Math.round(val * 100) / 100),
   totalPaidAmount: z.coerce
-    .number<number>({ message: "Ödenen tutar zorunludur" })
+    .number<number>({message: "Ödenen tutar zorunludur"})
     .transform((val) => Math.round(val * 100) / 100),
   currency: currencySchema,
   status: saleStatusSchema,

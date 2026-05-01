@@ -1,17 +1,17 @@
-import { Hono } from "hono";
-import type { Env } from "@/types/hono";
-import { QuoteService } from "@/services/quote.service";
-import { successResponse } from "@/utils/response";
-import { authMiddleware } from "@/middleware/auth";
+import {Hono} from "hono";
+import type {Env} from "@/types/hono";
+import {QuoteService} from "@/services/quote.service";
+import {successResponse} from "@/utils/response";
+import {authMiddleware} from "@/middleware/auth";
 import {
-  createQuoteSchema,
-  updateQuoteCustomerSchema,
-  updateQuoteConversionsSchema,
-  addRoomSchema,
-  updateRoomNameSchema,
   addItemsToRoomSchema,
+  addRoomSchema,
+  createQuoteSchema,
+  type Quote,
+  updateQuoteConversionsSchema,
+  updateQuoteCustomerSchema,
   updateQuoteItemSchema,
-  type Quote
+  updateRoomNameSchema
 } from "@/types/quotes/quote";
 
 export const quoteRoutes = new Hono<Env>();
@@ -32,7 +32,7 @@ quoteRoutes.use("*", authMiddleware);
 quoteRoutes.post("/", async (c) => {
   const user = c.get("user");
   const body = await c.req.json();
-  const { currency } = createQuoteSchema.parse(body);
+  const {currency} = createQuoteSchema.parse(body);
 
   const quote = await getService().createQuote(
     user.companyId!,
@@ -74,7 +74,7 @@ quoteRoutes.patch("/:id/currency", async (c) => {
   const user = c.get("user");
   const id = c.req.param("id");
   const body = await c.req.json();
-  const { currency } = createQuoteSchema.parse(body);
+  const {currency} = createQuoteSchema.parse(body);
 
   const quote = await getService().updateQuoteCurrency(user.companyId!, id, currency);
   return c.json(successResponse<Quote>(quote));
@@ -96,7 +96,7 @@ quoteRoutes.post("/:id/rooms", async (c) => {
   const user = c.get("user");
   const id = c.req.param("id");
   const body = await c.req.json();
-  const { name } = addRoomSchema.parse(body);
+  const {name} = addRoomSchema.parse(body);
 
   const quote = await getService().addRoom(user.companyId!, id, name);
   return c.json(successResponse<Quote>(quote), 201);
@@ -108,7 +108,7 @@ quoteRoutes.patch("/:id/rooms/:roomId", async (c) => {
   const id = c.req.param("id");
   const roomId = c.req.param("roomId");
   const body = await c.req.json();
-  const { name } = updateRoomNameSchema.parse(body);
+  const {name} = updateRoomNameSchema.parse(body);
 
   const quote = await getService().updateRoomName(user.companyId!, id, roomId, name);
   return c.json(successResponse<Quote>(quote));
@@ -130,7 +130,7 @@ quoteRoutes.post("/:id/rooms/:roomId/items", async (c) => {
   const id = c.req.param("id");
   const roomId = c.req.param("roomId");
   const body = await c.req.json();
-  const { items } = addItemsToRoomSchema.parse(body);
+  const {items} = addItemsToRoomSchema.parse(body);
 
   const quote = await getService().addItemsToRoom(user.companyId!, id, roomId, items);
   return c.json(successResponse<Quote>(quote), 201);

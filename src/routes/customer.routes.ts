@@ -1,10 +1,10 @@
-import { Hono } from "hono";
-import type { Env } from "@/types/hono";
-import { CustomerService } from "@/services/customer.service";
-import { successResponse, paginatedResponse } from "@/utils/response";
-import { listCustomersQuerySchema } from "@/types/customer/customer";
-import { authMiddleware } from "@/middleware/auth";
-import { toResponse, toResponseArray } from "@/utils/response-transformer";
+import {Hono} from "hono";
+import type {Env} from "@/types/hono";
+import {CustomerService} from "@/services/customer.service";
+import {paginatedResponse, successResponse} from "@/utils/response";
+import {listCustomersQuerySchema} from "@/types/customer/customer";
+import {authMiddleware} from "@/middleware/auth";
+import {toResponse, toResponseArray} from "@/utils/response-transformer";
 
 export const customerRoutes = new Hono<Env>();
 
@@ -28,7 +28,7 @@ customerRoutes.get("/", async (c) => {
     Object.fromEntries(new URL(c.req.url).searchParams)
   );
 
-  const { customers, total } = await getCustomerService().listCustomers(
+  const {customers, total} = await getCustomerService().listCustomers(
     user.companyId!,
     {
       page: query.page,
@@ -93,5 +93,5 @@ customerRoutes.delete("/:id", async (c) => {
 
   await getCustomerService().deleteCustomer(user.companyId!, id, user.role);
 
-  return c.json(successResponse({ message: "Customer deleted successfully" }));
+  return c.json(successResponse({message: "Customer deleted successfully"}));
 });

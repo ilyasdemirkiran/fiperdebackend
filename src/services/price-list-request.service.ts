@@ -1,12 +1,12 @@
-import { PriceListRequestRepository } from "@/repositories/price-list-request.repository";
-import type { PriceListRequest, PriceListRequestMetadata } from "@/types/vendor/price_list_request";
-import { PRICE_LIST_ALLOWED_MIME_TYPES } from "@/types/vendor/price_list_request";
-import { AppError } from "@/middleware/error-handler";
-import { logger } from "@/utils/logger";
-import type { UserRole, FIUser } from "@/types/user/fi_user";
-import { isAdmin } from "@/types/user/fi_user";
-import { Timestamp } from "firebase-admin/firestore";
-import { Binary } from "mongodb";
+import {PriceListRequestRepository} from "@/repositories/price-list-request.repository";
+import type {PriceListRequest, PriceListRequestMetadata} from "@/types/vendor/price_list_request";
+import {PRICE_LIST_ALLOWED_MIME_TYPES} from "@/types/vendor/price_list_request";
+import {AppError} from "@/middleware/error-handler";
+import {logger} from "@/utils/logger";
+import type {FIUser, UserRole} from "@/types/user/fi_user";
+import {isAdmin} from "@/types/user/fi_user";
+import {Timestamp} from "firebase-admin/firestore";
+import {Binary} from "mongodb";
 
 export interface SubmitPriceListRequestInput {
   vendorName: string;
@@ -69,7 +69,7 @@ export class PriceListRequestService {
     const created = await this.repository.create(request);
 
     // Return metadata without binary data
-    const { data, ...metadata } = created;
+    const {data, ...metadata} = created;
     return metadata;
   }
 
@@ -130,9 +130,9 @@ export class PriceListRequestService {
       throw new AppError(500, "Failed to complete request", "UPDATE_FAILED");
     }
 
-    logger.info("Price list request completed", { requestId, completedBy: completedByUser.name });
+    logger.info("Price list request completed", {requestId, completedBy: completedByUser.name});
 
-    const { data, ...metadata } = updated;
+    const {data, ...metadata} = updated;
     return metadata;
   }
 
@@ -147,7 +147,7 @@ export class PriceListRequestService {
       throw new AppError(404, "Price list request not found", "REQUEST_NOT_FOUND");
     }
 
-    const { data, ...metadata } = request;
+    const {data, ...metadata} = request;
     return {
       metadata,
       buffer: Buffer.from(data.buffer),
@@ -165,6 +165,6 @@ export class PriceListRequestService {
       throw new AppError(404, "Price list request not found", "REQUEST_NOT_FOUND");
     }
 
-    logger.info("Price list request deleted", { requestId });
+    logger.info("Price list request deleted", {requestId});
   }
 }

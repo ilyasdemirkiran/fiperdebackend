@@ -1,7 +1,7 @@
-import { CustomerImageLabelRepository } from "@/repositories/customer-image-label.repository";
-import type { CustomerImageLabel } from "@/types/customer/image/customer_image_label";
-import { AppError } from "@/middleware/error-handler";
-import { logger } from "@/utils/logger";
+import {CustomerImageLabelRepository} from "@/repositories/customer-image-label.repository";
+import type {CustomerImageLabel} from "@/types/customer/image/customer_image_label";
+import {AppError} from "@/middleware/error-handler";
+import {logger} from "@/utils/logger";
 
 export class CustomerImageLabelService {
   private repository: CustomerImageLabelRepository;
@@ -43,7 +43,7 @@ export class CustomerImageLabelService {
       throw new AppError(404, "Label not found", "LABEL_NOT_FOUND");
     }
 
-    const updated = await this.repository.update(companyId, id, { name });
+    const updated = await this.repository.update(companyId, id, {name});
 
     if (!updated) {
       throw new AppError(500, "Failed to update label", "UPDATE_FAILED");
@@ -65,6 +65,6 @@ export class CustomerImageLabelService {
       throw new AppError(500, "Failed to delete label", "DELETE_FAILED");
     }
 
-    logger.info("Label deleted successfully", { id, companyId });
+    logger.info("Label deleted successfully", {id, companyId});
   }
 }

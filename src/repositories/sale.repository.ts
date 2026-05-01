@@ -1,9 +1,9 @@
-import { Collection, ObjectId, ClientSession } from "mongodb";
-import { getDatabaseForCompany } from "@/config/database";
-import type { Sale, SaleStatus } from "@/types/customer/sale/sale";
-import type { PaymentLog } from "@/types/customer/sale/payment_log";
-import { logger } from "@/utils/logger";
-import { Timestamp } from "firebase-admin/firestore";
+import {ClientSession, Collection, ObjectId} from "mongodb";
+import {getDatabaseForCompany} from "@/config/database";
+import type {Sale, SaleStatus} from "@/types/customer/sale/sale";
+import type {PaymentLog} from "@/types/customer/sale/payment_log";
+import {logger} from "@/utils/logger";
+import {Timestamp} from "firebase-admin/firestore";
 
 export class SaleRepository {
   private getCollection(companyId: string): Collection<Sale> {
@@ -14,10 +14,10 @@ export class SaleRepository {
   async create(companyId: string, sale: Sale): Promise<Sale> {
     try {
       const collection = this.getCollection(companyId);
-      const { _id, ...saleToInsert } = sale;
+      const {_id, ...saleToInsert} = sale;
       const result = await collection.insertOne(saleToInsert as any);
       sale._id = result.insertedId;
-      logger.info("Sale created", { saleId: sale._id, customerId: sale.customerId, companyId });
+      logger.info("Sale created", {saleId: sale._id, customerId: sale.customerId, companyId});
       return sale;
     } catch (error) {
       logger.error("Failed to create sale", error);
@@ -28,7 +28,7 @@ export class SaleRepository {
   async findById(companyId: string, id: string): Promise<Sale | null> {
     try {
       const collection = this.getCollection(companyId);
-      return await collection.findOne({ _id: new ObjectId(id) } as any);
+      return await collection.findOne({_id: new ObjectId(id)} as any);
     } catch (error) {
       logger.error("Failed to find sale by ID", error);
       throw error;
@@ -39,8 +39,8 @@ export class SaleRepository {
     try {
       const collection = this.getCollection(companyId);
       return await collection
-        .find({ customerId: customerId } as any)
-        .sort({ createdAt: -1 })
+        .find({customerId: customerId} as any)
+        .sort({createdAt: -1})
         .toArray();
     } catch (error) {
       logger.error("Failed to fetch sales by customerId", error);
@@ -56,9 +56,9 @@ export class SaleRepository {
     try {
       const collection = this.getCollection(companyId);
       return await collection.findOneAndUpdate(
-        { _id: new ObjectId(id) } as any,
-        { $set: { ...updates, updatedAt: Timestamp.now() } },
-        { returnDocument: "after" }
+        {_id: new ObjectId(id)} as any,
+        {$set: {...updates, updatedAt: Timestamp.now()}},
+        {returnDocument: "after"}
       );
     } catch (error) {
       logger.error("Failed to update sale", error);
@@ -69,11 +69,11 @@ export class SaleRepository {
   async delete(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const result = await collection.deleteOne({ _id: new ObjectId(id) } as any);
+      const result = await collection.deleteOne({_id: new ObjectId(id)} as any);
       const deleted = result.deletedCount > 0;
 
       if (deleted) {
-        logger.info("Sale deleted", { saleId: id, companyId });
+        logger.info("Sale deleted", {saleId: id, companyId});
       }
 
       return deleted;
@@ -86,11 +86,11 @@ export class SaleRepository {
   async deleteByCustomerId(companyId: string, customerId: string, session: ClientSession): Promise<number> {
     try {
       const collection = this.getCollection(companyId);
-      const result = await collection.deleteMany({ customerId: new ObjectId(customerId) } as any, { session });
+      const result = await collection.deleteMany({customerId: new ObjectId(customerId)} as any, {session});
 
       const count = result.deletedCount;
       if (count > 0) {
-        logger.info(`Deleted ${count} sales for customer`, { customerId, companyId });
+        logger.info(`Deleted ${count} sales for customer`, {customerId, companyId});
       }
       return count;
     } catch (error) {
@@ -112,7 +112,9 @@ export class SaleRepository {
 
       // Get current sale
       const sale = await this.findById(companyId, saleId);
-      if (!sale) return null;
+      if (!sale) {
+        return null;
+      }
 
       // Calculate new totalPaidAmount
       const newTotalPaid = sale.totalPaidAmount + paymentLog.amount;
@@ -120,16 +122,16 @@ export class SaleRepository {
 
       // Update sale with new log and recalculated values
       return await collection.findOneAndUpdate(
-        { _id: new ObjectId(saleId) } as any,
+        {_id: new ObjectId(saleId)} as any,
         {
-          $push: { logs: paymentLog } as any,
+          $push: {logs: paymentLog} as any,
           $set: {
             totalPaidAmount: Math.round(newTotalPaid * 100) / 100,
             status: newStatus,
             updatedAt: Timestamp.now(),
           },
         },
-        { returnDocument: "after" }
+        {returnDocument: "after"}
       );
     } catch (error) {
       logger.error("Failed to add payment log", error);
@@ -151,25 +153,29 @@ export class SaleRepository {
 
       // Get current sale
       const sale = await this.findById(companyId, saleId);
-      if (!sale) return null;
+      if (!sale) {
+        return null;
+      }
 
       // Find and update the log
       const logIndex = sale.logs.findIndex((log) => log._id?.toString() === logId);
-      if (logIndex === -1) return null;
+      if (logIndex === -1) {
+        return null;
+      }
 
       const oldAmount = sale.logs[logIndex]!.amount;
       const newAmount = updates.amount ?? oldAmount;
 
       // Update log in array
       const updatedLogs = [...sale.logs];
-      updatedLogs[logIndex] = { ...updatedLogs[logIndex]!, ...updates } as PaymentLog;
+      updatedLogs[logIndex] = {...updatedLogs[logIndex]!, ...updates} as PaymentLog;
 
       // Recalculate totalPaidAmount
       const newTotalPaid = sale.totalPaidAmount - oldAmount + newAmount;
       const newStatus: SaleStatus = newTotalPaid >= sale.totalAmount ? "completed" : "pending";
 
       return await collection.findOneAndUpdate(
-        { _id: new ObjectId(saleId) } as any,
+        {_id: new ObjectId(saleId)} as any,
         {
           $set: {
             logs: updatedLogs,
@@ -178,7 +184,7 @@ export class SaleRepository {
             updatedAt: Timestamp.now(),
           },
         },
-        { returnDocument: "after" }
+        {returnDocument: "after"}
       );
     } catch (error) {
       logger.error("Failed to update payment log", error);
@@ -199,27 +205,31 @@ export class SaleRepository {
 
       // Get current sale
       const sale = await this.findById(companyId, saleId);
-      if (!sale) return null;
+      if (!sale) {
+        return null;
+      }
 
       // Find the log to delete
       const log = sale.logs.find((l) => l._id?.toString() === logId);
-      if (!log) return null;
+      if (!log) {
+        return null;
+      }
 
       // Recalculate totalPaidAmount
       const newTotalPaid = sale.totalPaidAmount - log.amount;
       const newStatus: SaleStatus = newTotalPaid >= sale.totalAmount ? "completed" : "pending";
 
       return await collection.findOneAndUpdate(
-        { _id: new ObjectId(saleId) } as any,
+        {_id: new ObjectId(saleId)} as any,
         {
-          $pull: { logs: { _id: log._id } } as any,
+          $pull: {logs: {_id: log._id}} as any,
           $set: {
             totalPaidAmount: Math.round(newTotalPaid * 100) / 100,
             status: newStatus,
             updatedAt: Timestamp.now(),
           },
         },
-        { returnDocument: "after" }
+        {returnDocument: "after"}
       );
     } catch (error) {
       logger.error("Failed to delete payment log", error);
@@ -230,7 +240,7 @@ export class SaleRepository {
   async exists(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const count = await collection.countDocuments({ _id: new ObjectId(id) } as any);
+      const count = await collection.countDocuments({_id: new ObjectId(id)} as any);
       return count > 0;
     } catch (error) {
       logger.error("Failed to check sale existence", error);

@@ -1,14 +1,9 @@
-import { isEmpty } from "es-toolkit/compat";
-import {
-  type CountryCode,
-  isValidPhoneNumber,
-  parseIncompletePhoneNumber,
-  parsePhoneNumberWithError,
-} from "libphonenumber-js";
-import { z } from "zod";
+import {isEmpty} from "es-toolkit/compat";
+import {type CountryCode, isValidPhoneNumber, parseIncompletePhoneNumber, parsePhoneNumberWithError,} from "libphonenumber-js";
+import {z} from "zod";
 
 export const phoneNumberSchema = z
-  .string({ message: "Telefon numarası zorunludur" })
+  .string({message: "Telefon numarası zorunludur"})
   .min(10, "En az 10 karakter olmalı")
   .max(20, "En fazla 20 karakter olmalı")
   .refine((phone: string) => validatePhoneNumber(phone), {

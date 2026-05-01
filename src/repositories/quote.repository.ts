@@ -1,8 +1,8 @@
-import { Collection, ObjectId, ClientSession } from "mongodb";
-import { getDatabaseForCompany } from "@/config/database";
-import type { Quote } from "@/types/quotes/quote";
-import { logger } from "@/utils/logger";
-import { Timestamp } from "firebase-admin/firestore";
+import {ClientSession, Collection, ObjectId} from "mongodb";
+import {getDatabaseForCompany} from "@/config/database";
+import type {Quote} from "@/types/quotes/quote";
+import {logger} from "@/utils/logger";
+import {Timestamp} from "firebase-admin/firestore";
 
 export class QuoteRepository {
   private getCollection(companyId: string): Collection<Quote> {
@@ -14,7 +14,7 @@ export class QuoteRepository {
     try {
       const collection = this.getCollection(companyId);
       await collection.insertOne(quote as any);
-      logger.info("Quote created", { quoteId: quote._id, companyId });
+      logger.info("Quote created", {quoteId: quote._id, companyId});
       return quote;
     } catch (error) {
       logger.error("Failed to create quote", error);
@@ -25,7 +25,7 @@ export class QuoteRepository {
   async findById(companyId: string, id: string): Promise<Quote | null> {
     try {
       const collection = this.getCollection(companyId);
-      const quote = await collection.findOne({ _id: new ObjectId(id) } as any);
+      const quote = await collection.findOne({_id: new ObjectId(id)} as any);
       return quote;
     } catch (error) {
       logger.error("Failed to find quote by ID", error);
@@ -43,7 +43,7 @@ export class QuoteRepository {
       if (filter.creatorId) {
         query.creatorId = filter.creatorId;
       }
-      return await collection.find(query).sort({ createdAt: -1 }).toArray();
+      return await collection.find(query).sort({createdAt: -1}).toArray();
     } catch (error) {
       logger.error("Failed to fetch quotes", error);
       throw error;
@@ -59,13 +59,13 @@ export class QuoteRepository {
     try {
       const collection = this.getCollection(companyId);
       const result = await collection.findOneAndUpdate(
-        { _id: new ObjectId(id) } as any,
-        { $set: { ...updates, updatedAt: Timestamp.now() } },
-        { returnDocument: "after", session }
+        {_id: new ObjectId(id)} as any,
+        {$set: {...updates, updatedAt: Timestamp.now()}},
+        {returnDocument: "after", session}
       );
 
       if (result) {
-        logger.info("Quote updated", { quoteId: id, companyId });
+        logger.info("Quote updated", {quoteId: id, companyId});
       }
 
       return result;
@@ -78,7 +78,7 @@ export class QuoteRepository {
   async delete(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const result = await collection.deleteOne({ _id: new ObjectId(id) } as any);
+      const result = await collection.deleteOne({_id: new ObjectId(id)} as any);
       return result.deletedCount > 0;
     } catch (error) {
       logger.error("Failed to delete quote", error);

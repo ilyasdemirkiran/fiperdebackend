@@ -1,11 +1,11 @@
-import { Hono } from "hono";
-import type { Env } from "@/types/hono";
-import { CustomerImageService, type UploadImageInput } from "@/services/customer-image.service";
-import { successResponse } from "@/utils/response";
-import { authMiddleware } from "@/middleware/auth";
-import { toResponse, toResponseArray } from "@/utils/response-transformer";
-import { z } from "zod";
-import type { CustomerImageMetadata } from "@/types/customer/image/customer_image";
+import {Hono} from "hono";
+import type {Env} from "@/types/hono";
+import {CustomerImageService, type UploadImageInput} from "@/services/customer-image.service";
+import {successResponse} from "@/utils/response";
+import {authMiddleware} from "@/middleware/auth";
+import {toResponse, toResponseArray} from "@/utils/response-transformer";
+import {z} from "zod";
+import type {CustomerImageMetadata} from "@/types/customer/image/customer_image";
 
 export const customerImageRoutes = new Hono<Env>();
 
@@ -34,7 +34,7 @@ customerImageRoutes.get("/images/:imageId/download", async (c) => {
   const user = c.get("user");
   const imageId = c.req.param("imageId");
 
-  const { buffer, metadata } = await getService().getImageData(user.companyId!, imageId);
+  const {buffer, metadata} = await getService().getImageData(user.companyId!, imageId);
 
   return new Response(buffer, {
     headers: {
@@ -65,11 +65,11 @@ const byLabelsSchema = z.object({
 customerImageRoutes.post("/images/by-labels", async (c) => {
   const user = c.get("user");
   const body = await c.req.json();
-  const { labelIds } = byLabelsSchema.parse(body);
+  const {labelIds} = byLabelsSchema.parse(body);
 
   const images = labelIds.length === 0
-    ? await getService().listAllImages(user.companyId!)
-    : await getService().getImagesByLabels(user.companyId!, labelIds);
+                 ? await getService().listAllImages(user.companyId!)
+                 : await getService().getImagesByLabels(user.companyId!, labelIds);
   return c.json(successResponse(toResponseArray(images)));
 });
 
@@ -99,7 +99,7 @@ async function handleImageUpload(c: any, customerId?: string) {
   }
 
   if (files.length === 0) {
-    return c.json({ success: false, error: { message: "No files provided" } }, 400);
+    return c.json({success: false, error: {message: "No files provided"}}, 400);
   }
 
   const uploads: UploadImageInput[] = await Promise.all(
@@ -168,7 +168,7 @@ customerImageRoutes.delete("/images/:imageId", async (c) => {
 
   await getService().deleteImage(user.companyId!, imageId);
 
-  return c.json(successResponse({ message: "Image deleted successfully" }));
+  return c.json(successResponse({message: "Image deleted successfully"}));
 });
 
 // Resumable Upload Endpoints
@@ -199,13 +199,13 @@ customerImageRoutes.post("/:customerId/upload/chunk", async (c) => {
   const chunkIndex = c.req.query("index");
 
   if (!uploadId || !chunkIndex) {
-    return c.json({ success: false, error: { message: "Missing uploadId or index" } }, 400);
+    return c.json({success: false, error: {message: "Missing uploadId or index"}}, 400);
   }
 
   // Get raw binary body
   const buffer = await c.req.arrayBuffer();
   if (!buffer || buffer.byteLength === 0) {
-    return c.json({ success: false, error: { message: "Empty chunk data" } }, 400);
+    return c.json({success: false, error: {message: "Empty chunk data"}}, 400);
   }
 
   const result = await getService().uploadChunk(

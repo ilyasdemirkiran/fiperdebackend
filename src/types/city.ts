@@ -1,4 +1,3 @@
-
 export interface City {
   plateNumber: string; // plaka_kodu
   name: string; // il_adi

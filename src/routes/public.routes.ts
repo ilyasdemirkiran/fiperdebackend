@@ -1,6 +1,6 @@
-import { Hono } from "hono";
-import { VendorAttachmentService } from "@/services/vendor-attachment.service";
-import { Binary } from "mongodb";
+import {Hono} from "hono";
+import {VendorAttachmentService} from "@/services/vendor-attachment.service";
+import {Binary} from "mongodb";
 
 export const publicRoutes = new Hono();
 

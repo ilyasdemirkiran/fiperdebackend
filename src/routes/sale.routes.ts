@@ -1,13 +1,13 @@
-import { Hono } from "hono";
-import type { Env } from "@/types/hono";
-import { SaleService } from "@/services/sale.service";
-import { successResponse } from "@/utils/response";
-import { authMiddleware } from "@/middleware/auth";
-import { z } from "zod";
-import { toResponse, toResponseArray } from "@/utils/response-transformer";
-import { currencySchema } from "@/types/currency";
-import { paymentTypeSchema } from "@/types/customer/sale/payment_log";
-import { timestampSchema } from "@/types/timestamp";
+import {Hono} from "hono";
+import type {Env} from "@/types/hono";
+import {SaleService} from "@/services/sale.service";
+import {successResponse} from "@/utils/response";
+import {authMiddleware} from "@/middleware/auth";
+import {z} from "zod";
+import {toResponse, toResponseArray} from "@/utils/response-transformer";
+import {currencySchema} from "@/types/currency";
+import {paymentTypeSchema} from "@/types/customer/sale/payment_log";
+import {timestampSchema} from "@/types/timestamp";
 
 export const saleRoutes = new Hono<Env>();
 
@@ -125,7 +125,7 @@ saleRoutes.delete("/:customerId/sales/:saleId", async (c) => {
 
   await getService().deleteSale(user.companyId!, saleId, user.role);
 
-  return c.json(successResponse({ message: "Sale deleted successfully" }));
+  return c.json(successResponse({message: "Sale deleted successfully"}));
 });
 
 // ========== PAYMENT LOG CRUD ==========

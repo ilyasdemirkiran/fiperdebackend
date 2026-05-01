@@ -1,16 +1,12 @@
-import { VendorDocumentRepository } from "@/repositories/vendor-document.repository";
-import { VendorRepository } from "@/repositories/vendor.repository";
-import {
-  type VendorAttachment,
-  type VendorAttachmentMetadata,
-  ALLOWED_ATTACHMENT_MIME_TYPE,
-} from "@/types/vendor/vendor_attachment";
-import { type VendorDocument, type VendorDocumentMetadata } from "@/types/vendor/vendor_document";
-import { AppError } from "@/middleware/error-handler";
-import { logger } from "@/utils/logger";
-import { Timestamp } from "firebase-admin/firestore";
-import type { UserRole } from "@/types/user/fi_user";
-import { Binary, ObjectId } from "mongodb";
+import {VendorDocumentRepository} from "@/repositories/vendor-document.repository";
+import {VendorRepository} from "@/repositories/vendor.repository";
+import {ALLOWED_ATTACHMENT_MIME_TYPE, type VendorAttachment, type VendorAttachmentMetadata,} from "@/types/vendor/vendor_attachment";
+import {type VendorDocument} from "@/types/vendor/vendor_document";
+import {AppError} from "@/middleware/error-handler";
+import {logger} from "@/utils/logger";
+import {Timestamp} from "firebase-admin/firestore";
+import type {UserRole} from "@/types/user/fi_user";
+import {Binary, ObjectId} from "mongodb";
 
 export interface UploadAttachmentInput {
   title: string;
@@ -95,7 +91,7 @@ export class VendorAttachmentService {
     });
 
     // Return metadata without binary data, cast to AttachmentMetadata format
-    const { data, ...metadata } = created;
+    const {data, ...metadata} = created;
     return metadata as unknown as VendorAttachmentMetadata;
   }
 
@@ -123,7 +119,7 @@ export class VendorAttachmentService {
       throw new AppError(404, "Attachment not found", "ATTACHMENT_NOT_FOUND");
     }
 
-    const { data, ...metadata } = document;
+    const {data, ...metadata} = document;
     return metadata as unknown as VendorAttachmentMetadata;
   }
 
@@ -168,7 +164,7 @@ export class VendorAttachmentService {
       throw new AppError(404, "Attachment/Document not found", "ATTACHMENT_NOT_FOUND");
     }
 
-    logger.info("Vendor attachment/document deleted", { attachmentId });
+    logger.info("Vendor attachment/document deleted", {attachmentId});
   }
 
   /**

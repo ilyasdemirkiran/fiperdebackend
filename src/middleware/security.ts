@@ -1,4 +1,4 @@
-import type { Context, Next } from "hono";
+import type {Context, Next} from "hono";
 
 // ─── Bot Guard ───────────────────────────────────────────────────
 // Blocks known scanner/bot paths silently (no logging to keep logs clean)
@@ -130,7 +130,7 @@ export const rateLimiter = async (c: Context, next: Next) => {
   let entry = rateLimitStore.get(ip);
 
   if (!entry || now > entry.resetTime) {
-    entry = { count: 1, resetTime: now + WINDOW_MS };
+    entry = {count: 1, resetTime: now + WINDOW_MS};
     rateLimitStore.set(ip, entry);
   } else {
     entry.count++;

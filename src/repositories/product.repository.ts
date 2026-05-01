@@ -1,8 +1,8 @@
-import { Collection, ObjectId } from "mongodb";
-import { getGlobalVendorDatabase } from "@/config/database";
-import type { Product } from "@/types/vendor/product/product";
-import type { Vendor } from "@/types/vendor/vendor";
-import { logger } from "@/utils/logger";
+import {Collection, ObjectId} from "mongodb";
+import {getGlobalVendorDatabase} from "@/config/database";
+import type {Product} from "@/types/vendor/product/product";
+import type {Vendor} from "@/types/vendor/vendor";
+import {logger} from "@/utils/logger";
 
 export class ProductRepository {
   private getCollection(): Collection<Product> {
@@ -18,8 +18,8 @@ export class ProductRepository {
         vendorId: new ObjectId(vendorId),
       };
       const result = await collection.insertOne(productToInsert as any);
-      logger.info("Product created", { productId: result.insertedId, vendorId });
-      return { ...productToInsert, _id: result.insertedId };
+      logger.info("Product created", {productId: result.insertedId, vendorId});
+      return {...productToInsert, _id: result.insertedId};
     } catch (error) {
       logger.error("Failed to create product", error);
       throw error;
@@ -29,7 +29,7 @@ export class ProductRepository {
   async findById(id: string): Promise<Product | null> {
     try {
       const collection = this.getCollection();
-      return await collection.findOne({ _id: new ObjectId(id) });
+      return await collection.findOne({_id: new ObjectId(id)});
     } catch (error) {
       logger.error("Failed to find product by ID", error);
       throw error;
@@ -45,8 +45,8 @@ export class ProductRepository {
       const collection = this.getCollection();
       const objectIds = vendorIds.map(id => new ObjectId(id));
       return await collection
-        .find({ vendorId: { $in: objectIds } })
-        .sort({ name: 1 })
+        .find({vendorId: {$in: objectIds}})
+        .sort({name: 1})
         .toArray();
     } catch (error) {
       logger.error("Failed to fetch products by vendor IDs", error);
@@ -58,8 +58,8 @@ export class ProductRepository {
     try {
       const collection = this.getCollection();
       return await collection
-        .find({ vendorId: new ObjectId(vendorId) })
-        .sort({ name: 1 })
+        .find({vendorId: new ObjectId(vendorId)})
+        .sort({name: 1})
         .toArray();
     } catch (error) {
       logger.error("Failed to fetch products by vendor ID", error);
@@ -72,7 +72,7 @@ export class ProductRepository {
       const collection = this.getCollection();
       return await collection
         .find({})
-        .sort({ name: 1 })
+        .sort({name: 1})
         .toArray();
     } catch (error) {
       logger.error("Failed to fetch all products", error);
@@ -92,7 +92,7 @@ export class ProductRepository {
       const result = await db
         .collection("products")
         .aggregate<Product & { vendor?: Vendor }>([
-          { $match: { vendorId: { $in: vendorIds } } },
+          {$match: {vendorId: {$in: vendorIds}}},
           {
             $lookup: {
               from: "vendors",
@@ -103,11 +103,11 @@ export class ProductRepository {
           },
           {
             $addFields: {
-              vendor: { $arrayElemAt: ["$vendorArr", 0] },
+              vendor: {$arrayElemAt: ["$vendorArr", 0]},
             },
           },
-          { $unset: "vendorArr" },
-          { $sort: { name: 1 } },
+          {$unset: "vendorArr"},
+          {$sort: {name: 1}},
         ])
         .toArray();
       return result;
@@ -126,7 +126,7 @@ export class ProductRepository {
       const result = await db
         .collection("products")
         .aggregate<Product & { vendor?: Vendor }>([
-          { $match: { _id: new ObjectId(id) } },
+          {$match: {_id: new ObjectId(id)}},
           {
             $lookup: {
               from: "vendors",
@@ -137,10 +137,10 @@ export class ProductRepository {
           },
           {
             $addFields: {
-              vendor: { $arrayElemAt: ["$vendorArr", 0] },
+              vendor: {$arrayElemAt: ["$vendorArr", 0]},
             },
           },
-          { $unset: "vendorArr" },
+          {$unset: "vendorArr"},
         ])
         .toArray();
       return result[0] ?? null;
@@ -159,7 +159,7 @@ export class ProductRepository {
       const result = await db
         .collection("products")
         .aggregate<Product & { vendor?: Vendor }>([
-          { $match: { vendorId: new ObjectId(vendorId) } },
+          {$match: {vendorId: new ObjectId(vendorId)}},
           {
             $lookup: {
               from: "vendors",
@@ -170,11 +170,11 @@ export class ProductRepository {
           },
           {
             $addFields: {
-              vendor: { $arrayElemAt: ["$vendorArr", 0] },
+              vendor: {$arrayElemAt: ["$vendorArr", 0]},
             },
           },
-          { $unset: "vendorArr" },
-          { $sort: { name: 1 } },
+          {$unset: "vendorArr"},
+          {$sort: {name: 1}},
         ])
         .toArray();
       return result;
@@ -188,9 +188,9 @@ export class ProductRepository {
     try {
       const collection = this.getCollection();
       return await collection.findOneAndUpdate(
-        { _id: new ObjectId(id) },
-        { $set: updates },
-        { returnDocument: "after" }
+        {_id: new ObjectId(id)},
+        {$set: updates},
+        {returnDocument: "after"}
       );
     } catch (error) {
       logger.error("Failed to update product", error);
@@ -204,14 +204,14 @@ export class ProductRepository {
   ): Promise<number> {
     try {
       const collection = this.getCollection();
-      const bulkOps = updates.map(({ productId, data }) => ({
+      const bulkOps = updates.map(({productId, data}) => ({
         updateOne: {
-          filter: { _id: new ObjectId(productId), vendorId: new ObjectId(vendorId) },
-          update: { $set: data },
+          filter: {_id: new ObjectId(productId), vendorId: new ObjectId(vendorId)},
+          update: {$set: data},
         },
       }));
       const result = await collection.bulkWrite(bulkOps);
-      logger.info("Products bulk updated", { count: result.modifiedCount, vendorId });
+      logger.info("Products bulk updated", {count: result.modifiedCount, vendorId});
       return result.modifiedCount;
     } catch (error) {
       logger.error("Failed to bulk update products", error);
@@ -222,11 +222,11 @@ export class ProductRepository {
   async delete(id: string): Promise<boolean> {
     try {
       const collection = this.getCollection();
-      const result = await collection.deleteOne({ _id: new ObjectId(id) });
+      const result = await collection.deleteOne({_id: new ObjectId(id)});
       const deleted = result.deletedCount > 0;
 
       if (deleted) {
-        logger.info("Product deleted", { productId: id });
+        logger.info("Product deleted", {productId: id});
       }
 
       return deleted;
@@ -239,8 +239,8 @@ export class ProductRepository {
   async deleteByVendorId(vendorId: string): Promise<number> {
     try {
       const collection = this.getCollection();
-      const result = await collection.deleteMany({ vendorId: new ObjectId(vendorId) });
-      logger.info("Products deleted for vendor", { vendorId, count: result.deletedCount });
+      const result = await collection.deleteMany({vendorId: new ObjectId(vendorId)});
+      logger.info("Products deleted for vendor", {vendorId, count: result.deletedCount});
       return result.deletedCount;
     } catch (error) {
       logger.error("Failed to delete products by vendor ID", error);
@@ -256,8 +256,8 @@ export class ProductRepository {
         vendorId: new ObjectId(vendorId),
       }));
       const result = await collection.insertMany(productsToInsert as any);
-      logger.info("Products bulk created", { count: result.insertedCount, vendorId });
-      return productsToInsert.map((p, i) => ({ ...p, _id: result.insertedIds[i] }));
+      logger.info("Products bulk created", {count: result.insertedCount, vendorId});
+      return productsToInsert.map((p, i) => ({...p, _id: result.insertedIds[i]}));
     } catch (error) {
       logger.error("Failed to bulk create products", error);
       throw error;
@@ -269,10 +269,10 @@ export class ProductRepository {
       const collection = this.getCollection();
       const objectIds = productIds.map((id) => new ObjectId(id));
       const result = await collection.deleteMany({
-        _id: { $in: objectIds },
+        _id: {$in: objectIds},
         vendorId: new ObjectId(vendorId),
       });
-      logger.info("Products bulk deleted", { count: result.deletedCount, vendorId });
+      logger.info("Products bulk deleted", {count: result.deletedCount, vendorId});
       return result.deletedCount;
     } catch (error) {
       logger.error("Failed to bulk delete products", error);
@@ -283,7 +283,7 @@ export class ProductRepository {
   async exists(id: string): Promise<boolean> {
     try {
       const collection = this.getCollection();
-      const count = await collection.countDocuments({ _id: new ObjectId(id) });
+      const count = await collection.countDocuments({_id: new ObjectId(id)});
       return count > 0;
     } catch (error) {
       logger.error("Failed to check product existence", error);

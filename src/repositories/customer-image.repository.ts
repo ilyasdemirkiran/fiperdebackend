@@ -1,8 +1,8 @@
-import { Collection, ObjectId, ClientSession, GridFSBucket } from "mongodb";
-import { getDatabaseForCompany, getClient, getGridFSBucket } from "@/config/database";
-import type { CustomerImage, CustomerImageMetadata } from "@/types/customer/image/customer_image";
-import { logger } from "@/utils/logger";
-import { Readable } from "stream";
+import {ClientSession, Collection, GridFSBucket, ObjectId} from "mongodb";
+import {getClient, getDatabaseForCompany, getGridFSBucket} from "@/config/database";
+import type {CustomerImage, CustomerImageMetadata} from "@/types/customer/image/customer_image";
+import {logger} from "@/utils/logger";
+import {Readable} from "stream";
 
 export class CustomerImageRepository {
   private getCollection(companyId: string): Collection<CustomerImage> {
@@ -32,7 +32,7 @@ export class CustomerImageRepository {
 
     return new Promise((resolve, reject) => {
       const readableStream = Readable.from(data);
-      const uploadStream = bucket.openUploadStream(filename, { metadata });
+      const uploadStream = bucket.openUploadStream(filename, {metadata});
 
       readableStream
         .pipe(uploadStream)
@@ -41,7 +41,7 @@ export class CustomerImageRepository {
           reject(error);
         })
         .on("finish", () => {
-          logger.info("GridFS upload completed", { fileId: uploadStream.id, filename });
+          logger.info("GridFS upload completed", {fileId: uploadStream.id, filename});
           resolve(uploadStream.id);
         });
     });
@@ -83,7 +83,7 @@ export class CustomerImageRepository {
   async deleteFromGridFS(companyId: string, fileId: ObjectId): Promise<void> {
     const bucket = this.getBucket(companyId);
     await bucket.delete(fileId);
-    logger.info("GridFS file deleted", { fileId });
+    logger.info("GridFS file deleted", {fileId});
   }
 
   /**
@@ -133,14 +133,14 @@ export class CustomerImageRepository {
         };
 
         // Insert image metadata
-        await imagesCollection.insertOne(image as any, { session });
+        await imagesCollection.insertOne(image as any, {session});
 
         // Increment customer imageCount
         if (customerId) {
           await customersCollection.updateOne(
-            { _id: customerId } as any,
-            { $inc: { imageCount: 1 } },
-            { session }
+            {_id: customerId} as any,
+            {$inc: {imageCount: 1}},
+            {session}
           );
         }
       });
@@ -229,14 +229,14 @@ export class CustomerImageRepository {
         const customersCollection = this.getCustomersCollection(companyId);
 
         // Insert all images
-        await imagesCollection.insertMany(images as any[], { session });
+        await imagesCollection.insertMany(images as any[], {session});
 
         // Increment customer imageCount by number of images
         if (customerId) {
           await customersCollection.updateOne(
-            { _id: customerId } as any,
-            { $inc: { imageCount: images.length } },
-            { session }
+            {_id: customerId} as any,
+            {$inc: {imageCount: images.length}},
+            {session}
           );
         }
       });
@@ -248,7 +248,7 @@ export class CustomerImageRepository {
       });
 
       // Return metadata without fileId
-      return images.map(({ fileId, ...metadata }) => metadata as CustomerImageMetadata);
+      return images.map(({fileId, ...metadata}) => metadata as CustomerImageMetadata);
     } catch (error) {
       // Cleanup GridFS files if transaction failed
       for (const fileId of uploadedFileIds) {
@@ -268,7 +268,7 @@ export class CustomerImageRepository {
   async findById(companyId: string, id: string): Promise<CustomerImage | null> {
     try {
       const collection = this.getCollection(companyId);
-      return await collection.findOne({ _id: ObjectId.createFromHexString(id) } as any);
+      return await collection.findOne({_id: ObjectId.createFromHexString(id)} as any);
     } catch (error) {
       logger.error("Failed to find image by ID", error);
       throw error;
@@ -279,8 +279,8 @@ export class CustomerImageRepository {
     try {
       const collection = this.getCollection(companyId);
       return await collection.findOne(
-        { _id: ObjectId.createFromHexString(id) } as any,
-        { projection: { fileId: 0 } }
+        {_id: ObjectId.createFromHexString(id)} as any,
+        {projection: {fileId: 0}}
       ) as CustomerImageMetadata | null;
     } catch (error) {
       logger.error("Failed to find image metadata by ID", error);
@@ -292,8 +292,8 @@ export class CustomerImageRepository {
     try {
       const collection = this.getCollection(companyId);
       return await collection
-        .find({}, { projection: { fileId: 0 } })
-        .sort({ uploadedAt: -1 })
+        .find({}, {projection: {fileId: 0}})
+        .sort({uploadedAt: -1})
         .toArray() as CustomerImageMetadata[];
     } catch (error) {
       logger.error("Failed to fetch all images", error);
@@ -305,8 +305,8 @@ export class CustomerImageRepository {
     try {
       const collection = this.getCollection(companyId);
       return await collection
-        .find({ customerId } as any, { projection: { fileId: 0 } })
-        .sort({ uploadedAt: -1 })
+        .find({customerId} as any, {projection: {fileId: 0}})
+        .sort({uploadedAt: -1})
         .toArray() as CustomerImageMetadata[];
     } catch (error) {
       logger.error("Failed to fetch images by customerId", error);
@@ -319,10 +319,10 @@ export class CustomerImageRepository {
       const collection = this.getCollection(companyId);
       return await collection
         .find(
-          { labels: { $in: labelIds } } as any,
-          { projection: { fileId: 0 } }
+          {labels: {$in: labelIds}} as any,
+          {projection: {fileId: 0}}
         )
-        .sort({ uploadedAt: -1 })
+        .sort({uploadedAt: -1})
         .toArray() as CustomerImageMetadata[];
     } catch (error) {
       logger.error("Failed to fetch images by label IDs", error);
@@ -338,9 +338,9 @@ export class CustomerImageRepository {
     try {
       const collection = this.getCollection(companyId);
       const result = await collection.findOneAndUpdate(
-        { _id: ObjectId.createFromHexString(id) } as any,
-        { $set: updates },
-        { returnDocument: "after", projection: { fileId: 0 } }
+        {_id: ObjectId.createFromHexString(id)} as any,
+        {$set: updates},
+        {returnDocument: "after", projection: {fileId: 0}}
       );
       return result as CustomerImageMetadata | null;
     } catch (error) {
@@ -375,8 +375,8 @@ export class CustomerImageRepository {
 
         // Delete the image metadata
         const deleteResult = await imagesCollection.deleteOne(
-          { _id: ObjectId.createFromHexString(imageId) } as any,
-          { session }
+          {_id: ObjectId.createFromHexString(imageId)} as any,
+          {session}
         );
 
         if (deleteResult.deletedCount === 0) {
@@ -386,9 +386,9 @@ export class CustomerImageRepository {
         // Decrement customer imageCount
         if (customerId) {
           await customersCollection.updateOne(
-            { _id: customerId } as any,
-            { $inc: { imageCount: -1 } },
-            { session }
+            {_id: customerId} as any,
+            {$inc: {imageCount: -1}},
+            {session}
           );
         }
 
@@ -400,7 +400,7 @@ export class CustomerImageRepository {
         await this.deleteFromGridFS(companyId, image.fileId);
       }
 
-      logger.info("Image deleted with GridFS", { imageId, customerId, companyId });
+      logger.info("Image deleted with GridFS", {imageId, customerId, companyId});
       return deleted;
     } catch (error) {
       logger.error("Failed to delete image with GridFS", error);
@@ -413,7 +413,7 @@ export class CustomerImageRepository {
   async exists(companyId: string, id: string): Promise<boolean> {
     try {
       const collection = this.getCollection(companyId);
-      const count = await collection.countDocuments({ _id: ObjectId.createFromHexString(id) } as any);
+      const count = await collection.countDocuments({_id: ObjectId.createFromHexString(id)} as any);
       return count > 0;
     } catch (error) {
       logger.error("Failed to check image existence", error);
@@ -426,10 +426,10 @@ export class CustomerImageRepository {
       const collection = this.getCollection(companyId);
 
       // First get all images to find fileIds
-      const images = await collection.find({ customerId } as any).toArray();
+      const images = await collection.find({customerId} as any).toArray();
 
       // Delete image records
-      const result = await collection.deleteMany({ customerId } as any, { session });
+      const result = await collection.deleteMany({customerId} as any, {session});
 
       // Delete GridFS files (outside transaction)
       for (const image of images) {
