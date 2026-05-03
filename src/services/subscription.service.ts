@@ -22,7 +22,7 @@ export class SubscriptionService {
     if (subscriptionFromDb) {
       throw new AppError(400, "Subscription already exists", "SUBSCRIPTION_EXISTS")
     } else {
-      const plan: SubscriptionPlan = subscription.paytrPaymentAmount > 1800 ? "yearly" : "monthly";
+      const plan: SubscriptionPlan = subscription.paytrPaymentAmount > 200000 ? "yearly" : "monthly";
       const now = new Date();
 
       await this.subscriptionRepo.create({
