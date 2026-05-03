@@ -21,6 +21,8 @@ import {companyRoutes} from "@/routes/company.routes";
 import {vendorPriceRateRoutes} from "@/routes/vendor-price-rate.routes";
 import {publicRoutes} from "@/routes/public.routes";
 import {quoteRoutes} from "@/routes/quote.routes";
+import {payTRPublicRoutes, payTRRoutes} from "@/routes/payTRRoutes";
+import {subscriptionRoutes} from "@/routes/subscription.routes";
 
 const app = new Hono();
 
@@ -87,11 +89,22 @@ app.route("/api/customers", customerImageRoutes);
 app.route("/api/customers", saleRoutes);
 app.route("/api/customers", customerRoutes);
 app.route("/api/labels", labelRoutes);
+
 app.route("/api/vendors", vendorRoutes);
 app.route("/api/vendors", vendorAttachmentRoutes);
+
 app.route("/api/products", productRoutes);
 app.route("/api/vendor-price-rates", vendorPriceRateRoutes);
+
 app.route("/api/quotes", quoteRoutes);
+
+// In order to get token you need to be logged in
+app.route("/api/payTR", payTRRoutes);
+
+// This contains only the endpoints required by payTR callback, so it can be accessed without authentication
+app.route("/api/payTRPublic", payTRPublicRoutes);
+
+app.route("/api/subscription", subscriptionRoutes);
 
 // Initialize services
 async function initialize() {

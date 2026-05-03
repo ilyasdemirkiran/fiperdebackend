@@ -10,6 +10,12 @@ const envSchema = z.object({
   FIREBASE_SERVICE_ACCOUNT_PATH: z.string(),
   DB_NAME: z.string().default("fiperde"),
   DB_TEST_NAME: z.string().default("fiperde-test"),
+  PAYTR_MERCHANT_ID: z.string().min(1),
+  PAYTR_MERCHANT_KEY: z.string().min(1),
+  PAYTR_MERCHANT_SALT: z.string().min(1),
+  BASE_URL: z.string().url(),
+  MERCHANT_OK_URL: z.string().url(),
+  MERCHANT_FAIL_URL: z.string().url(),
 });
 
 function loadEnv() {

@@ -20,7 +20,6 @@ companyRoutes.post("/", async (c) => {
   const body = await c.req.json();
   const {name} = createCompanySchema.parse(body);
 
-  // _id is string here
   const company = await companyService.createCompany(user._id!, name);
 
   return c.json(successResponse(company), 201);

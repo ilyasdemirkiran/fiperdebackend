@@ -138,7 +138,6 @@ export class CompanyService {
     if (!user) {
       throw new AppError(404, "User not found");
     }
-    console.log(user.companyId, companyId)
     if (user.companyId !== companyId) {
       throw new AppError(403, "Not authorized");
     }
@@ -174,10 +173,7 @@ export class CompanyService {
       throw new AppError(404, "User not found");
     }
 
-    console.log(user.companyId);
-    const company = await this.companyRepo.findById(user.companyId ?? '');
-
-    return company;
+    return await this.companyRepo.findById(user.companyId ?? '');
   }
 
   async getCompanyUsers(userId: string, companyId: string): Promise<FIUser[]> {
