@@ -14,18 +14,26 @@ import {
   updateQuoteItemSchema,
   updateRoomNameSchema
 } from "@/types/quotes/quote";
-import {XMLParser} from "fast-xml-parser";
-import {type Currency, currencySchema} from "@/types/currency";
+import {CurrencyService} from "@/services/currency.service";
 
 export const quoteRoutes = new Hono<Env>();
 
 let service: QuoteService | null = null;
+let currencyService: CurrencyService | null = null;
 
 function getService(): QuoteService {
   if (!service) {
     service = new QuoteService();
   }
   return service;
+}
+
+function getCurrencyService() {
+  if (!currencyService) {
+    currencyService = new CurrencyService();
+  }
+
+  return currencyService;
 }
 
 // Apply auth middleware
@@ -35,14 +43,16 @@ quoteRoutes.use("*", authMiddleware);
 quoteRoutes.post("/", async (c) => {
   const user = c.get("user");
   const body = await c.req.json();
-  const {currency} = createQuoteSchema.parse(body);
+  const {currency, conversions} = createQuoteSchema.parse(body);
 
   const quote = await getService().createQuote(
     user.companyId!,
     user._id!,
     `${user.name} ${user.surname}`,
-    currency
+    currency,
+    conversions
   );
+
   return c.json(successResponse<Quote>(quote), 201);
 });
 
@@ -188,23 +198,5 @@ quoteRoutes.post("/:id/deny", async (c) => {
 });
 
 quoteRoutes.get("/currency/rates", async (c) => {
-  const response = await fetch("https://www.tcmb.gov.tr/kurlar/today.xml");
-  const xmlText = await response.text();
-
-  const parser = new XMLParser({
-    ignoreAttributes: false,
-    attributeNamePrefix: "@_",
-    parseTagValue: true,
-    trimValues: true
-  });
-
-  const rawData: TCMBXmlResponse = parser.parse(xmlText);
-  rawData.Tarih_Date.Currency = rawData.Tarih_Date.Currency.filter(currency => {
-    const code = currency["@_CurrencyCode"];
-
-    // return currencySchema.options.includes(code as Currency);
-    return true;
-  })
-
-  return c.json(successResponse<TCMBXmlResponse>(rawData));
+  return c.json(successResponse<TCMBXmlResponse>(await getCurrencyService().getCurrencyRates()));
 });

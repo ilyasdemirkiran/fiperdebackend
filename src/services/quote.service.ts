@@ -1,7 +1,7 @@
 import {QuoteRepository} from "@/repositories/quote.repository";
 import {ProductRepository} from "@/repositories/product.repository";
 import {CustomerService} from "@/services/customer.service";
-import {type Quote, type QuoteItem, type QuoteRoom, quoteSchema} from "@/types/quotes/quote";
+import {type Quote, type QuoteConversion, type QuoteItem, type QuoteRoom, quoteSchema} from "@/types/quotes/quote";
 import {AppError} from "@/middleware/error-handler";
 import {ObjectId} from "mongodb";
 import type {Currency} from "@/types/currency";
@@ -17,7 +17,7 @@ export class QuoteService {
     this.customerService = new CustomerService();
   }
 
-  async createQuote(companyId: string, creatorId: string, creatorName: string, currency: Currency): Promise<Quote> {
+  async createQuote(companyId: string, creatorId: string, creatorName: string, currency: Currency, conversions: QuoteConversion): Promise<Quote> {
     const quoteNumber = await this.repository.getNextQuoteNumber(companyId);
 
     const quote: Quote = quoteSchema.parse({
@@ -26,6 +26,7 @@ export class QuoteService {
       creatorId,
       creatorName,
       currency,
+      conversions,
       rooms: [],
       status: "draft",
     });

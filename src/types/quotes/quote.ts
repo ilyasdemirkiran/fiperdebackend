@@ -27,6 +27,13 @@ export const quoteRoomSchema = z.object({
 });
 export type QuoteRoom = z.infer<typeof quoteRoomSchema>;
 
+export const quoteConversionSchema = z.record(currencySchema, z.number()).default({
+  TRY: 1,
+  USD: 1,
+  EUR: 1
+});
+export type QuoteConversion = z.infer<typeof quoteConversionSchema>;
+
 export const quoteSchema = z.object({
   _id: z.custom<ObjectId>().optional(),
   companyId: z.string(),
@@ -36,11 +43,7 @@ export const quoteSchema = z.object({
   creatorId: z.string(),
   creatorName: z.string().optional(),
   currency: currencySchema,
-  conversions: z.record(currencySchema, z.number()).default({
-    EUR: 1.00,
-    USD: 1.00,
-    TRY: 1.00,
-  }),
+  conversions: quoteConversionSchema,
   rooms: z.array(quoteRoomSchema).default([]),
   status: quoteStatusSchema.default("draft"),
   total: z.number().default(0),
@@ -53,6 +56,7 @@ export type Quote = z.infer<typeof quoteSchema>;
 // Input schemas
 export const createQuoteSchema = z.object({
   currency: currencySchema,
+  conversions: quoteConversionSchema
 });
 
 export const updateQuoteCustomerSchema = z.object({
