@@ -8,11 +8,14 @@ import {
   addRoomSchema,
   createQuoteSchema,
   type Quote,
+  type TCMBXmlResponse,
   updateQuoteConversionsSchema,
   updateQuoteCustomerSchema,
   updateQuoteItemSchema,
   updateRoomNameSchema
 } from "@/types/quotes/quote";
+import {XMLParser} from "fast-xml-parser";
+import {type Currency, currencySchema} from "@/types/currency";
 
 export const quoteRoutes = new Hono<Env>();
 
@@ -182,4 +185,26 @@ quoteRoutes.post("/:id/deny", async (c) => {
   const id = c.req.param("id");
   const quote = await getService().denyQuote(user.companyId!, id);
   return c.json(successResponse<Quote>(quote));
+});
+
+quoteRoutes.get("/currency/rates", async (c) => {
+  const response = await fetch("https://www.tcmb.gov.tr/kurlar/today.xml");
+  const xmlText = await response.text();
+
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "@_",
+    parseTagValue: true,
+    trimValues: true
+  });
+
+  const rawData: TCMBXmlResponse = parser.parse(xmlText);
+  rawData.Tarih_Date.Currency = rawData.Tarih_Date.Currency.filter(currency => {
+    const code = currency["@_CurrencyCode"];
+
+    // return currencySchema.options.includes(code as Currency);
+    return true;
+  })
+
+  return c.json(successResponse<TCMBXmlResponse>(rawData));
 });

@@ -21,6 +21,7 @@
     "axios": "^1.16.0",
     "date-fns": "^4.1.0",
     "es-toolkit": "^1.46.1",
+    "fast-xml-parser": "^5.7.2",
     "firebase-admin": "^13.8.0",
     "hono": "^4.12.16",
     "libphonenumber-js": "^1.12.42",

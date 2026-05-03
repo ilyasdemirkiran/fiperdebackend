@@ -98,3 +98,27 @@ export type AddRoomInput = z.infer<typeof addRoomSchema>;
 export type AddItemsToRoomInput = z.infer<typeof addItemsToRoomSchema>;
 export type UpdateQuoteItemInput = z.infer<typeof updateQuoteItemSchema>;
 export type UpdateRoomNameInput = z.infer<typeof updateRoomNameSchema>;
+
+export interface TCMBCurrency {
+  "@_CrossOrder": string | number;
+  "@_Kod": string;
+  "@_CurrencyCode": string;
+  Unit: number;
+  Isim: string;
+  CurrencyName: string;
+  ForexBuying: number;
+  ForexSelling: number;
+  BanknoteBuying?: number | string; // Bazı kurlarda boş gelebiliyor
+  BanknoteSelling?: number | string;
+  CrossRateUSD?: number | string;
+  CrossRateOther?: number | string;
+}
+
+export interface TCMBXmlResponse {
+  Tarih_Date: {
+    "@_Tarih": string;
+    "@_Date": string;
+    "@_Bulten_No": string;
+    Currency: TCMBCurrency[];
+  };
+}
