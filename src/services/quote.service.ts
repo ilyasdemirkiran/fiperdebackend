@@ -162,10 +162,6 @@ export class QuoteService {
     const quote = await this.getQuote(companyId, id);
     this.ensureEditable(quote);
 
-    if (!quote.conversions || Object.keys(quote.conversions).length <= 1 && !quote.conversions[quote.currency]) {
-      // Technically we initialized it with base=1, but let's check if others are needed
-    }
-
     const room = quote.rooms.find(r => r.id === roomId);
     if (!room) {
       throw new AppError(404, "Room not found", "ROOM_NOT_FOUND");

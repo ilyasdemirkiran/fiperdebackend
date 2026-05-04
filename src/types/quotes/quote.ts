@@ -11,7 +11,7 @@ export const quoteItemSchema = z.object({
   id: z.string(), // Local ID within the quote/room
   productId: z.custom<ObjectId>(),
   name: z.string(),
-  quantity: z.number().positive(),
+  quantity: z.number().min(0).default(0),
   unitPrice: z.number(), // Original price in originalCurrency
   originalCurrency: currencySchema,
   convertedUnitPrice: z.number(), // Price in quote base currency (using conversion rate)
@@ -81,7 +81,7 @@ export const addRoomSchema = z.object({
 export const addItemsToRoomSchema = z.object({
   items: z.array(z.object({
     productId: z.string(),
-    quantity: z.number().positive(),
+    quantity: z.number().min(0).default(0),
     customPrice: z.number().optional(), // If provided, overrides catalog price
   })),
 });
