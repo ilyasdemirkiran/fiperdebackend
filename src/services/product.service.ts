@@ -33,9 +33,9 @@ export class ProductService {
    * Build a vendorId → rate map for a company's allowed vendors.
    * Vendors without an explicit rate entry default to 0.
    */
-  private async buildRateMap(vendorIds: string[]): Promise<Map<string, number>> {
+  private async buildRateMap(companyId: string, vendorIds: string[]): Promise<Map<string, number>> {
     const objectIds = vendorIds.map((id) => new ObjectId(id));
-    const rates = await this.priceRateRepository.findByVendorIds(objectIds);
+    const rates = await this.priceRateRepository.findByVendorIds(companyId, objectIds);
     const map = new Map<string, number>();
     for (const r of rates) {
       map.set(r.vendorId.toHexString(), r.rate);
@@ -77,7 +77,7 @@ export class ProductService {
     // Parallel: fetch enriched products + rate map
     const [products, rateMap] = await Promise.all([
       this.repository.findEnrichedByVendorIds(objectIds),
-      this.buildRateMap(allowedVendorIds),
+      this.buildRateMap(companyId, allowedVendorIds),
     ]);
 
     return this.applyRates(products, rateMap);
@@ -126,7 +126,7 @@ export class ProductService {
 
     if (companyId) {
       const vendorHex = product.vendorId?.toHexString?.() ?? product.vendorId?.toString?.() ?? "";
-      const rateMap = await this.buildRateMap([vendorHex]);
+      const rateMap = await this.buildRateMap(companyId, [vendorHex]);
       const enriched = this.applyRates([product], rateMap)[0];
       return enriched!;
     }
@@ -142,7 +142,7 @@ export class ProductService {
     const products = await this.repository.findEnrichedByVendorId(vendorId);
 
     if (companyId && products.length > 0) {
-      const rateMap = await this.buildRateMap([vendorId]);
+      const rateMap = await this.buildRateMap(companyId, [vendorId]);
       return this.applyRates(products, rateMap);
     }
 

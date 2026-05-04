@@ -177,18 +177,18 @@ export class VendorService {
     }
 
     const objectIds = vendorIds.map((id) => new ObjectId(id));
-    return await this.priceRateRepository.findByVendorIds(objectIds);
+    return await this.priceRateRepository.findByVendorIds(companyId, objectIds);
   }
 
   /**
    * Bulk update price rates (admin/sudo only)
    */
-  async updatePriceRates(role: UserRole, rates: VendorPriceRate[]): Promise<void> {
+  async updatePriceRates(companyId:string, role: UserRole, rates: VendorPriceRate[]): Promise<void> {
     if (!isAdmin(role)) {
       throw new AppError(403, "Only admin users can perform this operation", "FORBIDDEN");
     }
 
-    await this.priceRateRepository.bulkUpsert(rates);
+    await this.priceRateRepository.bulkUpsert(companyId, rates);
   }
 
   // ========== DOCUMENT MANAGEMENT ==========

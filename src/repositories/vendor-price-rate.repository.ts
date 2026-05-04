@@ -1,20 +1,20 @@
 import {Collection, ObjectId} from "mongodb";
-import {getGlobalVendorDatabase} from "@/config/database";
+import {getDatabaseForCompany} from "@/config/database";
 import type {VendorPriceRate} from "@/types/vendor/vendor_price_rate";
 import {logger} from "@/utils/logger";
 
 export class VendorPriceRateRepository {
-  private getCollection(): Collection<VendorPriceRate> {
-    const db = getGlobalVendorDatabase();
+  private getCollection(companyId: string): Collection<VendorPriceRate> {
+    const db = getDatabaseForCompany(companyId);
     return db.collection<VendorPriceRate>("vendor_price_rates");
   }
 
   /**
    * Find price rates for multiple vendors
    */
-  async findByVendorIds(vendorIds: ObjectId[]): Promise<VendorPriceRate[]> {
+  async findByVendorIds(companyId: string, vendorIds: ObjectId[]): Promise<VendorPriceRate[]> {
     try {
-      const collection = this.getCollection();
+      const collection = this.getCollection(companyId);
       return await collection
         .find({vendorId: {$in: vendorIds}})
         .toArray();
@@ -27,13 +27,13 @@ export class VendorPriceRateRepository {
   /**
    * Bulk upsert price rates — insert or update by vendorId
    */
-  async bulkUpsert(rates: VendorPriceRate[]): Promise<void> {
+  async bulkUpsert(companyId: string, rates: VendorPriceRate[]): Promise<void> {
     try {
       if (rates.length === 0) {
         return;
       }
 
-      const collection = this.getCollection();
+      const collection = this.getCollection(companyId);
       const operations = rates.map((rate) => ({
         updateOne: {
           filter: {vendorId: new ObjectId(rate.vendorId)},

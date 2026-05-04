@@ -47,7 +47,7 @@ vendorPriceRateRoutes.put("/", async (c) => {
     rate: r.rate,
   }));
 
-  await getService().updatePriceRates(user.role, mappedRates);
+  await getService().updatePriceRates(user.companyId!, user.role, mappedRates);
 
   return c.json(successResponse({message: "Price rates updated successfully"}));
 });
