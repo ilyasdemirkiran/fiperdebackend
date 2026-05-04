@@ -13,6 +13,7 @@ import type {UserRole} from "@/types/user/fi_user";
 import {isAdmin} from "@/types/user/fi_user";
 import {Timestamp} from "firebase-admin/firestore";
 import {Binary, ObjectId} from "mongodb";
+import {isEmpty} from "es-toolkit/compat";
 
 export class VendorService {
   private repository: VendorRepository;
@@ -74,14 +75,13 @@ export class VendorService {
    * List vendors that company has permission to see (for client)
    */
   async listVendorsForCompany(companyId: string): Promise<Vendor[]> {
-    // Get vendor IDs that this company has permission for
-    const vendorIds = await this.permissionRepository.getVendorIdsForCompany(companyId);
+    const allowedVendorIds = await this.permissionRepository.getVendorIdsForCompany(companyId);
 
-    if (vendorIds.length === 0) {
+    if (isEmpty(allowedVendorIds)) {
       return [];
     }
 
-    return await this.repository.findByIds(vendorIds);
+    return await this.repository.findByIds(allowedVendorIds);
   }
 
   async updateVendor(
@@ -183,7 +183,7 @@ export class VendorService {
   /**
    * Bulk update price rates (admin/sudo only)
    */
-  async updatePriceRates(companyId:string, role: UserRole, rates: VendorPriceRate[]): Promise<void> {
+  async updatePriceRates(companyId: string, role: UserRole, rates: VendorPriceRate[]): Promise<void> {
     if (!isAdmin(role)) {
       throw new AppError(403, "Only admin users can perform this operation", "FORBIDDEN");
     }

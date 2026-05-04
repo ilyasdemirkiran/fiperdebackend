@@ -9,6 +9,7 @@ import {logger} from "@/utils/logger";
 import type {UserRole} from "@/types/user/fi_user";
 import {Timestamp} from "firebase-admin/firestore";
 import {ObjectId} from "mongodb";
+import {isEmpty} from "es-toolkit/compat";
 
 export class ProductService {
   private repository: ProductRepository;
@@ -77,6 +78,21 @@ export class ProductService {
     // Parallel: fetch enriched products + rate map
     const [products, rateMap] = await Promise.all([
       this.repository.findEnrichedByVendorIds(objectIds),
+      this.buildRateMap(companyId, allowedVendorIds),
+    ]);
+
+    return this.applyRates(products, rateMap);
+  }
+
+  async listAllProductsForCompany(companyId: string): Promise<Product[]> {
+    const allowedVendorIds = await this.permissionRepository.getVendorIdsForCompany(companyId);
+
+    if (isEmpty(allowedVendorIds)) {
+      return [];
+    }
+
+    const [products, rateMap] = await Promise.all([
+      this.repository.findByVendorIds(allowedVendorIds),
       this.buildRateMap(companyId, allowedVendorIds),
     ]);
 

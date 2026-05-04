@@ -5,6 +5,7 @@ import {successResponse} from "@/utils/response";
 import {authMiddleware} from "@/middleware/auth";
 import {z} from "zod";
 import {currencySchema} from "@/types/currency";
+import {isEmpty} from "es-toolkit/compat";
 
 export const productRoutes = new Hono<Env>();
 
@@ -32,6 +33,17 @@ const createProductSchema = z.object({
 });
 
 const updateProductSchema = createProductSchema.omit({vendorId: true}).partial();
+
+productRoutes.get("/list/all", async (c) => {
+  const user = c.get("user");
+  if (isEmpty(user.companyId)) {
+    return c.json(successResponse([]));
+  }
+
+  const products = await getService().listAllProductsForCompany(user.companyId!);
+
+  return c.json(successResponse(products));
+});
 
 // GET /api/products - List products for user's company (permission-filtered, with vendor & priceWithRate)
 productRoutes.get("/", async (c) => {
