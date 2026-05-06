@@ -1,7 +1,7 @@
 import {QuoteRepository} from "@/repositories/quote.repository";
 import {ProductRepository} from "@/repositories/product.repository";
 import {CustomerService} from "@/services/customer.service";
-import {type Quote, type QuoteConversion, type QuoteItem, type QuoteRoom, quoteSchema} from "@/types/quotes/quote";
+import {type Quote, type QuoteConversion, type QuoteItem, type QuoteRoom, quoteSchema, type AddCustomItemInput} from "@/types/quotes/quote";
 import {AppError} from "@/middleware/error-handler";
 import {ObjectId} from "mongodb";
 import type {Currency} from "@/types/currency";
@@ -188,6 +188,7 @@ export class QuoteService {
         id: new ObjectId().toHexString(),
         productId: product._id!,
         name: product.name,
+        publicName: "",
         quantity: input.quantity,
         unitPrice,
         originalCurrency: product.currency,
@@ -200,6 +201,71 @@ export class QuoteService {
 
     await this.repository.update(companyId, id, {rooms: quote.rooms});
     return await this.recalculateQuoteTotal(companyId, id);
+  }
+
+  async addCustomItemToRoom(
+    companyId: string,
+    id: string,
+    roomId: string,
+    input: AddCustomItemInput
+  ): Promise<Quote> {
+    const quote = await this.getQuote(companyId, id);
+    this.ensureEditable(quote);
+
+    const room = quote.rooms.find(r => r.id === roomId);
+    if (!room) {
+      throw new AppError(404, "Room not found", "ROOM_NOT_FOUND");
+    }
+
+    const conversionRate = quote.conversions[input.currency];
+    if (!conversionRate) {
+      throw new AppError(400, `Conversion rate for ${input.currency} is not defined in this quote.`, "CONVERSION_MISSING");
+    }
+
+    const convertedUnitPrice = input.unitPrice * conversionRate;
+    const totalPrice = input.quantity * convertedUnitPrice;
+
+    const newItem: QuoteItem = {
+      id: new ObjectId().toHexString(),
+      name: input.name,
+      publicName: "",
+      quantity: input.quantity,
+      unitPrice: input.unitPrice,
+      originalCurrency: input.currency,
+      convertedUnitPrice,
+      totalPrice,
+    };
+
+    room.items.push(newItem);
+
+    await this.repository.update(companyId, id, {rooms: quote.rooms});
+    return await this.recalculateQuoteTotal(companyId, id);
+  }
+
+  async updateItemPublicName(
+    companyId: string,
+    id: string,
+    roomId: string,
+    itemId: string,
+    publicName: string
+  ): Promise<Quote> {
+    const quote = await this.getQuote(companyId, id);
+    this.ensureEditable(quote);
+
+    const room = quote.rooms.find(r => r.id === roomId);
+    if (!room) {
+      throw new AppError(404, "Room not found", "ROOM_NOT_FOUND");
+    }
+
+    const item = room.items.find(i => i.id === itemId);
+    if (!item) {
+      throw new AppError(404, "Item not found", "ITEM_NOT_FOUND");
+    }
+
+    item.publicName = publicName;
+
+    const updated = await this.repository.update(companyId, id, {rooms: quote.rooms});
+    return updated!;
   }
 
   async updateItem(

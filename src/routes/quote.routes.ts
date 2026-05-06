@@ -4,11 +4,13 @@ import {QuoteService} from "@/services/quote.service";
 import {successResponse} from "@/utils/response";
 import {authMiddleware} from "@/middleware/auth";
 import {
+  addCustomItemSchema,
   addItemsToRoomSchema,
   addRoomSchema,
   createQuoteSchema,
   type Quote,
   type TCMBXmlResponse,
+  updateItemPublicNameSchema,
   updateQuoteConversionsSchema,
   updateQuoteCustomerSchema,
   updateQuoteItemSchema,
@@ -149,6 +151,18 @@ quoteRoutes.post("/:id/rooms/:roomId/items", async (c) => {
   return c.json(successResponse<Quote>(quote), 201);
 });
 
+// POST /api/quotes/:id/rooms/:roomId/custom-items - Add custom item to room (no productId)
+quoteRoutes.post("/:id/rooms/:roomId/custom-items", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+  const roomId = c.req.param("roomId");
+  const body = await c.req.json();
+  const input = addCustomItemSchema.parse(body);
+
+  const quote = await getService().addCustomItemToRoom(user.companyId!, id, roomId, input);
+  return c.json(successResponse<Quote>(quote), 201);
+});
+
 // PATCH /api/quotes/:id/rooms/:roomId/items/:itemId - Update item
 quoteRoutes.patch("/:id/rooms/:roomId/items/:itemId", async (c) => {
   const user = c.get("user");
@@ -159,6 +173,19 @@ quoteRoutes.patch("/:id/rooms/:roomId/items/:itemId", async (c) => {
   const updates = updateQuoteItemSchema.parse(body);
 
   const quote = await getService().updateItem(user.companyId!, id, roomId, itemId, updates);
+  return c.json(successResponse<Quote>(quote));
+});
+
+// PATCH /api/quotes/:id/rooms/:roomId/items/:itemId/public-name - Update item publicName
+quoteRoutes.patch("/:id/rooms/:roomId/items/:itemId/public-name", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+  const roomId = c.req.param("roomId");
+  const itemId = c.req.param("itemId");
+  const body = await c.req.json();
+  const { publicName } = updateItemPublicNameSchema.parse(body);
+
+  const quote = await getService().updateItemPublicName(user.companyId!, id, roomId, itemId, publicName);
   return c.json(successResponse<Quote>(quote));
 });
 

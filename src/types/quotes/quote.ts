@@ -1,16 +1,17 @@
-import {z} from "zod";
-import {currencySchema} from "@/types/currency";
-import {timestampSchema} from "@/types/timestamp";
-import {ObjectId} from "mongodb";
-import {Timestamp} from "firebase-admin/firestore";
+import { z } from "zod";
+import { currencySchema } from "@/types/currency";
+import { timestampSchema } from "@/types/timestamp";
+import { ObjectId } from "mongodb";
+import { Timestamp } from "firebase-admin/firestore";
 
 export const quoteStatusSchema = z.enum(["draft", "sent_for_approval", "approved", "denied"]);
 export type QuoteStatus = z.infer<typeof quoteStatusSchema>;
 
 export const quoteItemSchema = z.object({
   id: z.string(), // Local ID within the quote/room
-  productId: z.custom<ObjectId>(),
+  productId: z.custom<ObjectId>().optional(),
   name: z.string(),
+  publicName: z.string().default(""),
   quantity: z.number().min(0).default(0),
   unitPrice: z.number(), // Original price in originalCurrency
   originalCurrency: currencySchema,
@@ -95,6 +96,17 @@ export const updateRoomNameSchema = z.object({
   name: z.string().min(1),
 });
 
+export const addCustomItemSchema = z.object({
+  name: z.string().min(1),
+  quantity: z.number().min(0).default(0),
+  unitPrice: z.number(),
+  currency: currencySchema,
+});
+
+export const updateItemPublicNameSchema = z.object({
+  publicName: z.string(),
+});
+
 export type CreateQuoteInput = z.infer<typeof createQuoteSchema>;
 export type UpdateQuoteCustomerInput = z.infer<typeof updateQuoteCustomerSchema>;
 export type UpdateQuoteConversionsInput = z.infer<typeof updateQuoteConversionsSchema>;
@@ -102,6 +114,8 @@ export type AddRoomInput = z.infer<typeof addRoomSchema>;
 export type AddItemsToRoomInput = z.infer<typeof addItemsToRoomSchema>;
 export type UpdateQuoteItemInput = z.infer<typeof updateQuoteItemSchema>;
 export type UpdateRoomNameInput = z.infer<typeof updateRoomNameSchema>;
+export type AddCustomItemInput = z.infer<typeof addCustomItemSchema>;
+export type UpdateItemPublicNameInput = z.infer<typeof updateItemPublicNameSchema>;
 
 export interface TCMBCurrency {
   "@_CrossOrder": string | number;
