@@ -1,20 +1,23 @@
-import {QuoteRepository} from "@/repositories/quote.repository";
-import {ProductRepository} from "@/repositories/product.repository";
-import {CustomerService} from "@/services/customer.service";
-import {type Quote, type QuoteConversion, type QuoteItem, type QuoteRoom, quoteSchema, type AddCustomItemInput} from "@/types/quotes/quote";
-import {AppError} from "@/middleware/error-handler";
-import {ObjectId} from "mongodb";
-import type {Currency} from "@/types/currency";
+import { QuoteRepository } from "@/repositories/quote.repository";
+import { ProductRepository } from "@/repositories/product.repository";
+import { CustomerService } from "@/services/customer.service";
+import { type Quote, type QuoteConversion, type QuoteItem, type QuoteRoom, quoteSchema, type AddCustomItemInput, type QuoteItemLabel } from "@/types/quotes/quote";
+import { AppError } from "@/middleware/error-handler";
+import { ObjectId } from "mongodb";
+import type { Currency } from "@/types/currency";
+import { QuoteItemLabelRepository } from "@/repositories/quote-item-label.repository";
 
 export class QuoteService {
   private repository: QuoteRepository;
   private productRepository: ProductRepository;
   private customerService: CustomerService;
+  private quoteItemLabelRepository: QuoteItemLabelRepository;
 
   constructor() {
     this.repository = new QuoteRepository();
     this.productRepository = new ProductRepository();
     this.customerService = new CustomerService();
+    this.quoteItemLabelRepository = new QuoteItemLabelRepository();
   }
 
   async createQuote(companyId: string, creatorId: string, creatorName: string, currency: Currency, conversions: QuoteConversion): Promise<Quote> {
@@ -83,7 +86,7 @@ export class QuoteService {
     this.ensureEditable(quote);
 
     // If currency changes, we need to reset conversions or keep only the new base as 1
-    const conversions = {[currency]: 1};
+    const conversions = { [currency]: 1 };
 
     const updated = await this.repository.update(companyId, id, {
       currency,
@@ -100,7 +103,7 @@ export class QuoteService {
     // Ensure base currency rate is 1
     conversions[quote.currency] = 1;
 
-    await this.repository.update(companyId, id, {conversions: conversions as any});
+    await this.repository.update(companyId, id, { conversions: conversions as any });
 
     return await this.recalculateQuoteTotal(companyId, id);
   }
@@ -134,7 +137,7 @@ export class QuoteService {
 
     const updatedRooms = quote.rooms.filter(r => r.id !== roomId);
 
-    await this.repository.update(companyId, id, {rooms: updatedRooms});
+    await this.repository.update(companyId, id, { rooms: updatedRooms });
     return await this.recalculateQuoteTotal(companyId, id);
   }
 
@@ -149,7 +152,7 @@ export class QuoteService {
 
     room.name = name;
 
-    const updated = await this.repository.update(companyId, id, {rooms: quote.rooms});
+    const updated = await this.repository.update(companyId, id, { rooms: quote.rooms });
     return updated!;
   }
 
@@ -199,7 +202,7 @@ export class QuoteService {
 
     room.items.push(...newItems);
 
-    await this.repository.update(companyId, id, {rooms: quote.rooms});
+    await this.repository.update(companyId, id, { rooms: quote.rooms });
     return await this.recalculateQuoteTotal(companyId, id);
   }
 
@@ -238,7 +241,7 @@ export class QuoteService {
 
     room.items.push(newItem);
 
-    await this.repository.update(companyId, id, {rooms: quote.rooms});
+    await this.repository.update(companyId, id, { rooms: quote.rooms });
     return await this.recalculateQuoteTotal(companyId, id);
   }
 
@@ -264,7 +267,7 @@ export class QuoteService {
 
     item.publicName = publicName;
 
-    const updated = await this.repository.update(companyId, id, {rooms: quote.rooms});
+    const updated = await this.repository.update(companyId, id, { rooms: quote.rooms });
     return updated!;
   }
 
@@ -300,7 +303,7 @@ export class QuoteService {
     item.convertedUnitPrice = item.unitPrice * conversionRate;
     item.totalPrice = item.quantity * item.convertedUnitPrice;
 
-    await this.repository.update(companyId, id, {rooms: quote.rooms});
+    await this.repository.update(companyId, id, { rooms: quote.rooms });
     return await this.recalculateQuoteTotal(companyId, id);
   }
 
@@ -315,7 +318,7 @@ export class QuoteService {
 
     room.items = room.items.filter(i => i.id !== itemId);
 
-    await this.repository.update(companyId, id, {rooms: quote.rooms});
+    await this.repository.update(companyId, id, { rooms: quote.rooms });
     return await this.recalculateQuoteTotal(companyId, id);
   }
 
@@ -336,7 +339,7 @@ export class QuoteService {
       throw new AppError(400, "Quote total must be greater than 0.", "VALIDATION_ERROR");
     }
 
-    const updated = await this.repository.update(companyId, id, {status: "sent_for_approval"});
+    const updated = await this.repository.update(companyId, id, { status: "sent_for_approval" });
     return updated!;
   }
 
@@ -346,7 +349,7 @@ export class QuoteService {
       throw new AppError(400, "Only quotes sent for approval can be approved.", "INVALID_STATUS");
     }
 
-    const updated = await this.repository.update(companyId, id, {status: "approved"});
+    const updated = await this.repository.update(companyId, id, { status: "approved" });
     return updated!;
   }
 
@@ -356,13 +359,13 @@ export class QuoteService {
       throw new AppError(400, "Only quotes sent for approval can be denied.", "INVALID_STATUS");
     }
 
-    const updated = await this.repository.update(companyId, id, {status: "denied"});
+    const updated = await this.repository.update(companyId, id, { status: "denied" });
     return updated!;
   }
 
   async listQuotes(companyId: string, userId: string, role: string): Promise<Quote[]> {
     const isAdmin = role === "admin" || role === "sudo";
-    return await this.repository.findAll(companyId, isAdmin ? {} : {creatorId: userId});
+    return await this.repository.findAll(companyId, isAdmin ? {} : { creatorId: userId });
   }
 
   private async recalculateQuoteTotal(companyId: string, id: string): Promise<Quote> {
@@ -398,5 +401,29 @@ export class QuoteService {
     if (quote.status === "approved" || quote.status === "denied") {
       throw new AppError(400, "Approved or Denied quotes cannot be edited.", "READ_ONLY_ERROR");
     }
+  }
+
+  // Quote Item Label Methods
+  async addQuoteItemLabel(companyId: string, name: string): Promise<QuoteItemLabel> {
+    const quoteItemLabel = {
+      id: new ObjectId().toHexString(),
+      name,
+    };
+
+    await this.quoteItemLabelRepository.create(companyId, quoteItemLabel);
+    return quoteItemLabel;
+  }
+
+  async listQuoteItemLabels(companyId: string): Promise<QuoteItemLabel[]> {
+    return await this.quoteItemLabelRepository.findAll(companyId);
+  }
+
+  async updateQuoteItemLabel(companyId: string, id: string, name: string): Promise<QuoteItemLabel> {
+    const quoteItemLabel = await this.quoteItemLabelRepository.update(companyId, { id, name });
+    return quoteItemLabel!;
+  }
+
+  async deleteQuoteItemLabel(companyId: string, id: string): Promise<void> {
+    await this.quoteItemLabelRepository.delete(companyId, id);
   }
 }

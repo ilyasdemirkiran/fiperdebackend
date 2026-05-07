@@ -1,14 +1,15 @@
-import {Hono} from "hono";
-import type {Env} from "@/types/hono";
-import {QuoteService} from "@/services/quote.service";
-import {successResponse} from "@/utils/response";
-import {authMiddleware} from "@/middleware/auth";
+import { Hono } from "hono";
+import type { Env } from "@/types/hono";
+import { QuoteService } from "@/services/quote.service";
+import { successResponse } from "@/utils/response";
+import { authMiddleware } from "@/middleware/auth";
 import {
   addCustomItemSchema,
   addItemsToRoomSchema,
   addRoomSchema,
   createQuoteSchema,
   type Quote,
+  type QuoteItemLabel,
   type TCMBXmlResponse,
   updateItemPublicNameSchema,
   updateQuoteConversionsSchema,
@@ -16,7 +17,8 @@ import {
   updateQuoteItemSchema,
   updateRoomNameSchema
 } from "@/types/quotes/quote";
-import {CurrencyService} from "@/services/currency.service";
+import { CurrencyService } from "@/services/currency.service";
+import z from "zod";
 
 export const quoteRoutes = new Hono<Env>();
 
@@ -41,11 +43,13 @@ function getCurrencyService() {
 // Apply auth middleware
 quoteRoutes.use("*", authMiddleware);
 
+// ─── Static routes (MUST come before /:id) ──────────────────────────────────
+
 // POST /api/quotes - Create draft
 quoteRoutes.post("/", async (c) => {
   const user = c.get("user");
   const body = await c.req.json();
-  const {currency, conversions} = createQuoteSchema.parse(body);
+  const { currency, conversions } = createQuoteSchema.parse(body);
 
   const quote = await getService().createQuote(
     user.companyId!,
@@ -64,6 +68,60 @@ quoteRoutes.get("/", async (c) => {
   const quotes = await getService().listQuotes(user.companyId!, user._id!, user.role);
   return c.json(successResponse<Quote[]>(quotes));
 });
+
+// GET /api/quotes/currency/rates
+quoteRoutes.get("/currency/rates", async (c) => {
+  return c.json(successResponse<TCMBXmlResponse>(await getCurrencyService().getCurrencyRates()));
+});
+
+// ─── Labels (static path, must come before /:id) ────────────────────────────
+
+const createQuoteItemLabelSchema = z.object({
+  name: z.string().min(1, "Label name cannot be empty"),
+});
+
+const updateQuoteItemLabelSchema = z.object({
+  name: z.string().min(1, "Label name cannot be empty"),
+});
+
+// POST /api/quotes/labels - Create quote item label
+quoteRoutes.post("/labels", async (c) => {
+  const user = c.get("user");
+  const body = await c.req.json();
+  const { name } = createQuoteItemLabelSchema.parse(body);
+
+  const label = await getService().addQuoteItemLabel(user.companyId!, name);
+  return c.json(successResponse<QuoteItemLabel>(label), 201);
+});
+
+// GET /api/quotes/labels - List quote item labels
+quoteRoutes.get("/labels", async (c) => {
+  const user = c.get("user");
+  const labels = await getService().listQuoteItemLabels(user.companyId!);
+  return c.json(successResponse<QuoteItemLabel[]>(labels));
+});
+
+// PATCH /api/quotes/labels/:id - Update quote item label
+quoteRoutes.patch("/labels/:id", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+  const body = await c.req.json();
+  const { name } = updateQuoteItemLabelSchema.parse(body);
+
+  const label = await getService().updateQuoteItemLabel(user.companyId!, id, name);
+  return c.json(successResponse<QuoteItemLabel>(label));
+});
+
+// DELETE /api/quotes/labels/:id - Delete quote item label
+quoteRoutes.delete("/labels/:id", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+
+  await getService().deleteQuoteItemLabel(user.companyId!, id);
+  return c.json(successResponse<boolean>(true));
+});
+
+// ─── Parametric routes (/:id and below) ─────────────────────────────────────
 
 // GET /api/quotes/:id - Get details
 quoteRoutes.get("/:id", async (c) => {
@@ -89,7 +147,7 @@ quoteRoutes.patch("/:id/currency", async (c) => {
   const user = c.get("user");
   const id = c.req.param("id");
   const body = await c.req.json();
-  const {currency} = createQuoteSchema.parse(body);
+  const { currency } = createQuoteSchema.parse(body);
 
   const quote = await getService().updateQuoteCurrency(user.companyId!, id, currency);
   return c.json(successResponse<Quote>(quote));
@@ -111,7 +169,7 @@ quoteRoutes.post("/:id/rooms", async (c) => {
   const user = c.get("user");
   const id = c.req.param("id");
   const body = await c.req.json();
-  const {name} = addRoomSchema.parse(body);
+  const { name } = addRoomSchema.parse(body);
 
   const quote = await getService().addRoom(user.companyId!, id, name);
   return c.json(successResponse<Quote>(quote), 201);
@@ -123,7 +181,7 @@ quoteRoutes.patch("/:id/rooms/:roomId", async (c) => {
   const id = c.req.param("id");
   const roomId = c.req.param("roomId");
   const body = await c.req.json();
-  const {name} = updateRoomNameSchema.parse(body);
+  const { name } = updateRoomNameSchema.parse(body);
 
   const quote = await getService().updateRoomName(user.companyId!, id, roomId, name);
   return c.json(successResponse<Quote>(quote));
@@ -145,7 +203,7 @@ quoteRoutes.post("/:id/rooms/:roomId/items", async (c) => {
   const id = c.req.param("id");
   const roomId = c.req.param("roomId");
   const body = await c.req.json();
-  const {items} = addItemsToRoomSchema.parse(body);
+  const { items } = addItemsToRoomSchema.parse(body);
 
   const quote = await getService().addItemsToRoom(user.companyId!, id, roomId, items);
   return c.json(successResponse<Quote>(quote), 201);
@@ -222,8 +280,4 @@ quoteRoutes.post("/:id/deny", async (c) => {
   const id = c.req.param("id");
   const quote = await getService().denyQuote(user.companyId!, id);
   return c.json(successResponse<Quote>(quote));
-});
-
-quoteRoutes.get("/currency/rates", async (c) => {
-  return c.json(successResponse<TCMBXmlResponse>(await getCurrencyService().getCurrencyRates()));
 });

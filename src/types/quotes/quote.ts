@@ -20,6 +20,12 @@ export const quoteItemSchema = z.object({
 });
 export type QuoteItem = z.infer<typeof quoteItemSchema>;
 
+export const quoteItemLabelSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+export type QuoteItemLabel = z.infer<typeof quoteItemLabelSchema>;
+
 export const quoteRoomSchema = z.object({
   id: z.string(), // Unique ID within the quote
   name: z.string(),
