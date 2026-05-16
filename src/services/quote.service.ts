@@ -6,6 +6,7 @@ import { AppError } from "@/middleware/error-handler";
 import { ObjectId } from "mongodb";
 import type { Currency } from "@/types/currency";
 import { QuoteItemLabelRepository } from "@/repositories/quote-item-label.repository";
+import { getClient } from "@/config/database";
 
 export class QuoteService {
   private repository: QuoteRepository;
@@ -389,9 +390,13 @@ export class QuoteService {
       grandTotal += roomTotal;
     }
 
+    const discountPercent = quote.discountPercent || 0;
+    const totalAfterDiscount = grandTotal * (1 - discountPercent / 100);
+
     const updated = await this.repository.update(companyId, id, {
       rooms: quote.rooms,
       total: grandTotal,
+      totalAfterDiscount,
     });
 
     return updated!;
@@ -400,6 +405,41 @@ export class QuoteService {
   private ensureEditable(quote: Quote) {
     if (quote.status === "approved" || quote.status === "denied") {
       throw new AppError(400, "Approved or Denied quotes cannot be edited.", "READ_ONLY_ERROR");
+    }
+  }
+
+  async updateDiscountPercent(companyId: string, id: string, discountPercent: number): Promise<Quote> {
+    const mongoClient = getClient();
+    const session = mongoClient.startSession();
+
+    try {
+      let result: Quote | null = null;
+
+      await session.withTransaction(async () => {
+        const quote = await this.repository.findById(companyId, id);
+        if (!quote) {
+          throw new AppError(404, "Quote not found", "QUOTE_NOT_FOUND");
+        }
+
+        this.ensureEditable(quote);
+
+        if (quote.total === 0) {
+          throw new AppError(400, "Cannot apply discount to a quote with zero total.", "ZERO_TOTAL");
+        }
+
+        const totalAfterDiscount = quote.total * (1 - discountPercent / 100);
+
+        result = await this.repository.update(
+          companyId,
+          id,
+          { discountPercent, totalAfterDiscount },
+          session
+        );
+      });
+
+      return result!;
+    } finally {
+      await session.endSession();
     }
   }
 

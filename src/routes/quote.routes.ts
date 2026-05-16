@@ -11,6 +11,7 @@ import {
   type Quote,
   type QuoteItemLabel,
   type TCMBXmlResponse,
+  updateDiscountPercentSchema,
   updateItemPublicNameSchema,
   updateQuoteConversionsSchema,
   updateQuoteCustomerSchema,
@@ -161,6 +162,17 @@ quoteRoutes.patch("/:id/conversions", async (c) => {
   const conversions = updateQuoteConversionsSchema.parse(body);
 
   const quote = await getService().updateQuoteConversions(user.companyId!, id, conversions);
+  return c.json(successResponse<Quote>(quote));
+});
+
+// PATCH /api/quotes/:id/discount - Update discount percent
+quoteRoutes.patch("/:id/discount", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+  const body = await c.req.json();
+  const { discountPercent } = updateDiscountPercentSchema.parse(body);
+
+  const quote = await getService().updateDiscountPercent(user.companyId!, id, discountPercent);
   return c.json(successResponse<Quote>(quote));
 });
 

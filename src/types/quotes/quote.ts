@@ -54,6 +54,8 @@ export const quoteSchema = z.object({
   rooms: z.array(quoteRoomSchema).default([]),
   status: quoteStatusSchema.default("draft"),
   total: z.number().default(0),
+  discountPercent: z.number().min(0).max(100).default(0),
+  totalAfterDiscount: z.number().default(0),
   createdAt: timestampSchema.default(Timestamp.now()),
   updatedAt: timestampSchema.optional(),
 });
@@ -113,6 +115,10 @@ export const updateItemPublicNameSchema = z.object({
   publicName: z.string(),
 });
 
+export const updateDiscountPercentSchema = z.object({
+  discountPercent: z.number().min(0).max(100),
+});
+
 export type CreateQuoteInput = z.infer<typeof createQuoteSchema>;
 export type UpdateQuoteCustomerInput = z.infer<typeof updateQuoteCustomerSchema>;
 export type UpdateQuoteConversionsInput = z.infer<typeof updateQuoteConversionsSchema>;
@@ -122,6 +128,7 @@ export type UpdateQuoteItemInput = z.infer<typeof updateQuoteItemSchema>;
 export type UpdateRoomNameInput = z.infer<typeof updateRoomNameSchema>;
 export type AddCustomItemInput = z.infer<typeof addCustomItemSchema>;
 export type UpdateItemPublicNameInput = z.infer<typeof updateItemPublicNameSchema>;
+export type UpdateDiscountPercentInput = z.infer<typeof updateDiscountPercentSchema>;
 
 export interface TCMBCurrency {
   "@_CrossOrder": string | number;
