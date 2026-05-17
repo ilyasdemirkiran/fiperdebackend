@@ -23,6 +23,7 @@ import {publicRoutes} from "@/routes/public.routes";
 import {quoteRoutes} from "@/routes/quote.routes";
 import {payTRPublicRoutes, payTRRoutes} from "@/routes/payTRRoutes";
 import {subscriptionRoutes} from "@/routes/subscription.routes";
+import {updateRoutes} from "@/routes/update.routes";
 
 const app = new Hono();
 
@@ -78,6 +79,8 @@ app.get("/api", (c) => {
     })
   );
 });
+
+app.route("/api/update", updateRoutes);
 
 // Mount routes
 app.route("/api/public", publicRoutes);

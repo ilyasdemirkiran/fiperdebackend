@@ -16,6 +16,7 @@ const envSchema = z.object({
   BASE_URL: z.string().url(),
   MERCHANT_OK_URL: z.string().url(),
   MERCHANT_FAIL_URL: z.string().url(),
+  APP_VERSION: z.string().default("1.0.0"),
 });
 
 function loadEnv() {

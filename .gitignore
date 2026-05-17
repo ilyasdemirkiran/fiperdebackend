@@ -37,3 +37,7 @@ certbot/
 
 # MongoDB replica set keyfile
 mongo-keyfile/
+
+storage/
+storage/versions
+*.zip
