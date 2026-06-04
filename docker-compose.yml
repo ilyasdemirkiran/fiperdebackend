@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Nginx Reverse Proxy with SSL
   nginx:
@@ -15,6 +13,7 @@ services:
       - ./certbot/www:/var/www/certbot:ro
     depends_on:
       - backend
+      - certbot
     networks:
       - fiperde-network
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
@@ -87,7 +86,7 @@ services:
     networks:
       - fiperde-network
     healthcheck:
-      test: [ "CMD-SHELL", "mongosh -u \"$$MONGO_INITDB_ROOT_USERNAME\" -p \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval \"try { rs.status(); } catch(e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongodb:27017' }] }); } db.adminCommand('ping');\"" ]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 10s
       retries: 10
