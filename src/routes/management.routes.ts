@@ -1,14 +1,17 @@
-import {Hono} from "hono";
-import type {Env} from "@/types/hono";
-import {ManagementService} from "@/services/management.service";
-import {VendorService} from "@/services/vendor.service";
-import {PriceListRequestService} from "@/services/price-list-request.service";
-import {successResponse} from "@/utils/response";
-import {toResponse, toResponseArray} from "@/utils/response-transformer";
-import {authMiddleware} from "@/middleware/auth";
-import {z} from "zod";
+import { Hono } from "hono";
+import type { Env } from "@/types/hono";
+import { ManagementService } from "@/services/management.service";
+import { VendorService } from "@/services/vendor.service";
+import { PriceListRequestService } from "@/services/price-list-request.service";
+import { successResponse } from "@/utils/response";
+import { toResponse, toResponseArray } from "@/utils/response-transformer";
+import { authMiddleware } from "@/middleware/auth";
+import { z } from "zod";
+import { managementAuthMiddleware } from "@/middleware/management-auth";
 
 export const managementRoutes = new Hono<Env>();
+
+managementRoutes.use("*", managementAuthMiddleware);
 
 let managementService: ManagementService | null = null;
 let vendorService: VendorService | null = null;
@@ -45,7 +48,7 @@ managementRoutes.use("*", authMiddleware);
 // GET /management/companies - List all companies with users
 managementRoutes.get("/companies", async (c) => {
   const user = c.get("user");
-  const companies = await getManagementService().listCompaniesWithUsers(user.role);
+  const companies = await getManagementService().listCompaniesWithUsers();
   return c.json(successResponse(toResponseArray(companies)));
 });
 
@@ -55,8 +58,8 @@ managementRoutes.post("/companies/:id/promote/:userId", async (c) => {
   const companyId = c.req.param("id");
   const userId = c.req.param("userId");
 
-  await getManagementService().promoteToAdmin(user.role, companyId, userId);
-  return c.json(successResponse({message: "User promoted to admin"}));
+  await getManagementService().promoteToAdmin(companyId, userId);
+  return c.json(successResponse({ message: "User promoted to admin" }));
 });
 
 // POST /management/companies/:id/demote/:userId - Demote user from admin
@@ -65,8 +68,22 @@ managementRoutes.post("/companies/:id/demote/:userId", async (c) => {
   const companyId = c.req.param("id");
   const userId = c.req.param("userId");
 
-  await getManagementService().demoteFromAdmin(user.role, companyId, userId);
-  return c.json(successResponse({message: "User demoted from admin"}));
+  await getManagementService().demoteFromAdmin(companyId, userId);
+  return c.json(successResponse({ message: "User demoted from admin" }));
+});
+
+const setUserCompanySchema = z.object({
+  companyId: z.string().min(1),
+});
+
+// PUT /management/users/:userId/company - Set user's companyId (sudo only)
+managementRoutes.put("/users/:userId/company", async (c) => {
+  const userId = c.req.param("userId");
+  const body = await c.req.json();
+  const { companyId } = setUserCompanySchema.parse(body);
+
+  await getManagementService().setUserCompanyId(userId, companyId);
+  return c.json(successResponse({ message: "User company updated" }));
 });
 
 // =====================
@@ -76,7 +93,7 @@ managementRoutes.post("/companies/:id/demote/:userId", async (c) => {
 // GET /management/vendors - List all vendors
 managementRoutes.get("/vendors", async (c) => {
   const user = c.get("user");
-  const vendors = await getManagementService().listVendors(user.role);
+  const vendors = await getManagementService().listVendors();
   return c.json(successResponse(toResponseArray(vendors)));
 });
 
@@ -85,7 +102,7 @@ managementRoutes.get("/vendors/:id", async (c) => {
   const user = c.get("user");
   const vendorId = c.req.param("id");
 
-  const vendor = await getManagementService().getVendorWithProducts(user.role, vendorId);
+  const vendor = await getManagementService().getVendorWithProducts(vendorId);
   return c.json(successResponse(toResponse(vendor)));
 });
 
@@ -103,7 +120,7 @@ managementRoutes.post("/vendors", async (c) => {
   const body = await c.req.json();
   const data = vendorSchema.parse(body);
 
-  const vendor = await getManagementService().createVendor(user.role, data);
+  const vendor = await getManagementService().createVendor(data);
   return c.json(successResponse(toResponse(vendor)), 201);
 });
 
@@ -114,7 +131,7 @@ managementRoutes.put("/vendors/:id", async (c) => {
   const body = await c.req.json();
   const data = vendorSchema.partial().parse(body);
 
-  const vendor = await getManagementService().updateVendor(user.role, vendorId, data);
+  const vendor = await getManagementService().updateVendor(vendorId, data);
   return c.json(successResponse(toResponse(vendor)));
 });
 
@@ -123,8 +140,8 @@ managementRoutes.delete("/vendors/:id", async (c) => {
   const user = c.get("user");
   const vendorId = c.req.param("id");
 
-  await getManagementService().deleteVendor(user.role, vendorId);
-  return c.json(successResponse({message: "Vendor deleted"}));
+  await getManagementService().deleteVendor(vendorId);
+  return c.json(successResponse({ message: "Vendor deleted" }));
 });
 
 const accessSchema = z.object({
@@ -136,17 +153,17 @@ managementRoutes.put("/vendors/:id/access", async (c) => {
   const user = c.get("user");
   const vendorId = c.req.param("id");
   const body = await c.req.json();
-  const {companyIds} = accessSchema.parse(body);
+  const { companyIds } = accessSchema.parse(body);
 
-  await getManagementService().setVendorAccess(user.role, vendorId, companyIds);
-  return c.json(successResponse({message: "Vendor access updated"}));
+  await getManagementService().setVendorAccess(vendorId, companyIds);
+  return c.json(successResponse({ message: "Vendor access updated" }));
 });
 
 // GET /management/vendor-permissions - Get all vendor permissions
 managementRoutes.get("/vendor-permissions", async (c) => {
   const user = c.get("user");
 
-  const permissions = await getManagementService().listAllVendorPermissions(user.role);
+  const permissions = await getManagementService().listAllVendorPermissions();
   return c.json(successResponse(permissions));
 });
 
@@ -174,7 +191,7 @@ managementRoutes.post("/vendors/:id/documents", async (c) => {
   const description = formData.get("description") as string || "";
 
   if (!file) {
-    return c.json({success: false, error: {message: "File is required"}}, 400);
+    return c.json({ success: false, error: { message: "File is required" } }, 400);
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -220,7 +237,7 @@ managementRoutes.delete("/documents/:id", async (c) => {
   const documentId = c.req.param("id");
 
   await getVendorService().deleteDocument(user.role, documentId);
-  return c.json(successResponse({message: "Document deleted"}));
+  return c.json(successResponse({ message: "Document deleted" }));
 });
 
 // =====================
@@ -243,7 +260,7 @@ managementRoutes.post("/vendors/:vendorId/products", async (c) => {
   const body = await c.req.json();
   const data = productSchema.parse(body);
 
-  const product = await getManagementService().createProduct(user.role, vendorId, data);
+  const product = await getManagementService().createProduct(vendorId, data);
   return c.json(successResponse(toResponse(product)), 201);
 });
 
@@ -254,7 +271,7 @@ managementRoutes.put("/products/:id", async (c) => {
   const body = await c.req.json();
   const data = productSchema.partial().parse(body);
 
-  const product = await getManagementService().updateProduct(user.role, productId, data);
+  const product = await getManagementService().updateProduct(productId, data);
   return c.json(successResponse(toResponse(product)));
 });
 
@@ -263,8 +280,8 @@ managementRoutes.delete("/products/:id", async (c) => {
   const user = c.get("user");
   const productId = c.req.param("id");
 
-  await getManagementService().deleteProduct(user.role, productId);
-  return c.json(successResponse({message: "Product deleted"}));
+  await getManagementService().deleteProduct(productId);
+  return c.json(successResponse({ message: "Product deleted" }));
 });
 
 // =====================
@@ -280,9 +297,9 @@ managementRoutes.post("/vendors/:vendorId/products/bulk", async (c) => {
   const user = c.get("user");
   const vendorId = c.req.param("vendorId");
   const body = await c.req.json();
-  const {products} = bulkProductSchema.parse(body);
+  const { products } = bulkProductSchema.parse(body);
 
-  const created = await getManagementService().bulkCreateProducts(user.role, vendorId, products);
+  const created = await getManagementService().bulkCreateProducts(vendorId, products);
   return c.json(successResponse(toResponseArray(created)), 201);
 });
 
@@ -295,10 +312,10 @@ managementRoutes.delete("/vendors/:vendorId/products/bulk", async (c) => {
   const user = c.get("user");
   const vendorId = c.req.param("vendorId");
   const body = await c.req.json();
-  const {productIds} = bulkDeleteSchema.parse(body);
+  const { productIds } = bulkDeleteSchema.parse(body);
 
-  const deletedCount = await getManagementService().bulkDeleteProducts(user.role, vendorId, productIds);
-  return c.json(successResponse({message: `${deletedCount} ürün silindi`, deletedCount}));
+  const deletedCount = await getManagementService().bulkDeleteProducts(vendorId, productIds);
+  return c.json(successResponse({ message: `${deletedCount} ürün silindi`, deletedCount }));
 });
 
 const bulkUpdateSchema = z.object({
@@ -313,10 +330,10 @@ managementRoutes.put("/vendors/:vendorId/products/bulk", async (c) => {
   const user = c.get("user");
   const vendorId = c.req.param("vendorId");
   const body = await c.req.json();
-  const {updates} = bulkUpdateSchema.parse(body);
+  const { updates } = bulkUpdateSchema.parse(body);
 
-  const modifiedCount = await getManagementService().bulkUpdateProducts(user.role, vendorId, updates);
-  return c.json(successResponse({message: `${modifiedCount} ürün güncellendi`, modifiedCount}));
+  const modifiedCount = await getManagementService().bulkUpdateProducts(vendorId, updates);
+  return c.json(successResponse({ message: `${modifiedCount} ürün güncellendi`, modifiedCount }));
 });
 
 // =====================
@@ -374,7 +391,7 @@ managementRoutes.put("/price-list-requests/:id/complete", async (c) => {
   const result = await getPriceListService().completeRequest(
     user.role,
     requestId,
-    {userId: user._id?.toString() || "", name: user.name}
+    { userId: user._id?.toString() || "", name: user.name }
   );
 
   return c.json(successResponse(result));
@@ -386,5 +403,5 @@ managementRoutes.delete("/price-list-requests/:id", async (c) => {
   const requestId = c.req.param("id");
 
   await getPriceListService().deleteRequest(user.role, requestId);
-  return c.json(successResponse({message: "Request deleted"}));
+  return c.json(successResponse({ message: "Request deleted" }));
 });
