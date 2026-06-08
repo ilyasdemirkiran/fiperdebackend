@@ -11,6 +11,8 @@ import { managementAuthMiddleware } from "@/middleware/management-auth";
 
 export const managementRoutes = new Hono<Env>();
 
+// Apply auth middleware
+managementRoutes.use("*", authMiddleware);
 managementRoutes.use("*", managementAuthMiddleware);
 
 let managementService: ManagementService | null = null;
@@ -38,23 +40,18 @@ function getPriceListService(): PriceListRequestService {
   return priceListService;
 }
 
-// Apply auth middleware
-managementRoutes.use("*", authMiddleware);
-
 // =====================
 // COMPANY ENDPOINTS
 // =====================
 
 // GET /management/companies - List all companies with users
 managementRoutes.get("/companies", async (c) => {
-  const user = c.get("user");
   const companies = await getManagementService().listCompaniesWithUsers();
   return c.json(successResponse(toResponseArray(companies)));
 });
 
 // POST /management/companies/:id/promote/:userId - Promote user to admin
 managementRoutes.post("/companies/:id/promote/:userId", async (c) => {
-  const user = c.get("user");
   const companyId = c.req.param("id");
   const userId = c.req.param("userId");
 
@@ -64,7 +61,6 @@ managementRoutes.post("/companies/:id/promote/:userId", async (c) => {
 
 // POST /management/companies/:id/demote/:userId - Demote user from admin
 managementRoutes.post("/companies/:id/demote/:userId", async (c) => {
-  const user = c.get("user");
   const companyId = c.req.param("id");
   const userId = c.req.param("userId");
 
@@ -92,14 +88,12 @@ managementRoutes.put("/users/:userId/company", async (c) => {
 
 // GET /management/vendors - List all vendors
 managementRoutes.get("/vendors", async (c) => {
-  const user = c.get("user");
   const vendors = await getManagementService().listVendors();
   return c.json(successResponse(toResponseArray(vendors)));
 });
 
 // GET /management/vendors/:id - Get vendor with products
 managementRoutes.get("/vendors/:id", async (c) => {
-  const user = c.get("user");
   const vendorId = c.req.param("id");
 
   const vendor = await getManagementService().getVendorWithProducts(vendorId);
@@ -116,7 +110,6 @@ const vendorSchema = z.object({
 
 // POST /management/vendors - Create vendor
 managementRoutes.post("/vendors", async (c) => {
-  const user = c.get("user");
   const body = await c.req.json();
   const data = vendorSchema.parse(body);
 
@@ -126,7 +119,6 @@ managementRoutes.post("/vendors", async (c) => {
 
 // PUT /management/vendors/:id - Update vendor
 managementRoutes.put("/vendors/:id", async (c) => {
-  const user = c.get("user");
   const vendorId = c.req.param("id");
   const body = await c.req.json();
   const data = vendorSchema.partial().parse(body);
@@ -137,7 +129,6 @@ managementRoutes.put("/vendors/:id", async (c) => {
 
 // DELETE /management/vendors/:id - Delete vendor
 managementRoutes.delete("/vendors/:id", async (c) => {
-  const user = c.get("user");
   const vendorId = c.req.param("id");
 
   await getManagementService().deleteVendor(vendorId);
@@ -150,7 +141,6 @@ const accessSchema = z.object({
 
 // PUT /management/vendors/:id/access - Set vendor access
 managementRoutes.put("/vendors/:id/access", async (c) => {
-  const user = c.get("user");
   const vendorId = c.req.param("id");
   const body = await c.req.json();
   const { companyIds } = accessSchema.parse(body);
@@ -161,8 +151,6 @@ managementRoutes.put("/vendors/:id/access", async (c) => {
 
 // GET /management/vendor-permissions - Get all vendor permissions
 managementRoutes.get("/vendor-permissions", async (c) => {
-  const user = c.get("user");
-
   const permissions = await getManagementService().listAllVendorPermissions();
   return c.json(successResponse(permissions));
 });
@@ -255,7 +243,6 @@ const productSchema = z.object({
 
 // POST /management/vendors/:vendorId/products - Create product
 managementRoutes.post("/vendors/:vendorId/products", async (c) => {
-  const user = c.get("user");
   const vendorId = c.req.param("vendorId");
   const body = await c.req.json();
   const data = productSchema.parse(body);
@@ -266,7 +253,6 @@ managementRoutes.post("/vendors/:vendorId/products", async (c) => {
 
 // PUT /management/products/:id - Update product
 managementRoutes.put("/products/:id", async (c) => {
-  const user = c.get("user");
   const productId = c.req.param("id");
   const body = await c.req.json();
   const data = productSchema.partial().parse(body);
@@ -277,7 +263,6 @@ managementRoutes.put("/products/:id", async (c) => {
 
 // DELETE /management/products/:id - Delete product
 managementRoutes.delete("/products/:id", async (c) => {
-  const user = c.get("user");
   const productId = c.req.param("id");
 
   await getManagementService().deleteProduct(productId);
@@ -294,7 +279,6 @@ const bulkProductSchema = z.object({
 
 // POST /management/vendors/:vendorId/products/bulk - Bulk create products
 managementRoutes.post("/vendors/:vendorId/products/bulk", async (c) => {
-  const user = c.get("user");
   const vendorId = c.req.param("vendorId");
   const body = await c.req.json();
   const { products } = bulkProductSchema.parse(body);
@@ -309,7 +293,6 @@ const bulkDeleteSchema = z.object({
 
 // DELETE /management/vendors/:vendorId/products/bulk - Bulk delete products
 managementRoutes.delete("/vendors/:vendorId/products/bulk", async (c) => {
-  const user = c.get("user");
   const vendorId = c.req.param("vendorId");
   const body = await c.req.json();
   const { productIds } = bulkDeleteSchema.parse(body);
@@ -327,7 +310,6 @@ const bulkUpdateSchema = z.object({
 
 // PUT /management/vendors/:vendorId/products/bulk - Bulk update products
 managementRoutes.put("/vendors/:vendorId/products/bulk", async (c) => {
-  const user = c.get("user");
   const vendorId = c.req.param("vendorId");
   const body = await c.req.json();
   const { updates } = bulkUpdateSchema.parse(body);

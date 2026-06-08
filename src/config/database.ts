@@ -1,5 +1,5 @@
-import {Db, GridFSBucket, MongoClient} from "mongodb";
-import {getMongoUri} from "./env";
+import { Db, GridFSBucket, MongoClient } from "mongodb";
+import { getMongoUri } from "./env";
 
 let client: MongoClient | null = null;
 const dbCache: Map<string, Db> = new Map();
@@ -166,7 +166,7 @@ export function getGridFSBucket(companyId: string, bucketName: string = "images"
   const db = getDatabaseForCompany(companyId);
 
   // Create new GridFS bucket and cache it
-  bucket = new GridFSBucket(db, {bucketName});
+  bucket = new GridFSBucket(db, { bucketName });
   gridFSCache.set(cacheKey, bucket);
 
   return bucket;
@@ -182,21 +182,21 @@ async function createIndexesForCompany(database: Db) {
   const salesCollection = database.collection("sales");
 
   // Customer indexes
-  await customersCollection.createIndex({status: 1});
-  await customersCollection.createIndex({createdAt: -1});
-  await customersCollection.createIndex({name: 1, surname: 1});
+  await customersCollection.createIndex({ status: 1 });
+  await customersCollection.createIndex({ createdAt: -1 });
+  await customersCollection.createIndex({ name: 1, surname: 1 });
 
   // Label indexes
-  await labelsCollection.createIndex({name: 1});
+  await labelsCollection.createIndex({ name: 1 });
 
   // CustomerImage indexes
-  await customerImagesCollection.createIndex({customerId: 1});
-  await customerImagesCollection.createIndex({uploadedAt: -1});
+  await customerImagesCollection.createIndex({ customerId: 1 });
+  await customerImagesCollection.createIndex({ uploadedAt: -1 });
 
   // Sale indexes
-  await salesCollection.createIndex({customerId: 1});
-  await salesCollection.createIndex({status: 1});
-  await salesCollection.createIndex({createdAt: -1});
+  await salesCollection.createIndex({ customerId: 1 });
+  await salesCollection.createIndex({ status: 1 });
+  await salesCollection.createIndex({ createdAt: -1 });
 
   console.log(`✅ Indexes created for ${database.databaseName}`);
 }
@@ -212,24 +212,24 @@ async function createVendorIndexes(database: Db) {
   const priceRatesCollection = database.collection("vendor_price_rates");
 
   // Vendor indexes
-  await vendorsCollection.createIndex({name: 1});
+  await vendorsCollection.createIndex({ name: 1 });
 
   // Product indexes
-  await productsCollection.createIndex({vendorId: 1});
-  await productsCollection.createIndex({name: 1});
+  await productsCollection.createIndex({ vendorId: 1 });
+  await productsCollection.createIndex({ name: 1 });
 
   // Attachment indexes
-  await attachmentsCollection.createIndex({vendorId: 1});
+  await attachmentsCollection.createIndex({ vendorId: 1 });
 
   // Permission indexes (KEY for performance)
   await permissionsCollection.createIndex(
-    {companyId: 1, vendorId: 1},
-    {unique: true}
+    { companyId: 1, vendorId: 1 },
+    { unique: true }
   );
-  await permissionsCollection.createIndex({vendorId: 1});
+  await permissionsCollection.createIndex({ vendorId: 1 });
 
   // Price rate indexes
-  await priceRatesCollection.createIndex({vendorId: 1}, {unique: true});
+  await priceRatesCollection.createIndex({ vendorId: 1 }, { unique: true });
 
   console.log(`✅ Vendor indexes created for ${database.databaseName}`);
 }

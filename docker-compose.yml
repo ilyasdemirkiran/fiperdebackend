@@ -35,19 +35,11 @@ services:
       dockerfile: Dockerfile
     container_name: fiperde-backend
     restart: unless-stopped
+    env_file:
+      .env
     # Port no longer exposed to host - only accessible via nginx
     expose:
       - "3000"
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - MONGODB_URI=mongodb://mongodb:27017/fiperde?authSource=admin
-      - MONGODB_TEST_URI=mongodb://mongodb-test:27017/fiperde-test?authSource=admin
-      - MONGO_USERNAME=${MONGO_ROOT_USERNAME}
-      - MONGO_PASSWORD=${MONGO_ROOT_PASSWORD}
-      - FIREBASE_SERVICE_ACCOUNT_PATH=/app/firebase-service-account.json
-      - DB_NAME=fiperde
-      - DB_TEST_NAME=fiperde-test
     volumes:
       - ./firebase-service-account.json:/app/firebase-service-account.json:ro
     depends_on:

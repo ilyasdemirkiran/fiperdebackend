@@ -1,21 +1,19 @@
-import {z} from "zod";
+import { z } from "zod";
 
 const envSchema = z.object({
   PORT: z.string().default("3000").transform(Number),
   NODE_ENV: z.enum(["development", "production", "test"]).default("production"),
   MONGODB_URI: z.string(),
-  MONGODB_TEST_URI: z.string().optional(),
-  MONGO_USERNAME: z.string().optional(),
-  MONGO_PASSWORD: z.string().optional(),
+  MONGO_ROOT_USERNAME: z.string().optional(),
+  MONGO_ROOT_PASSWORD: z.string().optional(),
   FIREBASE_SERVICE_ACCOUNT_PATH: z.string(),
   DB_NAME: z.string().default("fiperde"),
-  DB_TEST_NAME: z.string().default("fiperde-test"),
   PAYTR_MERCHANT_ID: z.string().min(1),
   PAYTR_MERCHANT_KEY: z.string().min(1),
   PAYTR_MERCHANT_SALT: z.string().min(1),
-  BASE_URL: z.string().url(),
-  MERCHANT_OK_URL: z.string().url(),
-  MERCHANT_FAIL_URL: z.string().url(),
+  BASE_URL: z.url(),
+  MERCHANT_OK_URL: z.url(),
+  MERCHANT_FAIL_URL: z.url(),
   APP_VERSION: z.string().default("1.0.0"),
 });
 
@@ -34,16 +32,14 @@ function loadEnv() {
 export const env = loadEnv();
 
 export const isProduction = env.NODE_ENV === "production";
-export const isDevelopment = env.NODE_ENV === "development";
-export const isTest = env.NODE_ENV === "test";
 
 /**
  * Injects URL-encoded credentials into a mongodb:// URI.
  * e.g. mongodb://host:27017/db → mongodb://user:pass@host:27017/db
  */
 function injectCredentials(uri: string): string {
-  const username = env.MONGO_USERNAME;
-  const password = env.MONGO_PASSWORD;
+  const username = env.MONGO_ROOT_USERNAME;
+  const password = env.MONGO_ROOT_PASSWORD;
 
   if (!username || !password) {
     return uri;
@@ -57,10 +53,5 @@ function injectCredentials(uri: string): string {
 }
 
 export const getMongoUri = () => {
-  const baseUri = isTest && env.MONGODB_TEST_URI ? env.MONGODB_TEST_URI : env.MONGODB_URI;
-  return injectCredentials(baseUri);
-};
-
-export const getDbName = () => {
-  return isTest ? env.DB_TEST_NAME : env.DB_NAME;
+  return injectCredentials(env.MONGODB_URI);
 };
