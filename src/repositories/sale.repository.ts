@@ -4,11 +4,11 @@ import type {Sale, SaleStatus} from "@/types/customer/sale/sale";
 import type {PaymentLog} from "@/types/customer/sale/payment_log";
 import {logger} from "@/utils/logger";
 import {Timestamp} from "firebase-admin/firestore";
+import {getSalesCollection} from "@/repositories/collections/customer.collections";
 
 export class SaleRepository {
   private getCollection(companyId: string): Collection<Sale> {
-    const db = getDatabaseForCompany(companyId);
-    return db.collection<Sale>("sales");
+    return getSalesCollection(companyId);
   }
 
   async create(companyId: string, sale: Sale): Promise<Sale> {

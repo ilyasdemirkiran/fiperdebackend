@@ -3,11 +3,11 @@ import {getDatabaseForCompany} from "@/config/database";
 import type {Quote} from "@/types/quotes/quote";
 import {logger} from "@/utils/logger";
 import {Timestamp} from "firebase-admin/firestore";
+import {getQuotesCollection} from "@/repositories/collections/quote.collections";
 
 export class QuoteRepository {
   private getCollection(companyId: string): Collection<Quote> {
-    const db = getDatabaseForCompany(companyId);
-    return db.collection<Quote>("quotes");
+    return getQuotesCollection(companyId);
   }
 
   async create(companyId: string, quote: Quote): Promise<Quote> {

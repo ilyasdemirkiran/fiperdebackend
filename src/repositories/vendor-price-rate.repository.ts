@@ -1,12 +1,11 @@
 import {Collection, ObjectId} from "mongodb";
-import {getDatabaseForCompany} from "@/config/database";
 import type {VendorPriceRate} from "@/types/vendor/vendor_price_rate";
 import {logger} from "@/utils/logger";
+import {getVendorPriceRateCollection} from "@/repositories/collections/core.collections";
 
 export class VendorPriceRateRepository {
   private getCollection(companyId: string): Collection<VendorPriceRate> {
-    const db = getDatabaseForCompany(companyId);
-    return db.collection<VendorPriceRate>("vendor_price_rates");
+    return getVendorPriceRateCollection(companyId);
   }
 
   /**

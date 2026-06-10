@@ -1,12 +1,12 @@
 import {Collection, ObjectId} from "mongodb";
-import {getCoreDatabase} from "@/config/database";
 import type {CompanyInvite} from "@/types/company/company_invite";
 import {logger} from "@/utils/logger";
 import {Timestamp} from "firebase-admin/firestore";
+import {getCompanyInvitesCollection} from "@/repositories/collections/core.collections";
 
 export class CompanyInviteRepository {
   private getCollection(): Collection<CompanyInvite> {
-    return getCoreDatabase().collection<CompanyInvite>("company_invites");
+    return getCompanyInvitesCollection();
   }
 
   async create(invite: Omit<CompanyInvite, "_id">): Promise<CompanyInvite> {

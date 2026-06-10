@@ -1,11 +1,11 @@
 import {Collection, ObjectId} from "mongodb";
-import {getCoreDatabase} from "@/config/database";
 import type {Company} from "@/types/company/company";
 import {logger} from "@/utils/logger";
+import {getCompaniesCollection} from "@/repositories/collections/core.collections";
 
 export class CompanyRepository {
   private getCollection(): Collection<Company> {
-    return getCoreDatabase().collection<Company>("companies");
+    return getCompaniesCollection();
   }
 
   async create(company: Omit<Company, "_id">): Promise<Company> {

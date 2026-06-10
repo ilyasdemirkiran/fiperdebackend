@@ -3,16 +3,15 @@ import {getClient, getDatabaseForCompany, getGridFSBucket} from "@/config/databa
 import type {CustomerImage, CustomerImageMetadata} from "@/types/customer/image/customer_image";
 import {logger} from "@/utils/logger";
 import {Readable} from "stream";
+import {getCustomerImagesCollection, getCustomersCollection} from "@/repositories/collections/customer.collections";
 
 export class CustomerImageRepository {
   private getCollection(companyId: string): Collection<CustomerImage> {
-    const db = getDatabaseForCompany(companyId);
-    return db.collection<CustomerImage>("customer_images");
+    return getCustomerImagesCollection(companyId);
   }
 
   private getCustomersCollection(companyId: string) {
-    const db = getDatabaseForCompany(companyId);
-    return db.collection("customers");
+    return getCustomersCollection(companyId);
   }
 
   private getBucket(companyId: string): GridFSBucket {

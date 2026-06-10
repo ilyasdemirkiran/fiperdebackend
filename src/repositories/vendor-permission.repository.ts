@@ -1,13 +1,12 @@
 import {Collection, ObjectId} from "mongodb";
-import {getGlobalVendorDatabase} from "@/config/database";
 import type {VendorPermission} from "@/types/vendor/vendor_permission";
 import {logger} from "@/utils/logger";
 import {Timestamp} from "firebase-admin/firestore";
+import {getVendorPermissionCollection} from "@/repositories/collections/core.collections";
 
 export class VendorPermissionRepository {
   private getCollection(): Collection<VendorPermission> {
-    const db = getGlobalVendorDatabase();
-    return db.collection<VendorPermission>("vendor_permissions");
+    return getVendorPermissionCollection();
   }
 
   async addPermission(vendorId: string, companyId: string): Promise<VendorPermission> {

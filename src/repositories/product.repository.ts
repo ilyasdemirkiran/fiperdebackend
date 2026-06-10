@@ -3,11 +3,11 @@ import {getGlobalVendorDatabase} from "@/config/database";
 import type {Product} from "@/types/vendor/product/product";
 import type {Vendor} from "@/types/vendor/vendor";
 import {logger} from "@/utils/logger";
+import {getProductsCollection} from "@/repositories/collections/core.collections";
 
 export class ProductRepository {
   private getCollection(): Collection<Product> {
-    const db = getGlobalVendorDatabase();
-    return db.collection<Product>("products");
+    return getProductsCollection();
   }
 
   async create(product: Omit<Product, "_id">, vendorId: string): Promise<Product> {
@@ -63,19 +63,6 @@ export class ProductRepository {
         .toArray();
     } catch (error) {
       logger.error("Failed to fetch products by vendor ID", error);
-      throw error;
-    }
-  }
-
-  async findAll(): Promise<Product[]> {
-    try {
-      const collection = this.getCollection();
-      return await collection
-        .find({})
-        .sort({name: 1})
-        .toArray();
-    } catch (error) {
-      logger.error("Failed to fetch all products", error);
       throw error;
     }
   }

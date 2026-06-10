@@ -2,11 +2,11 @@ import {Collection, ObjectId} from "mongodb";
 import {getGlobalVendorDatabase} from "@/config/database";
 import type {Vendor} from "@/types/vendor/vendor";
 import {logger} from "@/utils/logger";
+import {getVendorsCollection} from "@/repositories/collections/core.collections";
 
 export class VendorRepository {
   private getCollection(): Collection<Vendor> {
-    const db = getGlobalVendorDatabase();
-    return db.collection<Vendor>("vendors");
+    return getVendorsCollection();
   }
 
   async create(vendor: Omit<Vendor, "_id">): Promise<Vendor> {

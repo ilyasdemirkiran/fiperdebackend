@@ -6,22 +6,23 @@ import type { Vendor } from "@/types/vendor/vendor";
 import type { Product } from "@/types/vendor/product/product";
 import { logger } from "@/utils/logger";
 import { AppError } from "@/middleware/error-handler";
+import {getCompaniesCollection, getProductsCollection, getUsersCollection, getVendorsCollection} from "@/repositories/collections/core.collections";
 
 export class ManagementRepository {
   private getCompaniesCollection(): Collection<Company> {
-    return getCoreDatabase().collection<Company>("companies");
+    return getCompaniesCollection();
   }
 
   private getUsersCollection(): Collection<FIUser> {
-    return getCoreDatabase().collection<FIUser>("users");
+    return getUsersCollection();
   }
 
   private getVendorsCollection(): Collection<Vendor> {
-    return getGlobalVendorDatabase().collection<Vendor>("vendors");
+    return getVendorsCollection();
   }
 
   private getProductsCollection(): Collection<Product> {
-    return getGlobalVendorDatabase().collection<Product>("products");
+    return getProductsCollection();
   }
 
   // Company operations

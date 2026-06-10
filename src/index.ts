@@ -1,29 +1,30 @@
-import {Hono} from "hono";
-import {cors} from "hono/cors";
-import {env} from "@/config/env";
-import {connectDatabase} from "@/config/database";
-import {initializeFirebase} from "@/config/firebase";
-import {customerRoutes} from "@/routes/customer.routes";
-import {labelRoutes} from "@/routes/customer-image-label.routes";
-import {customerImageRoutes} from "@/routes/customer-image.routes";
-import {saleRoutes} from "@/routes/sale.routes";
-import {vendorRoutes} from "@/routes/vendor.routes";
-import {productRoutes} from "@/routes/product.routes";
-import {vendorAttachmentRoutes} from "@/routes/vendor-attachment.routes";
-import {managementRoutes} from "@/routes/management.routes";
-import {priceListRequestRoutes} from "@/routes/price-list-request.routes";
-import {errorHandler} from "@/middleware/error-handler";
-import {botGuard, rateLimiter} from "@/middleware/security";
-import {logger, runWithContext} from "@/utils/logger";
-import {successResponse} from "@/utils/response";
-import {authRoutes} from "@/routes/auth.routes";
-import {companyRoutes} from "@/routes/company.routes";
-import {vendorPriceRateRoutes} from "@/routes/vendor-price-rate.routes";
-import {publicRoutes} from "@/routes/public.routes";
-import {quoteRoutes} from "@/routes/quote.routes";
-import {payTRPublicRoutes, payTRRoutes} from "@/routes/payTRRoutes";
-import {subscriptionRoutes} from "@/routes/subscription.routes";
-import {updateRoutes} from "@/routes/update.routes";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { env } from "@/config/env";
+import { connectDatabase } from "@/config/database";
+import { initializeFirebase } from "@/config/firebase";
+import { customerRoutes } from "@/routes/customer.routes";
+import { labelRoutes } from "@/routes/customer-image-label.routes";
+import { customerImageRoutes } from "@/routes/customer-image.routes";
+import { saleRoutes } from "@/routes/sale.routes";
+import { vendorRoutes } from "@/routes/vendor.routes";
+import { productRoutes } from "@/routes/product.routes";
+import { vendorAttachmentRoutes } from "@/routes/vendor-attachment.routes";
+import { managementRoutes } from "@/routes/management.routes";
+import { priceListRequestRoutes } from "@/routes/price-list-request.routes";
+import { errorHandler } from "@/middleware/error-handler";
+import { botGuard, rateLimiter } from "@/middleware/security";
+import { logger, runWithContext } from "@/utils/logger";
+import { successResponse } from "@/utils/response";
+import { authRoutes } from "@/routes/auth.routes";
+import { companyRoutes } from "@/routes/company.routes";
+import { vendorPriceRateRoutes } from "@/routes/vendor-price-rate.routes";
+import { publicRoutes } from "@/routes/public.routes";
+import { quoteRoutes } from "@/routes/quote.routes";
+import { payTRPublicRoutes, payTRRoutes } from "@/routes/payTRRoutes";
+import { subscriptionRoutes } from "@/routes/subscription.routes";
+import { updateRoutes } from "@/routes/update.routes";
+import { logger as honoLogger } from "hono/logger";
 
 const app = new Hono();
 
@@ -32,6 +33,8 @@ app.onError(errorHandler);
 
 // CORS
 app.use("/*", cors());
+
+app.use(honoLogger())
 
 // Security middleware — block bots before they hit logging
 app.use("*", botGuard);

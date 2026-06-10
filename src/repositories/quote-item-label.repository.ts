@@ -2,13 +2,14 @@ import { getDatabaseForCompany } from "@/config/database";
 import { AppError } from "@/middleware/error-handler";
 import type { QuoteItemLabel } from "@/types/quotes/quote";
 import { type Collection } from "mongodb";
+import {getQuoteItemLabelCollection} from "@/repositories/collections/quote.collections";
 
 
 
 export class QuoteItemLabelRepository {
 
   getCollection(companyId: string): Collection<QuoteItemLabel> {
-    return getDatabaseForCompany(companyId).collection<QuoteItemLabel>("quoteItemLabels");
+    return getQuoteItemLabelCollection(companyId);
   }
 
   async create(companyId: string, quoteItemLabel: QuoteItemLabel): Promise<QuoteItemLabel> {

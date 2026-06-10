@@ -2,11 +2,11 @@ import {Collection, ObjectId} from "mongodb";
 import {getGlobalVendorDatabase} from "@/config/database";
 import type {PriceListRequest, PriceListRequestMetadata} from "@/types/vendor/price_list_request";
 import {logger} from "@/utils/logger";
+import {getPriceListRequestsCollection} from "@/repositories/collections/core.collections";
 
 export class PriceListRequestRepository {
   private getCollection(): Collection<PriceListRequest> {
-    const db = getGlobalVendorDatabase();
-    return db.collection<PriceListRequest>("price_list_requests");
+    return getPriceListRequestsCollection();
   }
 
   async create(request: Omit<PriceListRequest, "_id">): Promise<PriceListRequest> {

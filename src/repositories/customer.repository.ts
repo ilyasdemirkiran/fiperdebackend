@@ -1,12 +1,11 @@
-import {ClientSession, Collection, ObjectId} from "mongodb";
-import {getDatabaseForCompany} from "@/config/database";
+import {ClientSession, Collection, type Document, ObjectId} from "mongodb";
 import type {CustomerDb, CustomerStatus} from "@/types/customer/customer";
 import {logger} from "@/utils/logger";
+import {CUSTOMER_COLLECTIONS, getCustomersCollection} from "@/repositories/collections/customer.collections";
 
 export class CustomerRepository {
   private getCollection(companyId: string): Collection<CustomerDb> {
-    const db = getDatabaseForCompany(companyId);
-    return db.collection<CustomerDb>("customers");
+    return getCustomersCollection(companyId);
   }
 
   async create(companyId: string, customer: CustomerDb): Promise<Omit<CustomerDb, "_id">> {
@@ -40,11 +39,30 @@ export class CustomerRepository {
         query.status = status;
       }
 
-      const pipeline: any[] = [
+      const pipeline: Document[] = [
         {$match: query},
         {
           $lookup: {
-            from: "customer_images",
+            from: CUSTOMER_COLLECTIONS.sales,
+            let: {customerId: {$toString: "$_id"}},
+            pipeline: [
+              {$match: {$expr: {$eq: ["$customerId", "$$customerId"]}}},
+              {$match: {status: {$ne: "deleted"}}},
+              {
+                $project: {
+                  _id: 0,
+                  totalAmount: 1,
+                  totalPaidAmount: 1,
+                  currency: 1,
+                },
+              },
+            ],
+            as: "sales",
+          },
+        },
+        {
+          $lookup: {
+            from: CUSTOMER_COLLECTIONS.customerImages,
             let: {customerId: {$toString: "$_id"}},
             pipeline: [
               {$match: {$expr: {$eq: ["$customerId", "$$customerId"]}}},
@@ -58,9 +76,39 @@ export class CustomerRepository {
             imageCount: {
               $ifNull: [{$arrayElemAt: ["$imageStats.count", 0]}, 0],
             },
+            debt: {
+              $filter: {
+                input: {
+                  $map: {
+                    input: {$setUnion: ["$sales.currency"]},
+                    as: "cur",
+                    in: {
+                      currency: "$$cur",
+                      totalDebt: {
+                        $sum: {
+                          $map: {
+                            input: {
+                              $filter: {
+                                input: "$sales",
+                                as: "s",
+                                cond: {$eq: ["$$s.currency", "$$cur"]},
+                              },
+                            },
+                            as: "s",
+                            in: {$subtract: ["$$s.totalAmount", "$$s.totalPaidAmount"]},
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                as: "d",
+                cond: {$gt: ["$$d.totalDebt", 0]},
+              },
+            },
           },
         },
-        {$project: {imageStats: 0}},
+        {$project: {imageStats: 0, sales: 0}},
         {$sort: {_id: -1 as const}},
       ];
 

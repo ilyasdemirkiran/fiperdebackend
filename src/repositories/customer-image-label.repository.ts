@@ -2,16 +2,15 @@ import {Collection, ObjectId} from "mongodb";
 import {getClient, getDatabaseForCompany} from "@/config/database";
 import type {CustomerImageLabel} from "@/types/customer/image/customer_image_label";
 import {logger} from "@/utils/logger";
+import {getCustomerImageLabelsCollection, getCustomerImagesCollection} from "@/repositories/collections/customer.collections";
 
 export class CustomerImageLabelRepository {
   private getCollection(companyId: string): Collection<CustomerImageLabel> {
-    const db = getDatabaseForCompany(companyId);
-    return db.collection<CustomerImageLabel>("labels");
+    return getCustomerImageLabelsCollection(companyId);
   }
 
   private getCustomerImagesCollection(companyId: string) {
-    const db = getDatabaseForCompany(companyId);
-    return db.collection("customer_images");
+    return getCustomerImagesCollection(companyId);
   }
 
   async create(companyId: string, label: CustomerImageLabel): Promise<Omit<CustomerImageLabel, "_id">> {

@@ -3,8 +3,17 @@ import {phoneNumberSchema} from "@/types/phone_number";
 import {isEmpty} from "es-toolkit/compat";
 import {timestampSchema} from "@/types/timestamp";
 import {ObjectId} from "mongodb";
+import {currencySchema} from "@/types/currency";
 
 export const customerStatusSchema = z.enum(["active", "inactive"]);
+
+export const customerDebtSchema = z.object({
+  hasDebt: z.boolean(),
+  totalDebt: z.number(),
+  currency: currencySchema,
+});
+
+export type CustomerDebt = z.infer<typeof customerDebtSchema>;
 
 // Base object schema without refinements (for .omit() and .pick())
 const customerBaseSchema = z.object({
@@ -32,6 +41,7 @@ const customerBaseSchema = z.object({
     .optional()
     .transform((val) => val ?? 0),
   createdAt: timestampSchema,
+  debt: z.array(customerDebtSchema).optional(),
 });
 
 // Full schema with refinements

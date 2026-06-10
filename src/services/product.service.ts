@@ -150,12 +150,8 @@ export class ProductService {
     return product;
   }
 
-  async listAllProducts(): Promise<Product[]> {
-    return await this.repository.findAll();
-  }
-
   async listProductsByVendor(vendorId: string, companyId?: string): Promise<Product[]> {
-    const products = await this.repository.findEnrichedByVendorId(vendorId);
+    const products = await this.repository.findByVendorId(vendorId);
 
     if (companyId && products.length > 0) {
       const rateMap = await this.buildRateMap(companyId, [vendorId]);

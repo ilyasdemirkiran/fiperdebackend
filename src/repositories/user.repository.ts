@@ -2,10 +2,11 @@ import { Collection } from "mongodb";
 import { getCoreDatabase } from "@/config/database";
 import type { FIUser } from "@/types/user/fi_user";
 import { logger } from "@/utils/logger";
+import {getUsersCollection} from "@/repositories/collections/core.collections";
 
 export class UserRepository {
   private getCollection(): Collection<FIUser> {
-    return getCoreDatabase().collection<FIUser>("users");
+    return getUsersCollection();
   }
 
   async create(user: FIUser): Promise<FIUser> {
