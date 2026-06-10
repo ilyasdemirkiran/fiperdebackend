@@ -1,5 +1,5 @@
 import {ClientSession, Collection, GridFSBucket, ObjectId} from "mongodb";
-import {getClient, getDatabaseForCompany, getGridFSBucket} from "@/config/database";
+import {getClient, getGridFSBucket} from "@/config/database";
 import type {CustomerImage, CustomerImageMetadata} from "@/types/customer/image/customer_image";
 import {logger} from "@/utils/logger";
 import {Readable} from "stream";

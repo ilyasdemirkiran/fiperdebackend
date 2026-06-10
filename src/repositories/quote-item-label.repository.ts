@@ -1,10 +1,7 @@
-import { getDatabaseForCompany } from "@/config/database";
-import { AppError } from "@/middleware/error-handler";
-import type { QuoteItemLabel } from "@/types/quotes/quote";
-import { type Collection } from "mongodb";
+import {AppError} from "@/middleware/error-handler";
+import type {QuoteItemLabel} from "@/types/quotes/quote";
+import {type Collection} from "mongodb";
 import {getQuoteItemLabelCollection} from "@/repositories/collections/quote.collections";
-
-
 
 export class QuoteItemLabelRepository {
 
@@ -15,15 +12,15 @@ export class QuoteItemLabelRepository {
   async create(companyId: string, quoteItemLabel: QuoteItemLabel): Promise<QuoteItemLabel> {
     const collection = this.getCollection(companyId);
     const created = await collection.insertOne(quoteItemLabel);
-    return { ...quoteItemLabel, id: created.insertedId.toHexString() };
+    return {...quoteItemLabel, id: created.insertedId.toHexString()};
   }
 
   async update(companyId: string, quoteItemLabel: QuoteItemLabel): Promise<QuoteItemLabel> {
     const collection = this.getCollection(companyId);
 
     const updated = await collection.updateOne(
-      { id: quoteItemLabel.id },
-      { $set: quoteItemLabel }
+      {id: quoteItemLabel.id},
+      {$set: quoteItemLabel}
     );
 
     if (updated.matchedCount === 0) {
@@ -34,7 +31,7 @@ export class QuoteItemLabelRepository {
 
   async delete(companyId: string, id: string): Promise<void> {
     const collection = this.getCollection(companyId);
-    const deleted = await collection.deleteOne({ id });
+    const deleted = await collection.deleteOne({id});
     if (deleted.deletedCount === 0) {
       throw new AppError(404, "QuoteItemLabel not found", "NOT_FOUND");
     }
@@ -42,7 +39,7 @@ export class QuoteItemLabelRepository {
 
   async findById(companyId: string, id: string): Promise<QuoteItemLabel | null> {
     const collection = this.getCollection(companyId);
-    return await collection.findOne({ id });
+    return await collection.findOne({id});
   }
 
   async findAll(companyId: string): Promise<QuoteItemLabel[]> {

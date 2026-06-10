@@ -1,5 +1,4 @@
 import type {Collection, Filter} from "mongodb";
-import {getCoreDatabase} from "@/config/database";
 import type {Subscription} from "@/types/subscription/subscription";
 import {getSubscriptionCollection} from "@/repositories/collections/core.collections";
 

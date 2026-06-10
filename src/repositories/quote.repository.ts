@@ -1,5 +1,4 @@
 import {ClientSession, Collection, ObjectId} from "mongodb";
-import {getDatabaseForCompany} from "@/config/database";
 import type {Quote} from "@/types/quotes/quote";
 import {logger} from "@/utils/logger";
 import {Timestamp} from "firebase-admin/firestore";
@@ -25,8 +24,7 @@ export class QuoteRepository {
   async findById(companyId: string, id: string): Promise<Quote | null> {
     try {
       const collection = this.getCollection(companyId);
-      const quote = await collection.findOne({_id: new ObjectId(id)} as any);
-      return quote;
+      return await collection.findOne({_id: new ObjectId(id)} as any);
     } catch (error) {
       logger.error("Failed to find quote by ID", error);
       throw error;

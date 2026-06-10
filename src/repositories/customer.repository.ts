@@ -23,8 +23,7 @@ export class CustomerRepository {
   async findById(companyId: string, id: string): Promise<CustomerDb | null> {
     try {
       const collection = this.getCollection(companyId);
-      const customer = await collection.findOne({_id: new ObjectId(id)} as any);
-      return customer;
+      return await collection.findOne({_id: new ObjectId(id)} as any);
     } catch (error) {
       logger.error("Failed to find customer by ID", error);
       throw error;
@@ -112,9 +111,7 @@ export class CustomerRepository {
         {$sort: {_id: -1 as const}},
       ];
 
-      const customers = await collection.aggregate<CustomerDb>(pipeline).toArray();
-
-      return customers;
+      return await collection.aggregate<CustomerDb>(pipeline).toArray();
     } catch (error) {
       logger.error("Failed to fetch all customers", error);
       throw error;

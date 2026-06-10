@@ -1,5 +1,4 @@
 import {ClientSession, Collection, ObjectId} from "mongodb";
-import {getDatabaseForCompany} from "@/config/database";
 import type {Sale, SaleStatus} from "@/types/customer/sale/sale";
 import type {PaymentLog} from "@/types/customer/sale/payment_log";
 import {logger} from "@/utils/logger";

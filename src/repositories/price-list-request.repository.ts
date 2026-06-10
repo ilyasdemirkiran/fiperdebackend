@@ -1,5 +1,4 @@
 import {Collection, ObjectId} from "mongodb";
-import {getGlobalVendorDatabase} from "@/config/database";
 import type {PriceListRequest, PriceListRequestMetadata} from "@/types/vendor/price_list_request";
 import {logger} from "@/utils/logger";
 import {getPriceListRequestsCollection} from "@/repositories/collections/core.collections";

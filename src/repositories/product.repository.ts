@@ -76,7 +76,7 @@ export class ProductRepository {
   async findEnrichedByVendorIds(vendorIds: ObjectId[]): Promise<(Product & { vendor?: Vendor })[]> {
     try {
       const db = getGlobalVendorDatabase();
-      const result = await db
+      return await db
         .collection("products")
         .aggregate<Product & { vendor?: Vendor }>([
           {$match: {vendorId: {$in: vendorIds}}},
@@ -97,7 +97,6 @@ export class ProductRepository {
           {$sort: {name: 1}},
         ])
         .toArray();
-      return result;
     } catch (error) {
       logger.error("Failed to fetch enriched products by vendor IDs", error);
       throw error;
@@ -133,40 +132,6 @@ export class ProductRepository {
       return result[0] ?? null;
     } catch (error) {
       logger.error("Failed to fetch enriched product by ID", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Fetch products by a single vendorId, with vendor document joined inline.
-   */
-  async findEnrichedByVendorId(vendorId: string): Promise<(Product & { vendor?: Vendor })[]> {
-    try {
-      const db = getGlobalVendorDatabase();
-      const result = await db
-        .collection("products")
-        .aggregate<Product & { vendor?: Vendor }>([
-          {$match: {vendorId: new ObjectId(vendorId)}},
-          {
-            $lookup: {
-              from: "vendors",
-              localField: "vendorId",
-              foreignField: "_id",
-              as: "vendorArr",
-            },
-          },
-          {
-            $addFields: {
-              vendor: {$arrayElemAt: ["$vendorArr", 0]},
-            },
-          },
-          {$unset: "vendorArr"},
-          {$sort: {name: 1}},
-        ])
-        .toArray();
-      return result;
-    } catch (error) {
-      logger.error("Failed to fetch enriched products by vendor ID", error);
       throw error;
     }
   }

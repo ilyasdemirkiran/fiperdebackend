@@ -1,5 +1,5 @@
 import {Collection, ObjectId} from "mongodb";
-import {getClient, getDatabaseForCompany} from "@/config/database";
+import {getClient} from "@/config/database";
 import type {CustomerImageLabel} from "@/types/customer/image/customer_image_label";
 import {logger} from "@/utils/logger";
 import {getCustomerImageLabelsCollection, getCustomerImagesCollection} from "@/repositories/collections/customer.collections";
