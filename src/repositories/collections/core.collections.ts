@@ -10,12 +10,14 @@ import type {Subscription} from "@/types/subscription/subscription";
 import type {VendorDocument} from "@/types/vendor/vendor_document";
 import type {VendorPermission} from "@/types/vendor/vendor_permission";
 import type {VendorPriceRate} from "@/types/vendor/vendor_price_rate";
+import type {CompanyNoteDb} from "@/types/company/company_note";
 
 export const CORE_COLLECTIONS = {
   companies: "companies",
   companyInvites: "company_invites",
   users: "users",
   subscriptions: "subscriptions",
+  companyNotes: "company_notes",
 
   vendors: {
     vendors: "vendors",
@@ -65,4 +67,8 @@ export function getProductsCollection(): Collection<Product> {
 
 export function getPriceListRequestsCollection(): Collection<PriceListRequest> {
   return getGlobalVendorDatabase().collection<PriceListRequest>(CORE_COLLECTIONS.priceListRequests);
+}
+
+export function getCompanyNotesCollection(): Collection<CompanyNoteDb> {
+  return getCoreDatabase().collection<CompanyNoteDb>(CORE_COLLECTIONS.companyNotes);
 }

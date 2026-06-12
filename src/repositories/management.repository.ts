@@ -138,4 +138,13 @@ export class ManagementRepository {
       throw error;
     }
   }
+
+  async findCompanyById(id: string): Promise<Company | null> {
+    try {
+      return await this.getCompaniesCollection().findOne({_id: new ObjectId(id)});
+    } catch (error) {
+      logger.error("Failed to find company by ID", error);
+      throw error;
+    }
+  }
 }

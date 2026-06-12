@@ -1,6 +1,7 @@
 import {CustomerRepository} from "@/repositories/customer.repository";
 import {CustomerImageRepository} from "@/repositories/customer-image.repository";
 import {SaleRepository} from "@/repositories/sale.repository";
+import {CustomerNoteRepository} from "@/repositories/customer-note.repository";
 import {getClient} from "@/config/database";
 import {type CreateCustomerInput, createCustomerSchema, type CustomerDb, type UpdateCustomerInput, updateCustomerSchema,} from "@/types/customer/customer";
 import {AppError} from "@/middleware/error-handler";
@@ -131,7 +132,11 @@ export class CustomerService {
           const saleRepo = new SaleRepository();
           const deletedSalesCount = await saleRepo.deleteByCustomerId(companyId, id, session);
 
-          logger.info(`Deleted ${deletedImagesCount} images and ${deletedSalesCount} sales for customer ${id}`, {companyId});
+          // Delete associated notes
+          const noteRepo = new CustomerNoteRepository();
+          const deletedNotesCount = await noteRepo.deleteAllByCustomerId(companyId, id, session);
+
+          logger.info(`Deleted ${deletedImagesCount} images, ${deletedSalesCount} sales, and ${deletedNotesCount} notes for customer ${id}`, {companyId});
         });
 
         logger.info("Customer and associated images permanently deleted (hard delete)", {id, companyId, userRole});

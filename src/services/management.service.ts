@@ -3,12 +3,19 @@ import { VendorRepository } from "@/repositories/vendor.repository";
 import { ProductRepository } from "@/repositories/product.repository";
 import { VendorPermissionRepository } from "@/repositories/vendor-permission.repository";
 import { VendorDocumentRepository } from "@/repositories/vendor-document.repository";
+import { CompanyNoteRepository } from "@/repositories/company-note.repository";
+import {
+  createCompanyNoteSchema,
+  updateCompanyNoteSchema,
+  type CompanyNoteDb,
+} from "@/types/company/company_note";
 import type { CompanyWithUsers, VendorWithProducts } from "@/types/management/management";
 import type { Vendor } from "@/types/vendor/vendor";
 import type { Product } from "@/types/vendor/product/product";
 import { AppError } from "@/middleware/error-handler";
 import { logger } from "@/utils/logger";
 import { Timestamp } from "firebase-admin/firestore";
+import { ObjectId } from "mongodb";
 
 export class ManagementService {
   private repository: ManagementRepository;
@@ -16,6 +23,7 @@ export class ManagementService {
   private productRepo: ProductRepository;
   private permissionRepo: VendorPermissionRepository;
   private documentRepo: VendorDocumentRepository;
+  private companyNoteRepo: CompanyNoteRepository;
 
   constructor() {
     this.repository = new ManagementRepository();
@@ -23,6 +31,7 @@ export class ManagementService {
     this.productRepo = new ProductRepository();
     this.permissionRepo = new VendorPermissionRepository();
     this.documentRepo = new VendorDocumentRepository();
+    this.companyNoteRepo = new CompanyNoteRepository();
   }
 
   // =====================
@@ -227,5 +236,88 @@ export class ManagementService {
     const modifiedCount = await this.productRepo.bulkUpdate(updates, vendorId);
     logger.info("Products bulk updated", { vendorId, requestedCount: updates.length, modifiedCount });
     return modifiedCount;
+  }
+
+  // =====================
+  // COMPANY NOTE MANAGEMENT
+  // =====================
+
+  async createCompanyNote(
+    companyId: string,
+    userId: string,
+    noteText: string
+  ): Promise<CompanyNoteDb> {
+    const company = await this.repository.findCompanyById(companyId);
+    if (!company) {
+      throw new AppError(404, "Company not found", "COMPANY_NOT_FOUND");
+    }
+
+    const validated = createCompanyNoteSchema.parse({
+      companyId: new ObjectId(companyId),
+      userId,
+      note: noteText,
+      createdAt: Timestamp.now(),
+    });
+
+    const note: CompanyNoteDb = {
+      _id: new ObjectId(),
+      ...validated,
+    };
+
+    return await this.companyNoteRepo.create(note);
+  }
+
+  async getCompanyNote(id: string): Promise<CompanyNoteDb> {
+    const note = await this.companyNoteRepo.findById(id);
+    if (!note) {
+      throw new AppError(404, "Company note not found", "COMPANY_NOTE_NOT_FOUND");
+    }
+    return note;
+  }
+
+  async listCompanyNotes(companyId: string): Promise<CompanyNoteDb[]> {
+    const company = await this.repository.findCompanyById(companyId);
+    if (!company) {
+      throw new AppError(404, "Company not found", "COMPANY_NOT_FOUND");
+    }
+
+    return await this.companyNoteRepo.findByCompanyId(companyId);
+  }
+
+  async updateCompanyNote(
+    id: string,
+    noteText: string
+  ): Promise<CompanyNoteDb> {
+    const exists = await this.companyNoteRepo.findById(id);
+    if (!exists) {
+      throw new AppError(404, "Company note not found", "COMPANY_NOTE_NOT_FOUND");
+    }
+
+    const validated = updateCompanyNoteSchema.parse({
+      note: noteText,
+    });
+
+    const updated = await this.companyNoteRepo.update(id, {
+      ...validated,
+      updatedAt: Timestamp.now(),
+    });
+
+    if (!updated) {
+      throw new AppError(500, "Failed to update company note", "UPDATE_FAILED");
+    }
+
+    return updated;
+  }
+
+  async deleteCompanyNote(id: string): Promise<void> {
+    const exists = await this.companyNoteRepo.findById(id);
+    if (!exists) {
+      throw new AppError(404, "Company note not found", "COMPANY_NOTE_NOT_FOUND");
+    }
+
+    const deleted = await this.companyNoteRepo.delete(id);
+    if (!deleted) {
+      throw new AppError(500, "Failed to delete company note", "DELETE_FAILED");
+    }
   }
 }

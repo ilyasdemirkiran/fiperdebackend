@@ -1,11 +1,12 @@
-import {Hono} from "hono";
-import {type Env} from "@/types/hono";
-import {ProductService} from "@/services/product.service";
-import {successResponse} from "@/utils/response";
-import {authMiddleware} from "@/middleware/auth";
-import {z} from "zod";
-import {currencySchema} from "@/types/currency";
-import {isEmpty} from "es-toolkit/compat";
+import { Hono } from "hono";
+import { compress } from 'hono/compress'
+import { type Env } from "@/types/hono";
+import { ProductService } from "@/services/product.service";
+import { successResponse } from "@/utils/response";
+import { authMiddleware } from "@/middleware/auth";
+import { z } from "zod";
+import { currencySchema } from "@/types/currency";
+import { isEmpty } from "es-toolkit/compat";
 
 export const productRoutes = new Hono<Env>();
 
@@ -32,7 +33,7 @@ const createProductSchema = z.object({
   imageUrl: z.string().url().optional(),
 });
 
-const updateProductSchema = createProductSchema.omit({vendorId: true}).partial();
+const updateProductSchema = createProductSchema.omit({ vendorId: true }).partial();
 
 productRoutes.get("/list/all", async (c) => {
   const user = c.get("user");
@@ -105,5 +106,5 @@ productRoutes.delete("/:id", async (c) => {
 
   await getService().deleteProduct(user.role, id);
 
-  return c.json(successResponse({message: "Product deleted successfully"}));
+  return c.json(successResponse({ message: "Product deleted successfully" }));
 });

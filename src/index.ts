@@ -7,6 +7,7 @@ import { customerRoutes } from "@/routes/customer.routes";
 import { labelRoutes } from "@/routes/customer-image-label.routes";
 import { customerImageRoutes } from "@/routes/customer-image.routes";
 import { saleRoutes } from "@/routes/sale.routes";
+import { customerNoteRoutes } from "@/routes/customer-note.routes";
 import { vendorRoutes } from "@/routes/vendor.routes";
 import { productRoutes } from "@/routes/product.routes";
 import { vendorAttachmentRoutes } from "@/routes/vendor-attachment.routes";
@@ -25,6 +26,7 @@ import { payTRPublicRoutes, payTRRoutes } from "@/routes/payTRRoutes";
 import { subscriptionRoutes } from "@/routes/subscription.routes";
 import { updateRoutes } from "@/routes/update.routes";
 import { logger as honoLogger } from "hono/logger";
+import { compress } from "hono/compress";
 
 const app = new Hono();
 
@@ -34,6 +36,7 @@ app.onError(errorHandler);
 // CORS
 app.use("/*", cors());
 
+app.use("*", compress());
 app.use(honoLogger())
 
 // Security middleware — block bots before they hit logging
@@ -93,6 +96,7 @@ app.route("/api/management", managementRoutes);
 app.route("/api/price-list-requests", priceListRequestRoutes);
 app.route("/api/customers", customerImageRoutes);
 app.route("/api/customers", saleRoutes);
+app.route("/api/customers", customerNoteRoutes);
 app.route("/api/customers", customerRoutes);
 app.route("/api/labels", labelRoutes);
 

@@ -387,3 +387,55 @@ managementRoutes.delete("/price-list-requests/:id", async (c) => {
   await getPriceListService().deleteRequest(user.role, requestId);
   return c.json(successResponse({ message: "Request deleted" }));
 });
+
+// =====================
+// COMPANY NOTE ENDPOINTS
+// =====================
+
+const companyNoteBodySchema = z.object({
+  note: z.string().min(1, "Not içeriği boş olamaz"),
+});
+
+// GET /management/companies/:companyId/notes - List notes for a company
+managementRoutes.get("/companies/:companyId/notes", async (c) => {
+  const companyId = c.req.param("companyId");
+
+  const notes = await getManagementService().listCompanyNotes(companyId);
+  return c.json(successResponse(toResponseArray(notes)));
+});
+
+// POST /management/companies/:companyId/notes - Create a note for a company
+managementRoutes.post("/companies/:companyId/notes", async (c) => {
+  const companyId = c.req.param("companyId");
+  const user = c.get("user");
+  const body = await c.req.json();
+
+  const { note } = companyNoteBodySchema.parse(body);
+
+  const noteResult = await getManagementService().createCompanyNote(
+    companyId,
+    user._id!,
+    note
+  );
+
+  return c.json(successResponse(toResponse(noteResult)), 201);
+});
+
+// PUT /management/companies/notes/:noteId - Update a company note
+managementRoutes.put("/companies/notes/:noteId", async (c) => {
+  const noteId = c.req.param("noteId");
+  const body = await c.req.json();
+
+  const { note } = companyNoteBodySchema.parse(body);
+
+  const noteResult = await getManagementService().updateCompanyNote(noteId, note);
+  return c.json(successResponse(toResponse(noteResult)));
+});
+
+// DELETE /management/companies/notes/:noteId - Delete a company note
+managementRoutes.delete("/companies/notes/:noteId", async (c) => {
+  const noteId = c.req.param("noteId");
+
+  await getManagementService().deleteCompanyNote(noteId);
+  return c.json(successResponse({ message: "Company note deleted successfully" }));
+});
