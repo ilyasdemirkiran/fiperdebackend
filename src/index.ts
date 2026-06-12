@@ -36,7 +36,7 @@ app.onError(errorHandler);
 // CORS
 app.use("/*", cors());
 
-app.use("*", compress());
+// app.use("*", compress());
 app.use(honoLogger())
 
 // Security middleware — block bots before they hit logging
