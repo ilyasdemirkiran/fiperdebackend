@@ -48,8 +48,8 @@ customerNoteRoutes.post("/:customerId/notes", async (c) => {
 
   const note = await getService().createNote(
     user.companyId!,
-    customerId,
     user._id!,
+    customerId,
     input.note
   );
 
