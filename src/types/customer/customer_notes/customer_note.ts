@@ -1,11 +1,11 @@
 import z from "zod";
-import { ObjectId } from "mongodb";
-import { timestampSchema } from "@/types/timestamp";
+import {ObjectId} from "mongodb";
+import {timestampSchema} from "@/types/timestamp";
 
 export const customerNoteSchema = z.object({
   _id: z.custom<ObjectId>().optional(),
   customerId: z.custom<ObjectId>(),
-  userId: z.custom<ObjectId>(),
+  userId: z.custom<string>(),
   note: z.string().min(1),
   createdAt: timestampSchema,
   updatedAt: timestampSchema.optional(),

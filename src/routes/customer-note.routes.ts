@@ -1,10 +1,10 @@
-import { Hono } from "hono";
-import type { Env } from "@/types/hono";
-import { CustomerNoteService } from "@/services/customer-note.service";
-import { successResponse } from "@/utils/response";
-import { authMiddleware } from "@/middleware/auth";
-import { z } from "zod";
-import { toResponse, toResponseArray } from "@/utils/response-transformer";
+import {Hono} from "hono";
+import type {Env} from "@/types/hono";
+import {CustomerNoteService} from "@/services/customer-note.service";
+import {successResponse} from "@/utils/response";
+import {authMiddleware} from "@/middleware/auth";
+import {z} from "zod";
+import {toResponse, toResponseArray} from "@/utils/response-transformer";
 
 export const customerNoteRoutes = new Hono<Env>();
 
@@ -80,5 +80,5 @@ customerNoteRoutes.delete("/:customerId/notes/:noteId", async (c) => {
 
   await getService().deleteNote(user.companyId!, noteId);
 
-  return c.json(successResponse({ message: "Customer note deleted successfully" }));
+  return c.json(successResponse({message: "Customer note deleted successfully"}));
 });

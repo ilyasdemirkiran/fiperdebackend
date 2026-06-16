@@ -1,13 +1,9 @@
-import { CustomerNoteRepository } from "@/repositories/customer-note.repository";
-import { CustomerRepository } from "@/repositories/customer.repository";
-import {
-  createCustomerNoteSchema,
-  updateCustomerNoteSchema,
-  type CustomerNoteDb,
-} from "@/types/customer/customer_notes/customer_note";
-import { AppError } from "@/middleware/error-handler";
-import { ObjectId } from "mongodb";
-import { Timestamp } from "firebase-admin/firestore";
+import {CustomerNoteRepository} from "@/repositories/customer-note.repository";
+import {CustomerRepository} from "@/repositories/customer.repository";
+import {createCustomerNoteSchema, type CustomerNoteDb, updateCustomerNoteSchema,} from "@/types/customer/customer_notes/customer_note";
+import {AppError} from "@/middleware/error-handler";
+import {ObjectId} from "mongodb";
+import {Timestamp} from "firebase-admin/firestore";
 
 export class CustomerNoteService {
   private repository: CustomerNoteRepository;
@@ -20,8 +16,8 @@ export class CustomerNoteService {
 
   async createNote(
     companyId: string,
-    customerId: string,
     userId: string,
+    customerId: string,
     noteText: string
   ): Promise<CustomerNoteDb> {
     // Check if customer exists
@@ -33,7 +29,7 @@ export class CustomerNoteService {
     // Validate and parse input schema
     const validated = createCustomerNoteSchema.parse({
       customerId: new ObjectId(customerId),
-      userId: new ObjectId(userId),
+      userId,
       note: noteText,
       createdAt: Timestamp.now(),
     });

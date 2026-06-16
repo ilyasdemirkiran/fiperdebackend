@@ -57,7 +57,7 @@ export class PriceListRequestService {
       size: input.data.length,
       data: new Binary(input.data),
       requestedBy: {
-        userId: user._id?.toString() || "",
+        userId: user._id || "",
         name: user.name,
         phone: user.phoneNumber as string,
         companyId: user.companyId,
