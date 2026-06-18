@@ -4,6 +4,7 @@ import { ProductRepository } from "@/repositories/product.repository";
 import { VendorPermissionRepository } from "@/repositories/vendor-permission.repository";
 import { VendorDocumentRepository } from "@/repositories/vendor-document.repository";
 import { CompanyNoteRepository } from "@/repositories/company-note.repository";
+import { SubscriptionRepository } from "@/repositories/subscription.repository";
 import {
   createCompanyNoteSchema,
   updateCompanyNoteSchema,
@@ -24,6 +25,7 @@ export class ManagementService {
   private permissionRepo: VendorPermissionRepository;
   private documentRepo: VendorDocumentRepository;
   private companyNoteRepo: CompanyNoteRepository;
+  private subscriptionRepo: SubscriptionRepository;
 
   constructor() {
     this.repository = new ManagementRepository();
@@ -32,6 +34,7 @@ export class ManagementService {
     this.permissionRepo = new VendorPermissionRepository();
     this.documentRepo = new VendorDocumentRepository();
     this.companyNoteRepo = new CompanyNoteRepository();
+    this.subscriptionRepo = new SubscriptionRepository();
   }
 
   // =====================
@@ -43,8 +46,11 @@ export class ManagementService {
 
     const companiesWithUsers: CompanyWithUsers[] = await Promise.all(
       companies.map(async (company) => {
-        const users = await this.repository.findUsersByIds(company.userIds);
-        return { ...company, users };
+        const [users, subscription] = await Promise.all([
+          this.repository.findUsersByIds(company.userIds),
+          this.subscriptionRepo.findByCompanyId(company._id!.toString())
+        ]);
+        return { ...company, users, subscription };
       })
     );
 

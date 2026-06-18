@@ -3,10 +3,12 @@ import type {Company} from "@/types/company/company";
 import type {FIUser} from "@/types/user/fi_user";
 import type {Vendor} from "@/types/vendor/vendor";
 import type {Product} from "@/types/vendor/product/product";
+import type {Subscription} from "@/types/subscription/subscription";
 
 // Company with populated users
 export type CompanyWithUsers = Company & {
   users: FIUser[];
+  subscription?: Subscription | null;
 };
 
 // Vendor with populated products
