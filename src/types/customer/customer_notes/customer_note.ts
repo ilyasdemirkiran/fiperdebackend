@@ -5,7 +5,7 @@ import {timestampSchema} from "@/types/timestamp";
 export const customerNoteSchema = z.object({
   _id: z.custom<ObjectId>().optional(),
   customerId: z.custom<ObjectId>(),
-  userId: z.custom<string>(),
+  userId: z.string(),
   note: z.string().min(1),
   createdAt: timestampSchema,
   updatedAt: timestampSchema.optional(),

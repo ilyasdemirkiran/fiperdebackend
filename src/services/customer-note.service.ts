@@ -16,8 +16,8 @@ export class CustomerNoteService {
 
   async createNote(
     companyId: string,
-    userId: string,
     customerId: string,
+    userId: string,
     noteText: string
   ): Promise<CustomerNoteDb> {
     // Check if customer exists

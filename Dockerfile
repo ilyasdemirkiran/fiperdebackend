@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 COPY . .
+RUN mkdir -p storage/versions
 
 FROM oven/bun:1.1.34-slim
 WORKDIR /app
@@ -14,6 +15,7 @@ COPY --from=builder --chown=bunuser:bunuser /app/node_modules ./node_modules
 COPY --from=builder --chown=bunuser:bunuser /app/src ./src
 COPY --from=builder --chown=bunuser:bunuser /app/package.json ./package.json
 COPY --from=builder --chown=bunuser:bunuser /app/tsconfig.json ./tsconfig.json
+COPY --from=builder --chown=bunuser:bunuser /app/storage ./storage
 
 USER bunuser
 EXPOSE 3000

@@ -48,8 +48,16 @@ function injectCredentials(uri: string): string {
   const encodedUser = encodeURIComponent(username);
   const encodedPass = encodeURIComponent(password);
 
-  // Replace mongodb:// with mongodb://user:pass@
-  return uri.replace("mongodb://", `mongodb://${encodedUser}:${encodedPass}@`);
+  // Correctly handle the injection into the URI
+  // Pattern: mongodb://[username:password@]host1[:port1][,...hostN[:portN]][/[defaultauthdb][?options]]
+  if (uri.startsWith("mongodb://")) {
+    const parts = uri.split("mongodb://");
+    // We want to insert user:pass@ after mongodb://
+    // If the URI already has a user:pass, this might be tricky, but assuming MONGODB_URI is host-only
+    return `mongodb://${encodedUser}:${encodedPass}@${parts[1]}${parts[1]?.includes("?") ? "&" : "?"}authSource=admin`;
+  }
+
+  return uri;
 }
 
 export const getMongoUri = () => {
