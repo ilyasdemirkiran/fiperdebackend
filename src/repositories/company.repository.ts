@@ -2,6 +2,8 @@ import {Collection, ObjectId} from "mongodb";
 import type {Company} from "@/types/company/company";
 import {logger} from "@/utils/logger";
 import {getCompaniesCollection} from "@/repositories/collections/core.collections";
+import {getGridFSBucket} from "@/config/database";
+import {Readable} from "stream";
 
 export class CompanyRepository {
   private getCollection(): Collection<Company> {
@@ -90,6 +92,75 @@ export class CompanyRepository {
     } catch (error) {
       logger.error("Failed to delete company", error);
       throw error;
+    }
+  }
+
+  /**
+   * Upload logo binary to GridFS of company database
+   */
+  async uploadLogoToGridFS(
+    companyId: string,
+    filename: string,
+    data: Buffer,
+    mimeType: string
+  ): Promise<ObjectId> {
+    const bucket = getGridFSBucket(companyId, "logos");
+
+    return new Promise((resolve, reject) => {
+      const readableStream = Readable.from(data);
+      const uploadStream = bucket.openUploadStream(filename, {
+        metadata: { mimeType }
+      });
+
+      readableStream
+        .pipe(uploadStream)
+        .on("error", (error) => {
+          logger.error("GridFS logo upload failed", error);
+          reject(error);
+        })
+        .on("finish", () => {
+          logger.info("GridFS logo upload completed", { fileId: uploadStream.id, filename });
+          resolve(uploadStream.id);
+        });
+    });
+  }
+
+  /**
+   * Download logo binary from GridFS of company database
+   */
+  async downloadLogoFromGridFS(companyId: string, fileId: ObjectId): Promise<{ buffer: Buffer; mimeType: string }> {
+    const bucket = getGridFSBucket(companyId, "logos");
+
+    const filesCollection = bucket.find({ _id: fileId });
+    const fileDoc = await filesCollection.next();
+    const mimeType = fileDoc?.metadata?.mimeType || "image/png";
+
+    return new Promise((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      const downloadStream = bucket.openDownloadStream(fileId);
+
+      downloadStream
+        .on("data", (chunk) => chunks.push(Buffer.from(chunk)))
+        .on("error", (error) => {
+          logger.error("GridFS logo download failed", error);
+          reject(error);
+        })
+        .on("end", () => {
+          resolve({ buffer: Buffer.concat(chunks), mimeType });
+        });
+    });
+  }
+
+  /**
+   * Delete logo binary from GridFS of company database
+   */
+  async deleteLogoFromGridFS(companyId: string, fileId: ObjectId): Promise<void> {
+    try {
+      const bucket = getGridFSBucket(companyId, "logos");
+      await bucket.delete(fileId);
+      logger.info("GridFS logo deleted", { fileId });
+    } catch (error) {
+      logger.warn("Failed to delete logo from GridFS (might already be deleted)", { fileId, error });
     }
   }
 }

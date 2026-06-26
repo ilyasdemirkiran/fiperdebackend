@@ -8,6 +8,7 @@ import type {CompanyInvite} from "@/types/company/company_invite";
 import type {FIUser} from "@/types/user/fi_user";
 import {isAdmin} from "@/types/user/fi_user";
 import {logger} from "@/utils/logger";
+import {ObjectId} from "mongodb";
 
 export class CompanyService {
   private companyRepo: CompanyRepository;
@@ -365,5 +366,124 @@ export class CompanyService {
     await this.companyRepo.delete(companyId);
 
     logger.info("Company deleted", {companyId, deletedBy: userId});
+  }
+
+  async uploadCompanyLogo(
+    userId: string,
+    companyId: string,
+    files: {
+      original?: { filename: string; mimeType: string; data: Buffer };
+      mini?: { filename: string; mimeType: string; data: Buffer };
+    }
+  ): Promise<Company> {
+    const user = await this.userRepo.findById(userId);
+    if (!user) {
+      throw new AppError(404, "User not found");
+    }
+    if (user.companyId !== companyId) {
+      throw new AppError(403, "Not authorized for this company");
+    }
+
+    const company = await this.companyRepo.findById(companyId);
+    if (!company) {
+      throw new AppError(404, "Company not found");
+    }
+
+    const isOwner = company.creatorUserId === userId;
+    const isUserAdmin = user.role === "admin" || user.role === "sudo";
+    if (!isOwner && !isUserAdmin) {
+      throw new AppError(403, "Only admin or company owner can manage logo");
+    }
+
+    const updates: Partial<Company> = {};
+
+    if (files.original) {
+      if (company.logoOriginalFileId) {
+        await this.companyRepo.deleteLogoFromGridFS(companyId, company.logoOriginalFileId);
+      }
+      const originalFileId = await this.companyRepo.uploadLogoToGridFS(
+        companyId,
+        files.original.filename,
+        files.original.data,
+        files.original.mimeType
+      );
+      updates.logoOriginalFileId = originalFileId;
+    }
+
+    if (files.mini) {
+      if (company.logoMiniFileId) {
+        await this.companyRepo.deleteLogoFromGridFS(companyId, company.logoMiniFileId);
+      }
+      const miniFileId = await this.companyRepo.uploadLogoToGridFS(
+        companyId,
+        files.mini.filename,
+        files.mini.data,
+        files.mini.mimeType
+      );
+      updates.logoMiniFileId = miniFileId;
+    }
+
+    const updatedCompany = await this.companyRepo.update(companyId, updates);
+    if (!updatedCompany) {
+      throw new AppError(500, "Failed to update company logo references");
+    }
+
+    return updatedCompany;
+  }
+
+  async deleteCompanyLogo(userId: string, companyId: string): Promise<Company> {
+    const user = await this.userRepo.findById(userId);
+    if (!user) {
+      throw new AppError(404, "User not found");
+    }
+    if (user.companyId !== companyId) {
+      throw new AppError(403, "Not authorized for this company");
+    }
+
+    const company = await this.companyRepo.findById(companyId);
+    if (!company) {
+      throw new AppError(404, "Company not found");
+    }
+
+    const isOwner = company.creatorUserId === userId;
+    const isUserAdmin = user.role === "admin" || user.role === "sudo";
+    if (!isOwner && !isUserAdmin) {
+      throw new AppError(403, "Only admin or company owner can manage logo");
+    }
+
+    if (company.logoOriginalFileId) {
+      await this.companyRepo.deleteLogoFromGridFS(companyId, company.logoOriginalFileId);
+    }
+    if (company.logoMiniFileId) {
+      await this.companyRepo.deleteLogoFromGridFS(companyId, company.logoMiniFileId);
+    }
+
+    const updatedCompany = await this.companyRepo.update(companyId, {
+      logoOriginalFileId: null as any,
+      logoMiniFileId: null as any
+    });
+
+    if (!updatedCompany) {
+      throw new AppError(500, "Failed to delete company logo references");
+    }
+
+    return updatedCompany;
+  }
+
+  async getCompanyLogo(
+    companyId: string,
+    type: "mini" | "original"
+  ): Promise<{ buffer: Buffer; mimeType: string }> {
+    const company = await this.companyRepo.findById(companyId);
+    if (!company) {
+      throw new AppError(404, "Company not found");
+    }
+
+    const fileId = type === "mini" ? company.logoMiniFileId : company.logoOriginalFileId;
+    if (!fileId) {
+      throw new AppError(404, `Company logo (${type}) not found`);
+    }
+
+    return await this.companyRepo.downloadLogoFromGridFS(companyId, fileId);
   }
 }
