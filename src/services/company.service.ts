@@ -1,14 +1,14 @@
-import {CompanyRepository} from "@/repositories/company.repository";
-import {CompanyInviteRepository} from "@/repositories/company-invite.repository";
-import {UserRepository} from "@/repositories/user.repository";
-import {AppError} from "@/middleware/error-handler";
-import {Timestamp} from "firebase-admin/firestore";
-import type {Company} from "@/types/company/company";
-import type {CompanyInvite} from "@/types/company/company_invite";
-import type {FIUser} from "@/types/user/fi_user";
-import {isAdmin} from "@/types/user/fi_user";
-import {logger} from "@/utils/logger";
-import {ObjectId} from "mongodb";
+import { CompanyRepository } from "@/repositories/company.repository";
+import { CompanyInviteRepository } from "@/repositories/company-invite.repository";
+import { UserRepository } from "@/repositories/user.repository";
+import { AppError } from "@/middleware/error-handler";
+import { Timestamp } from "firebase-admin/firestore";
+import type { Company } from "@/types/company/company";
+import type { CompanyInvite } from "@/types/company/company_invite";
+import type { FIUser } from "@/types/user/fi_user";
+import { isAdmin } from "@/types/user/fi_user";
+import { logger } from "@/utils/logger";
+import { ObjectId } from "mongodb";
 
 export class CompanyService {
   private companyRepo: CompanyRepository;
@@ -40,9 +40,9 @@ export class CompanyService {
     };
 
     const insertedCompany = await this.companyRepo.create(company);
-    await this.userRepo.update(userId, {companyId: insertedCompany._id.toHexString(), role: "admin"} as any);
+    await this.userRepo.update(userId, { companyId: insertedCompany._id.toHexString(), role: "admin" } as any);
 
-    logger.info("Company created", {companyId: insertedCompany._id.toHexString(), userId});
+    logger.info("Company created", { companyId: insertedCompany._id.toHexString(), userId });
     return insertedCompany;
   }
 
@@ -84,7 +84,7 @@ export class CompanyService {
     };
 
     const invite = await this.inviteRepo.create(inviteData);
-    logger.info("User invited", {companyId, phone});
+    logger.info("User invited", { companyId, phone });
     return invite;
   }
 
@@ -117,7 +117,7 @@ export class CompanyService {
 
     if (!accept) {
       await this.inviteRepo.updateStatus(inviteId, "rejected");
-      logger.info("Invite rejected", {inviteId, userId});
+      logger.info("Invite rejected", { inviteId, userId });
       return;
     }
 
@@ -129,9 +129,9 @@ export class CompanyService {
     // Accept logic - invite.companyId is string (hex)
     await this.inviteRepo.updateStatus(inviteId, "accepted");
     await this.companyRepo.addUser(invite.companyId, userId);
-    await this.userRepo.update(userId, {companyId: invite.companyId, role: "user"});
+    await this.userRepo.update(userId, { companyId: invite.companyId, role: "user" });
 
-    logger.info("Invite accepted", {inviteId, userId, companyId: invite.companyId});
+    logger.info("Invite accepted", { inviteId, userId, companyId: invite.companyId });
   }
 
   async getCompanyInvites(userId: string, companyId: string): Promise<CompanyInvite[]> {
@@ -209,8 +209,8 @@ export class CompanyService {
       throw new AppError(404, "Target user not found in company");
     }
 
-    await this.userRepo.update(targetUserId, {role: "admin"});
-    logger.info("User promoted", {companyId, targetUserId, requesterId});
+    await this.userRepo.update(targetUserId, { role: "admin" });
+    logger.info("User promoted", { companyId, targetUserId, requesterId });
   }
 
   async demoteUser(requesterId: string, companyId: string, targetUserId: string): Promise<void> {
@@ -233,8 +233,8 @@ export class CompanyService {
       throw new AppError(404, "Target user not found in company");
     }
 
-    await this.userRepo.update(targetUserId, {role: "user"});
-    logger.info("User demoted", {companyId, targetUserId, requesterId});
+    await this.userRepo.update(targetUserId, { role: "user" });
+    logger.info("User demoted", { companyId, targetUserId, requesterId });
   }
 
   async removeUserFromCompany(requesterId: string, companyId: string, targetUserId: string): Promise<void> {
@@ -258,9 +258,9 @@ export class CompanyService {
     }
 
     await this.companyRepo.removeUser(companyId, targetUserId);
-    await this.userRepo.update(targetUserId, {companyId: undefined, role: "user"});
+    await this.userRepo.update(targetUserId, { companyId: undefined, role: "user" });
 
-    logger.info("User removed from company", {companyId, targetUserId, requesterId});
+    logger.info("User removed from company", { companyId, targetUserId, requesterId });
   }
 
   async leaveCompany(userId: string): Promise<void> {
@@ -283,9 +283,9 @@ export class CompanyService {
     }
 
     await this.companyRepo.removeUser(companyId, userId);
-    await this.userRepo.update(userId, {companyId: undefined, role: "user"});
+    await this.userRepo.update(userId, { companyId: undefined, role: "user" });
 
-    logger.info("User left company", {companyId, userId});
+    logger.info("User left company", { companyId, userId });
   }
 
   async deleteInvite(requesterId: string, inviteId: string): Promise<void> {
@@ -304,7 +304,7 @@ export class CompanyService {
     }
 
     await this.inviteRepo.delete(inviteId);
-    logger.info("Invite deleted", {inviteId, requesterId});
+    logger.info("Invite deleted", { inviteId, requesterId });
   }
 
   async updateCompanyName(userId: string, name: string): Promise<Company> {
@@ -324,12 +324,12 @@ export class CompanyService {
       throw new AppError(404, "Company not found");
     }
 
-    const updated = await this.companyRepo.update(user.companyId, {name});
+    const updated = await this.companyRepo.update(user.companyId, { name });
     if (!updated) {
       throw new AppError(500, "Failed to update company");
     }
 
-    logger.info("Company name updated", {companyId: user.companyId, name, userId});
+    logger.info("Company name updated", { companyId: user.companyId, name, userId });
     return updated;
   }
 
@@ -355,17 +355,17 @@ export class CompanyService {
     // 1. Reset all users in the company
     const users = await this.userRepo.findByCompanyId(companyId);
     for (const u of users) {
-      await this.userRepo.update(u._id, {companyId: undefined, role: "user"});
+      await this.userRepo.update(u._id, { companyId: undefined, role: "user" });
     }
 
     // 2. Drop the company database
-    const {dropCompanyDatabase} = await import("@/config/database");
+    const { dropCompanyDatabase } = await import("@/config/database");
     await dropCompanyDatabase(companyId);
 
     // 3. Delete the company document
     await this.companyRepo.delete(companyId);
 
-    logger.info("Company deleted", {companyId, deletedBy: userId});
+    logger.info("Company deleted", { companyId, deletedBy: userId });
   }
 
   async uploadCompanyLogo(
@@ -445,10 +445,9 @@ export class CompanyService {
       throw new AppError(404, "Company not found");
     }
 
-    const isOwner = company.creatorUserId === userId;
     const isUserAdmin = user.role === "admin" || user.role === "sudo";
-    if (!isOwner && !isUserAdmin) {
-      throw new AppError(403, "Only admin or company owner can manage logo");
+    if (!isUserAdmin) {
+      throw new AppError(403, "Only admin can manage the logo");
     }
 
     if (company.logoOriginalFileId) {
