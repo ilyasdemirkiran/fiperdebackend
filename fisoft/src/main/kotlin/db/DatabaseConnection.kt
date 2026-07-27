@@ -1,6 +1,7 @@
 package com.ilyasdemirkiran.db
 
-import com.ilyasdemirkiran.types.FIUsers
+import com.ilyasdemirkiran.types.FIUsersTable
+import com.ilyasdemirkiran.types.companies.CompaniesTable
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.v1.core.StdOutSqlLogger
 import org.jetbrains.exposed.v1.jdbc.Database
@@ -24,7 +25,7 @@ object DatabaseConnection {
 
     transaction {
       addLogger(StdOutSqlLogger)
-      SchemaUtils.create(FIUsers)
+      SchemaUtils.create(FIUsersTable, CompaniesTable)
     }
 
     println("Database connected successfully")

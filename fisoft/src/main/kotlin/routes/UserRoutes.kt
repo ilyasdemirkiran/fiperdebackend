@@ -6,10 +6,10 @@ import com.ilyasdemirkiran.types.PhoneNumbers
 import com.ilyasdemirkiran.types.request.CreateUserRequest
 import com.ilyasdemirkiran.types.request.UpdateUserRequest
 import com.ilyasdemirkiran.types.response.ServerResponse
+import com.ilyasdemirkiran.utils.toUuid
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import java.util.*
 
 fun Route.userRoutes(userRepository: UserRepository) {
   get("/users") {
@@ -52,13 +52,13 @@ fun Route.userRoutes(userRepository: UserRepository) {
   // Update User
   put("/users/{id}") {
     try {
-      val userId = call.parameters["id"] ?: throw IllegalArgumentException("User ID is required")
+      val userIdStr = call.parameters["id"] ?: throw IllegalArgumentException("User ID is required")
       val request = call.receive<UpdateUserRequest>()
 
       val parsedPhoneNumber = request.phoneNumber?.let { PhoneNumbers.parse(it).value }
 
       val updatedUser = userRepository.update(
-        userId = UUID.fromString(userId),
+        userId = userIdStr.toUuid(),
         phoneNumber = parsedPhoneNumber,
         name = request.name,
         surname = request.surname
@@ -68,7 +68,7 @@ fun Route.userRoutes(userRepository: UserRepository) {
         val response = ServerResponse<FIUser>(
           success = false,
           message = "User not found",
-          error = "User with ID $userId does not exist"
+          error = "User with ID $userIdStr does not exist"
         )
         call.respond(response)
       } else {
@@ -92,22 +92,22 @@ fun Route.userRoutes(userRepository: UserRepository) {
   // Delete User
   delete("/users/{id}") {
     try {
-      val userId = call.parameters["id"] ?: throw IllegalArgumentException("User ID is required")
+      val userIdStr = call.parameters["id"] ?: throw IllegalArgumentException("User ID is required")
 
-      val deleted = userRepository.delete(UUID.fromString(userId))
+      val deleted = userRepository.delete(userIdStr.toUuid())
 
       if (deleted) {
         val response = ServerResponse(
           success = true,
           message = "User deleted successfully",
-          data = "User $userId has been deleted"
+          data = "User $userIdStr has been deleted"
         )
         call.respond(response)
       } else {
         val response = ServerResponse<String>(
           success = false,
           message = "User not found",
-          error = "User with ID $userId does not exist"
+          error = "User with ID $userIdStr does not exist"
         )
         call.respond(response)
       }
@@ -124,15 +124,15 @@ fun Route.userRoutes(userRepository: UserRepository) {
   // Get User by ID
   get("/users/{id}") {
     try {
-      val userId = call.parameters["id"] ?: throw IllegalArgumentException("User ID is required")
+      val userIdStr = call.parameters["id"] ?: throw IllegalArgumentException("User ID is required")
 
-      val user = userRepository.getById(UUID.fromString(userId))
+      val user = userRepository.getById(userIdStr.toUuid())
 
       if (user == null) {
         val response = ServerResponse<FIUser>(
           success = false,
           message = "User not found",
-          error = "User with ID $userId does not exist"
+          error = "User with ID $userIdStr does not exist"
         )
         call.respond(response)
       } else {

@@ -3,7 +3,7 @@ package com.ilyasdemirkiran.types
 import com.ilyasdemirkiran.utils.InstantSerializer
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.v1.core.ResultRow
-import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
+import org.jetbrains.exposed.v1.core.dao.id.UuidTable
 import org.jetbrains.exposed.v1.javatime.timestamp
 import java.time.Instant
 import kotlin.uuid.Uuid
@@ -17,7 +17,7 @@ enum class UserRole {
     get() = this == SUDO || this == ADMIN
 }
 
-object FIUsers : UUIDTable("fiusers") {
+object FIUsersTable : UuidTable("fiusers") {
   val phoneNumber = varchar("phone_number", 20).uniqueIndex()
   val name = varchar("name", 100)
   val surname = varchar("surname", 100)
@@ -38,11 +38,11 @@ data class FIUser(
 )
 
 fun ResultRow.toFIUser() = FIUser(
-  id = this[FIUsers.id].value.toKotlinUuid(),
-  phoneNumber = PhoneNumber(this[FIUsers.phoneNumber]),
-  name = this[FIUsers.name],
-  surname = this[FIUsers.surname],
-  companyId = this[FIUsers.companyId],
-  role = this[FIUsers.role],
-  createdAt = this[FIUsers.createdAt]
+  id = this[FIUsersTable.id].value,
+  phoneNumber = PhoneNumber(this[FIUsersTable.phoneNumber]),
+  name = this[FIUsersTable.name],
+  surname = this[FIUsersTable.surname],
+  companyId = this[FIUsersTable.companyId],
+  role = this[FIUsersTable.role],
+  createdAt = this[FIUsersTable.createdAt]
 )

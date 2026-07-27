@@ -8,14 +8,12 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 import java.time.Instant
-import java.util.*
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
 
 class UserRepository {
 
   fun getAll(): List<FIUser> = transaction {
-    FIUsers.selectAll()
+    FIUsersTable.selectAll()
       .map { it.toFIUser() }
   }
 
@@ -24,14 +22,14 @@ class UserRepository {
       val id = Uuid.random()
       val createdAt = Instant.now()
 
-      FIUsers.insert {
-        it[FIUsers.id] = id.toJavaUuid()
-        it[FIUsers.phoneNumber] = phoneNumber
-        it[FIUsers.name] = name
-        it[FIUsers.surname] = surname
-        it[FIUsers.companyId] = companyId
-        it[FIUsers.role] = UserRole.USER
-        it[FIUsers.createdAt] = createdAt
+      FIUsersTable.insert {
+        it[FIUsersTable.id] = id
+        it[FIUsersTable.phoneNumber] = phoneNumber
+        it[FIUsersTable.name] = name
+        it[FIUsersTable.surname] = surname
+        it[FIUsersTable.companyId] = companyId
+        it[FIUsersTable.role] = UserRole.USER
+        it[FIUsersTable.createdAt] = createdAt
       }
 
       FIUser(
@@ -46,30 +44,48 @@ class UserRepository {
     }
   }
 
-  fun update(userId: UUID, phoneNumber: String? = null, name: String? = null, surname: String? = null): FIUser? {
+  fun update(userId: Uuid, phoneNumber: String? = null, name: String? = null, surname: String? = null, companyId: Uuid? = null, role: UserRole? = null): FIUser? {
     return transaction {
-      FIUsers.update({ FIUsers.id eq userId }) { update ->
-        phoneNumber?.let { update[FIUsers.phoneNumber] = it }
-        name?.let { update[FIUsers.name] = it }
-        surname?.let { update[FIUsers.surname] = it }
+      FIUsersTable.update({ FIUsersTable.id eq userId }) { update ->
+        phoneNumber?.let { update[FIUsersTable.phoneNumber] = it }
+        name?.let { update[FIUsersTable.name] = it }
+        surname?.let { update[FIUsersTable.surname] = it }
+        companyId?.let { update[FIUsersTable.companyId] = it }
+        role?.let { update[FIUsersTable.role] = it }
       }
 
-      FIUsers.selectAll().where { FIUsers.id eq userId }
+      FIUsersTable.selectAll().where { FIUsersTable.id eq userId }
         .map { it.toFIUser() }
         .firstOrNull()
     }
   }
 
-  fun delete(userId: UUID): Boolean {
+  fun clearCompanyId(userId: Uuid): Boolean {
     return transaction {
-      val deleted = FIUsers.deleteWhere { FIUsers.id eq userId }
+      FIUsersTable.update({ FIUsersTable.id eq userId }) { update ->
+        update[FIUsersTable.companyId] = null
+        update[FIUsersTable.role] = UserRole.USER
+      } > 0
+    }
+  }
+
+  fun getByCompanyId(companyId: Uuid): List<FIUser> {
+    return transaction {
+      FIUsersTable.selectAll().where { FIUsersTable.companyId eq companyId }
+        .map { it.toFIUser() }
+    }
+  }
+
+  fun delete(userId: Uuid): Boolean {
+    return transaction {
+      val deleted = FIUsersTable.deleteWhere { FIUsersTable.id eq userId }
       deleted > 0
     }
   }
 
-  fun getById(userId: UUID): FIUser? {
+  fun getById(userId: Uuid): FIUser? {
     return transaction {
-      FIUsers.selectAll().where { FIUsers.id eq userId }
+      FIUsersTable.selectAll().where { FIUsersTable.id eq userId }
         .map { it.toFIUser() }
         .firstOrNull()
     }
@@ -77,7 +93,7 @@ class UserRepository {
 
   fun getByPhoneNumber(phoneNumber: String): FIUser? {
     return transaction {
-      FIUsers.selectAll().where { FIUsers.phoneNumber eq phoneNumber }
+      FIUsersTable.selectAll().where { FIUsersTable.phoneNumber eq phoneNumber }
         .map { it.toFIUser() }
         .firstOrNull()
     }

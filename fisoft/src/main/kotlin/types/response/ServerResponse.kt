@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ServerResponse<T>(
   val success: Boolean,
-  val message: String,
+  val message: String? = null,
   val data: T? = null,
   val error: String? = null
 )
