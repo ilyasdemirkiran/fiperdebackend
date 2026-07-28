@@ -1,0 +1,1197 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "FiPerde Backend - Complete Flow & Endpoints",
+		"description": "Comprehensive Postman collection following an end-to-end user & company business flow:\n1. User Registration & Auth (Login script saves session token)\n2. Company Management (Authenticated via Bearer Token)\n3. Customer Management (CRUD)\n4. Vendor Management (CRUD)\n5. Product Management (CRUD)\n6. Sale & Payment Log Management (Sale CRUD, Payment Logs, Monthly filtering)\n7. Media & Photo Management (Tag CRUD, MinIO Photo Uploads, Customer / Gallery Photos)\n8. Company Member & Invite Management",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "adminUserId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "companyId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "customerId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "vendorId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "productId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "saleId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "tagId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "photoId",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. User Registration & Auth",
+			"item": [
+				{
+					"name": "1.1 Create User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var json = pm.response.json();",
+									"    if (json.data && json.data.id) {",
+									"        pm.collectionVariables.set('adminUserId', json.data.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"+905551112233\",\n  \"password\": \"Secret123!\",\n  \"name\": \"Ahmet\",\n  \"surname\": \"Yılmaz\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["users"]
+						}
+					}
+				},
+				{
+					"name": "1.2 Login (Saves Token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var json = pm.response.json();",
+									"    if (json.data && json.data.token) {",
+									"        pm.collectionVariables.set('token', json.data.token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"+905551112233\",\n  \"password\": \"Secret123!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "1.3 Get Me / Validate Session",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "me"]
+						}
+					}
+				},
+				{
+					"name": "1.4 Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/logout",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "logout"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Company Setup",
+			"item": [
+				{
+					"name": "2.1 Create Company",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var json = pm.response.json();",
+									"    if (json.data && json.data.id) {",
+									"        pm.collectionVariables.set('companyId', json.data.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Fi Perde Ltd. Şti.\",\n  \"address\": \"İstanbul, Türkiye\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/companies",
+							"host": ["{{baseUrl}}"],
+							"path": ["companies"]
+						}
+					}
+				},
+				{
+					"name": "2.2 Get My Company",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/companies/my-company",
+							"host": ["{{baseUrl}}"],
+							"path": ["companies", "my-company"]
+						}
+					}
+				},
+				{
+					"name": "2.3 Update Company Name",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Fi Perde & Tasarım A.Ş.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/companies/name",
+							"host": ["{{baseUrl}}"],
+							"path": ["companies", "name"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Customer Management",
+			"item": [
+				{
+					"name": "3.1 Create Customer (Quick with Name & Surname)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var json = pm.response.json();",
+									"    if (json.data && json.data.id) {",
+									"        pm.collectionVariables.set('customerId', json.data.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Mehmet\",\n  \"surname\": \"Kaya\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/customers",
+							"host": ["{{baseUrl}}"],
+							"path": ["customers"]
+						}
+					}
+				},
+				{
+					"name": "3.2 List All Customers",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/customers",
+							"host": ["{{baseUrl}}"],
+							"path": ["customers"]
+						}
+					}
+				},
+				{
+					"name": "3.3 Get Customer By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/customers/{{customerId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["customers", "{{customerId}}"]
+						}
+					}
+				},
+				{
+					"name": "3.4 Update Customer (Add Address & Phone)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"+905321112233\",\n  \"city\": \"İstanbul\",\n  \"district\": \"Kadıköy\",\n  \"address\": \"Moda Cd. No:12/A\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/customers/{{customerId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["customers", "{{customerId}}"]
+						}
+					}
+				},
+				{
+					"name": "3.5 Delete Customer",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/customers/{{customerId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["customers", "{{customerId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Vendor Management",
+			"item": [
+				{
+					"name": "4.1 Create Vendor",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var json = pm.response.json();",
+									"    if (json.data && json.data.id) {",
+									"        pm.collectionVariables.set('vendorId', json.data.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Taç Kumaşçılık\",\n  \"phone\": \"+902123334455\",\n  \"city\": \"Bursa\",\n  \"district\": \"Yıldırım\",\n  \"address\": \"Tekstil Sanayi Bölgesi No:45\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendors",
+							"host": ["{{baseUrl}}"],
+							"path": ["vendors"]
+						}
+					}
+				},
+				{
+					"name": "4.2 List Vendors",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/vendors",
+							"host": ["{{baseUrl}}"],
+							"path": ["vendors"]
+						}
+					}
+				},
+				{
+					"name": "4.3 Get Vendor By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/vendors/{{vendorId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["vendors", "{{vendorId}}"]
+						}
+					}
+				},
+				{
+					"name": "4.4 Update Vendor",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Taç Tekstil A.Ş.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendors/{{vendorId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["vendors", "{{vendorId}}"]
+						}
+					}
+				},
+				{
+					"name": "4.5 Delete Vendor",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/vendors/{{vendorId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["vendors", "{{vendorId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Product Management",
+			"item": [
+				{
+					"name": "5.1 Create Product (Linked to Vendor)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var json = pm.response.json();",
+									"    if (json.data && json.data.id) {",
+									"        pm.collectionVariables.set('productId', json.data.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Keten Fon Perde\",\n  \"code\": \"PRD-101\",\n  \"price\": 15000,\n  \"currency\": \"TRY\",\n  \"vendorId\": \"{{vendorId}}\",\n  \"description\": \"%100 Doğal Keten Kumaş\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/products",
+							"host": ["{{baseUrl}}"],
+							"path": ["products"]
+						}
+					}
+				},
+				{
+					"name": "5.2 Create Independent Product (No Vendor)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Stor Perde Mekanizması\",\n  \"code\": \"MEK-01\",\n  \"price\": 4500,\n  \"currency\": \"TRY\",\n  \"description\": \"Alüminyum Kasa Stor Mekanizması\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/products",
+							"host": ["{{baseUrl}}"],
+							"path": ["products"]
+						}
+					}
+				},
+				{
+					"name": "5.3 List All Products",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/products",
+							"host": ["{{baseUrl}}"],
+							"path": ["products"]
+						}
+					}
+				},
+				{
+					"name": "5.4 List Products by Vendor",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/products?vendorId={{vendorId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["products"],
+							"query": [
+								{
+									"key": "vendorId",
+									"value": "{{vendorId}}"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "5.5 Update Product",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"price\": 17500,\n  \"description\": \"Güncellenmiş Keten Kumaş\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/products/{{productId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["products", "{{productId}}"]
+						}
+					}
+				},
+				{
+					"name": "5.6 Delete Product",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/products/{{productId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["products", "{{productId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Sales & Payment Logs",
+			"item": [
+				{
+					"name": "6.1 Create Sale",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var json = pm.response.json();",
+									"    if (json.data && json.data.id) {",
+									"        pm.collectionVariables.set('saleId', json.data.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"totalAmount\": 25000,\n  \"currency\": \"TRY\",\n  \"description\": \"Salon Keten Fon Perde ve Montajı\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sales",
+							"host": ["{{baseUrl}}"],
+							"path": ["sales"]
+						}
+					}
+				},
+				{
+					"name": "6.2 List All Sales",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/sales",
+							"host": ["{{baseUrl}}"],
+							"path": ["sales"]
+						}
+					}
+				},
+				{
+					"name": "6.3 List Sales by Customer",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/sales?customerId={{customerId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["sales"],
+							"query": [
+								{
+									"key": "customerId",
+									"value": "{{customerId}}"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "6.4 Add Payment Log (Kaparo / Ara Ödeme)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 10000,\n  \"currency\": \"TRY\",\n  \"paymentType\": \"BankTransfer\",\n  \"description\": \"Havale Kaparo Ödemesi\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sales/{{saleId}}/logs",
+							"host": ["{{baseUrl}}"],
+							"path": ["sales", "{{saleId}}", "logs"]
+						}
+					}
+				},
+				{
+					"name": "6.5 Add Remaining Payment Log (Final Payment)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 15000,\n  \"currency\": \"TRY\",\n  \"paymentType\": \"CreditCard\",\n  \"description\": \"Kredi Kartı Kapanış Bakiyesi\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sales/{{saleId}}/logs",
+							"host": ["{{baseUrl}}"],
+							"path": ["sales", "{{saleId}}", "logs"]
+						}
+					}
+				},
+				{
+					"name": "6.6 Get Payment Logs for Sale",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/sales/{{saleId}}/logs",
+							"host": ["{{baseUrl}}"],
+							"path": ["sales", "{{saleId}}", "logs"]
+						}
+					}
+				},
+				{
+					"name": "6.7 Get Monthly Payment Logs (Screen Filter)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/sales/logs/monthly?startDate=2026-07-01T00:00:00Z&endDate=2026-07-31T23:59:59Z",
+							"host": ["{{baseUrl}}"],
+							"path": ["sales", "logs", "monthly"],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "2026-07-01T00:00:00Z"
+								},
+								{
+									"key": "endDate",
+									"value": "2026-07-31T23:59:59Z"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "7. Media, Tags & MinIO Uploads",
+			"item": [
+				{
+					"name": "7.1 Create Tag / Label",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var json = pm.response.json();",
+									"    if (json.data && json.data.id) {",
+									"        pm.collectionVariables.set('tagId', json.data.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Salon Perdesi\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tags",
+							"host": ["{{baseUrl}}"],
+							"path": ["tags"]
+						}
+					}
+				},
+				{
+					"name": "7.2 List Company Tags",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tags",
+							"host": ["{{baseUrl}}"],
+							"path": ["tags"]
+						}
+					}
+				},
+				{
+					"name": "7.3 Update Tag Name",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Salon & Oturma Odası\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tags/{{tagId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["tags", "{{tagId}}"]
+						}
+					}
+				},
+				{
+					"name": "7.4 Upload Photo to Customer (Multipart & MinIO)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var json = pm.response.json();",
+									"    if (json.data && json.data.id) {",
+									"        pm.collectionVariables.set('photoId', json.data.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "title",
+									"value": "Müşteri Salon Ölçü Görseli",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "Cam ölçüleri alındı, keten fon uygulanacak.",
+									"type": "text"
+								},
+								{
+									"key": "customerId",
+									"value": "{{customerId}}",
+									"type": "text"
+								},
+								{
+									"key": "tagIds",
+									"value": "{{tagId}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/photos/upload",
+							"host": ["{{baseUrl}}"],
+							"path": ["photos", "upload"]
+						}
+					}
+				},
+				{
+					"name": "7.5 Upload Photo to Gallery (No Customer)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "title",
+									"value": "Örnek Katalog Perde Modeli",
+									"type": "text"
+								},
+								{
+									"key": "tagIds",
+									"value": "{{tagId}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/photos/upload",
+							"host": ["{{baseUrl}}"],
+							"path": ["photos", "upload"]
+						}
+					}
+				},
+				{
+					"name": "7.6 List Customer Photos",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/photos?customerId={{customerId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["photos"],
+							"query": [
+								{
+									"key": "customerId",
+									"value": "{{customerId}}"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "7.7 List Photos by Tag",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/photos?tagId={{tagId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["photos"],
+							"query": [
+								{
+									"key": "tagId",
+									"value": "{{tagId}}"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "7.8 Update Photo Metadata & Tags",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Güncellenmiş Perde Görseli\",\n  \"description\": \"Renk tonu müşteri tarafından onaylandı.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/photos/{{photoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["photos", "{{photoId}}"]
+						}
+					}
+				},
+				{
+					"name": "7.9 Delete Tag (Removes Tag from All Photos)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tags/{{tagId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["tags", "{{tagId}}"]
+						}
+					}
+				},
+				{
+					"name": "7.10 Delete Photo (Removes from MinIO & DB)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/photos/{{photoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["photos", "{{photoId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "8. Invites & Company Members",
+			"item": [
+				{
+					"name": "8.1 Invite Member to Company",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"+905554445566\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/companies/invite",
+							"host": ["{{baseUrl}}"],
+							"path": ["companies", "invite"]
+						}
+					}
+				},
+				{
+					"name": "8.2 List Company Invites",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/companies/invites",
+							"host": ["{{baseUrl}}"],
+							"path": ["companies", "invites"]
+						}
+					}
+				},
+				{
+					"name": "8.3 List Company Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/companies/{{companyId}}/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["companies", "{{companyId}}", "users"]
+						}
+					}
+				}
+			]
+		}
+	]
+}
