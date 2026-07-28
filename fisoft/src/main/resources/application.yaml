@@ -8,10 +8,6 @@ ktor:
       - com.ilyasdemirkiran.SerializationKt.configureSerialization
       - com.ilyasdemirkiran.RoutingKt.configureRouting
 
-supabase:
-  url: ${SUPABASE_URL}
-  serviceRoleKey: ${SUPABASE_SERVICE_ROLE_KEY}
-
 db:
   url: ${DB_URL}
   user: ${DB_USER}

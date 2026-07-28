@@ -7,7 +7,6 @@ import org.jetbrains.exposed.v1.core.dao.id.UuidTable
 import org.jetbrains.exposed.v1.javatime.timestamp
 import java.time.Instant
 import kotlin.uuid.Uuid
-import kotlin.uuid.toKotlinUuid
 
 @Serializable
 enum class UserRole {
@@ -19,6 +18,7 @@ enum class UserRole {
 
 object FIUsersTable : UuidTable("fiusers") {
   val phoneNumber = varchar("phone_number", 20).uniqueIndex()
+  val passwordHash = varchar("password_hash", 255)
   val name = varchar("name", 100)
   val surname = varchar("surname", 100)
   val companyId = uuid("company_id").nullable().index()

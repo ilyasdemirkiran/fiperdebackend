@@ -1,24 +1,17 @@
 [versions]
 kotlin = "2.4.0"
 logback = "1.5.35"
-supabase = "3.2.5"
 exposed = "1.0.0"
 postgres = "42.7.8"
 libphonenumber = "9.0.13"
 flyway = "11.12.0"
+jbcrypt = "0.4"
 
 [libraries]
+jbcrypt = { module = "org.mindrot:jbcrypt", version.ref = "jbcrypt" }
 flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
-
-supabase-bom = { module = "io.github.jan-tennert.supabase:bom", version.ref = "supabase" }
-
-supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt" }
-supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt" }
-supabase-storage = { module = "io.github.jan-tennert.supabase:storage-kt" }
-supabase-realtime = { module = "io.github.jan-tennert.supabase:realtime-kt" }
-supabase-functions = { module = "io.github.jan-tennert.supabase:functions-kt" }
 
 # Exposed
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }

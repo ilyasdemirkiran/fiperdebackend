@@ -1,6 +1,7 @@
 package com.ilyasdemirkiran.repository
 
 import com.ilyasdemirkiran.types.*
+import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
@@ -17,7 +18,7 @@ class UserRepository {
       .map { it.toFIUser() }
   }
 
-  fun create(phoneNumber: String, name: String, surname: String, companyId: Uuid? = null): FIUser {
+  fun create(phoneNumber: String, passwordHash: String, name: String, surname: String, companyId: Uuid? = null, role: UserRole = UserRole.USER): FIUser {
     return transaction {
       val id = Uuid.random()
       val createdAt = Instant.now()
@@ -25,10 +26,11 @@ class UserRepository {
       FIUsersTable.insert {
         it[FIUsersTable.id] = id
         it[FIUsersTable.phoneNumber] = phoneNumber
+        it[FIUsersTable.passwordHash] = passwordHash
         it[FIUsersTable.name] = name
         it[FIUsersTable.surname] = surname
         it[FIUsersTable.companyId] = companyId
-        it[FIUsersTable.role] = UserRole.USER
+        it[FIUsersTable.role] = role
         it[FIUsersTable.createdAt] = createdAt
       }
 
@@ -38,16 +40,17 @@ class UserRepository {
         name = name,
         surname = surname,
         companyId = companyId,
-        role = UserRole.USER,
+        role = role,
         createdAt = createdAt
       )
     }
   }
 
-  fun update(userId: Uuid, phoneNumber: String? = null, name: String? = null, surname: String? = null, companyId: Uuid? = null, role: UserRole? = null): FIUser? {
+  fun update(userId: Uuid, phoneNumber: String? = null, passwordHash: String? = null, name: String? = null, surname: String? = null, companyId: Uuid? = null, role: UserRole? = null): FIUser? {
     return transaction {
       FIUsersTable.update({ FIUsersTable.id eq userId }) { update ->
         phoneNumber?.let { update[FIUsersTable.phoneNumber] = it }
+        passwordHash?.let { update[FIUsersTable.passwordHash] = it }
         name?.let { update[FIUsersTable.name] = it }
         surname?.let { update[FIUsersTable.surname] = it }
         companyId?.let { update[FIUsersTable.companyId] = it }
@@ -98,5 +101,12 @@ class UserRepository {
         .firstOrNull()
     }
   }
-}
 
+  fun getPasswordHashByPhoneNumber(phoneNumber: String): String? {
+    return transaction {
+      FIUsersTable.selectAll().where { FIUsersTable.phoneNumber eq phoneNumber }
+        .map { it[FIUsersTable.passwordHash] }
+        .firstOrNull()
+    }
+  }
+}

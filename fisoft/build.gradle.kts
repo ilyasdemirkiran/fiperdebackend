@@ -20,22 +20,25 @@ dependencies {
   implementation(ktorLibs.server.contentNegotiation)
   implementation(ktorLibs.server.core)
   implementation(ktorLibs.server.cors)
+  implementation(ktorLibs.server.callLogging)
   implementation(ktorLibs.server.netty)
+  implementation(ktorLibs.serialization.kotlinx.json)
+  implementation(ktorLibs.client.logging)
 
   implementation(ktorLibs.client.cio)
 
   implementation(libs.logback.classic)
 
-  implementation(platform(libs.supabase.bom))
-  implementation(libs.supabase.auth)
-  implementation(libs.supabase.postgrest)
-  implementation(libs.supabase.storage)
+  implementation(libs.jbcrypt)
 
   implementation(libs.flyway.core)
   implementation(libs.flyway.database.postgresql)
 
   // Kotlin Serialization
   implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
+
+  // MinIO Client
+  implementation("io.minio:minio:8.5.17")
 
   implementation(libs.exposed.core)
   implementation(libs.exposed.jdbc)
