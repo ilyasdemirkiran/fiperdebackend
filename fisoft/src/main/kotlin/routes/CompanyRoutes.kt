@@ -3,6 +3,7 @@ package com.ilyasdemirkiran.routes
 import com.ilyasdemirkiran.repository.CompanyRepository
 import com.ilyasdemirkiran.repository.UserRepository
 import com.ilyasdemirkiran.types.FIUser
+import com.ilyasdemirkiran.types.PhoneNumbers
 import com.ilyasdemirkiran.types.UserRole
 import com.ilyasdemirkiran.types.companies.Company
 import com.ilyasdemirkiran.types.companies.CompanyInvite
@@ -48,13 +49,19 @@ fun Route.companyRoutes(companyRepository: CompanyRepository, userRepository: Us
 
       val request = call.receive<InviteUserRequest>()
 
+      val normalizedPhone = try {
+        PhoneNumbers.parse(request.phone).value
+      } catch (e: Exception) {
+        request.phone.filter { it.isDigit() }.let { if (it.length >= 10) "+90${it.takeLast(10)}" else request.phone }
+      }
+
       // Check if already invited
-      val existingInvite = companyRepository.findPendingInviteByPhoneAndCompany(request.phone, companyId)
+      val existingInvite = companyRepository.findPendingInviteByPhoneAndCompany(normalizedPhone, companyId)
       if (existingInvite != null) {
         return@authenticate call.respond(HttpStatusCode.BadRequest, ServerResponse<CompanyInvite>(false, "User already invited"))
       }
 
-      val invitedUser = userRepository.getByPhoneNumber(request.phone)
+      val invitedUser = userRepository.getByPhoneNumber(normalizedPhone)
       if (invitedUser != null && invitedUser.companyId != null) {
         return@authenticate call.respond(HttpStatusCode.BadRequest, ServerResponse<CompanyInvite>(false, "User is already in a company"))
       }
@@ -63,7 +70,7 @@ fun Route.companyRoutes(companyRepository: CompanyRepository, userRepository: Us
         companyId = companyId,
         inviterUserId = inviter.id,
         invitedUserId = invitedUser?.id,
-        invitedPhoneNumber = request.phone
+        invitedPhoneNumber = normalizedPhone
       )
 
       call.respond(HttpStatusCode.Created, ServerResponse(success = true, message = "Invite created", data = invite))
@@ -186,6 +193,33 @@ fun Route.companyRoutes(companyRepository: CompanyRepository, userRepository: Us
     }
   }
 
+  // POST /companies/invites/{inviteId}/cancel - Cancel an invite
+  post("/companies/invites/{inviteId}/cancel") {
+    call.authenticate<Map<String, Boolean>>(requireCompany = true, userRepository = userRepository) { auth ->
+      val requester = auth.user
+      val inviteIdStr = call.parameters["inviteId"] ?: throw IllegalArgumentException("Invite ID is required")
+      val inviteId = inviteIdStr.toUuid()
+
+      if (requester.role == UserRole.USER) {
+        return@authenticate call.respond(HttpStatusCode.Forbidden, ServerResponse<Map<String, Boolean>>(false, "User role cannot cancel invites"))
+      }
+
+      val invite = companyRepository.getInviteById(inviteId)
+        ?: return@authenticate call.respond(HttpStatusCode.NotFound, ServerResponse<Map<String, Boolean>>(false, "Invite not found"))
+
+      if (invite.companyId != requester.companyId) {
+        return@authenticate call.respond(HttpStatusCode.Forbidden, ServerResponse<Map<String, Boolean>>(false, "Invite belongs to another company"))
+      }
+
+      if (invite.status != InviteStatus.PENDING) {
+        return@authenticate call.respond(HttpStatusCode.BadRequest, ServerResponse<Map<String, Boolean>>(false, "Only pending invites can be cancelled"))
+      }
+
+      companyRepository.updateInviteStatus(inviteId, InviteStatus.CANCELLED)
+      call.respond(HttpStatusCode.OK, ServerResponse(success = true, data = mapOf("success" to true), message = "Invite cancelled"))
+    }
+  }
+
   // DELETE /companies/invites/{inviteId} - Delete an invite
   delete("/companies/invites/{inviteId}") {
     call.authenticate<Map<String, Boolean>>(requireCompany = true, userRepository = userRepository) { auth ->
@@ -193,7 +227,7 @@ fun Route.companyRoutes(companyRepository: CompanyRepository, userRepository: Us
       val inviteIdStr = call.parameters["inviteId"] ?: throw IllegalArgumentException("Invite ID is required")
       val inviteId = inviteIdStr.toUuid()
 
-      if (!requester.role.isAdmin) {
+      if (requester.role == UserRole.USER) {
         return@authenticate call.respond(HttpStatusCode.Forbidden, ServerResponse<Map<String, Boolean>>(false, "Not authorized to delete invites"))
       }
 
@@ -205,7 +239,7 @@ fun Route.companyRoutes(companyRepository: CompanyRepository, userRepository: Us
       }
 
       companyRepository.deleteInvite(inviteId)
-      call.respond(HttpStatusCode.OK, ServerResponse(success = true, data = mapOf("success" to true)))
+      call.respond(HttpStatusCode.OK, ServerResponse(success = true, data = mapOf("success" to true), message = "Invite deleted"))
     }
   }
 

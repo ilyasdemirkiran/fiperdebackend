@@ -59,20 +59,20 @@ class MinioStorageService(
   }
 
   fun uploadFile(
-    inputStream: InputStream,
+    bytes: ByteArray,
     filename: String,
     contentType: String,
-    size: Long,
     companyId: Uuid
   ): Pair<String, String> {
     val extension = filename.substringAfterLast('.', "jpg")
     val objectName = "companies/$companyId/photos/${Uuid.random()}.$extension"
+    val inputStream = bytes.inputStream()
 
     minioClient.putObject(
       PutObjectArgs.builder()
         .bucket(bucketName)
         .`object`(objectName)
-        .stream(inputStream, size, -1)
+        .stream(inputStream, bytes.size.toLong(), -1)
         .contentType(contentType)
         .build()
     )
@@ -92,6 +92,19 @@ class MinioStorageService(
       true
     } catch (e: Exception) {
       false
+    }
+  }
+
+  fun getFile(objectName: String): InputStream? {
+    return try {
+      minioClient.getObject(
+        io.minio.GetObjectArgs.builder()
+          .bucket(bucketName)
+          .`object`(objectName)
+          .build()
+      )
+    } catch (e: Exception) {
+      null
     }
   }
 }

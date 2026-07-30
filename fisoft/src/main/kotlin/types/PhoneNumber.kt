@@ -24,4 +24,9 @@ object PhoneNumbers {
       util.format(parsed, PhoneNumberUtil.PhoneNumberFormat.E164)
     )
   }
+
+  fun normalizeToDigits(phone: String): String {
+    val digits = phone.filter { it.isDigit() }
+    return if (digits.length >= 10) digits.takeLast(10) else digits
+  }
 }

@@ -149,10 +149,12 @@ class MediaRepository {
   ): Photo? = transaction {
     val existing = getPhotoById(photoId, companyId) ?: return@transaction null
 
-    PhotosTable.update({ (PhotosTable.id eq photoId) and (PhotosTable.companyId eq companyId) }) { update ->
-      title?.let { update[PhotosTable.title] = it }
-      description?.let { update[PhotosTable.description] = it }
-      customerId?.let { update[PhotosTable.customerId] = it }
+    if (title != null || description != null || customerId != null) {
+      PhotosTable.update({ (PhotosTable.id eq photoId) and (PhotosTable.companyId eq companyId) }) { update ->
+        title?.let { update[PhotosTable.title] = it }
+        description?.let { update[PhotosTable.description] = it }
+        customerId?.let { update[PhotosTable.customerId] = it }
+      }
     }
 
     if (tagIds != null) {

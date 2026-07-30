@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.7
 # Stage 1: Cache dependencies and Build fat JAR
 FROM gradle:8.12-jdk21 AS build
 WORKDIR /app

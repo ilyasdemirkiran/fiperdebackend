@@ -4,6 +4,7 @@ import com.ilyasdemirkiran.repository.SaleRepository
 import com.ilyasdemirkiran.repository.UserRepository
 import com.ilyasdemirkiran.types.request.AddPaymentLogRequest
 import com.ilyasdemirkiran.types.request.CreateSaleRequest
+import com.ilyasdemirkiran.types.request.UpdatePaymentLogRequest
 import com.ilyasdemirkiran.types.request.UpdateSaleRequest
 import com.ilyasdemirkiran.types.response.ServerResponse
 import com.ilyasdemirkiran.types.sales.Sale
@@ -14,6 +15,31 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+
+private fun parseDateToInstant(dateStr: String?, isEnd: Boolean): Instant {
+  if (dateStr.isNullOrBlank()) {
+    return if (isEnd) Instant.now() else Instant.EPOCH
+  }
+
+  return try {
+    // 1. DENE: ISO-8601 Instant format (örn: 2026-06-30T00:00:00Z)
+    Instant.parse(dateStr)
+  } catch (e: Exception) {
+    try {
+      // 2. DENE: YYYY-MM-DD format (örn: 2026-06-30)
+      val localDate = LocalDate.parse(dateStr)
+      if (isEnd) {
+        localDate.atTime(23, 59, 59, 999_999_999).toInstant(ZoneOffset.UTC)
+      } else {
+        localDate.atStartOfDay().toInstant(ZoneOffset.UTC)
+      }
+    } catch (e2: Exception) {
+      if (isEnd) Instant.now() else Instant.EPOCH
+    }
+  }
+}
 
 fun Route.saleRoutes(saleRepository: SaleRepository, userRepository: UserRepository) {
   route("/sales") {
@@ -62,8 +88,8 @@ fun Route.saleRoutes(saleRepository: SaleRepository, userRepository: UserReposit
         val startDateStr = call.request.queryParameters["startDate"]
         val endDateStr = call.request.queryParameters["endDate"]
 
-        val startDate = if (startDateStr != null) Instant.parse(startDateStr) else Instant.EPOCH
-        val endDate = if (endDateStr != null) Instant.parse(endDateStr) else Instant.now()
+        val startDate = parseDateToInstant(startDateStr, isEnd = false)
+        val endDate = parseDateToInstant(endDateStr, isEnd = true)
 
         val logs = saleRepository.getLogsByDateRange(companyId, startDate, endDate)
         call.respond(HttpStatusCode.OK, ServerResponse(success = true, message = "Sale logs retrieved successfully", data = logs))
@@ -146,6 +172,46 @@ fun Route.saleRoutes(saleRepository: SaleRepository, userRepository: UserReposit
 
         val logs = saleRepository.getLogsBySaleId(saleId, companyId)
         call.respond(HttpStatusCode.OK, ServerResponse(success = true, message = "Sale logs retrieved successfully", data = logs))
+      }
+    }
+
+    // PUT /sales/logs/{logId} - Update payment log
+    put("/logs/{logId}") {
+      call.authenticate<SaleLog>(requireCompany = true, userRepository = userRepository) { auth ->
+        val companyId = auth.user.companyId!!
+        val logId = (call.parameters["logId"] ?: throw IllegalArgumentException("Log ID is required")).toUuid()
+        val request = call.receive<UpdatePaymentLogRequest>()
+
+        val updatedLog = saleRepository.updatePaymentLog(
+          logId = logId,
+          companyId = companyId,
+          amount = request.amount,
+          currency = request.currency,
+          paymentType = request.paymentType,
+          description = request.description,
+          paymentDate = request.paymentDate
+        )
+
+        if (updatedLog == null) {
+          call.respond(HttpStatusCode.NotFound, ServerResponse<SaleLog>(false, "Payment log not found"))
+        } else {
+          call.respond(HttpStatusCode.OK, ServerResponse(success = true, message = "Payment log updated successfully", data = updatedLog))
+        }
+      }
+    }
+
+    // DELETE /sales/logs/{logId} - Delete payment log
+    delete("/logs/{logId}") {
+      call.authenticate<Map<String, Boolean>>(requireCompany = true, userRepository = userRepository) { auth ->
+        val companyId = auth.user.companyId!!
+        val logId = (call.parameters["logId"] ?: throw IllegalArgumentException("Log ID is required")).toUuid()
+
+        val deleted = saleRepository.deletePaymentLog(logId, companyId)
+        if (deleted) {
+          call.respond(HttpStatusCode.OK, ServerResponse(success = true, data = mapOf("success" to true), message = "Payment log deleted successfully"))
+        } else {
+          call.respond(HttpStatusCode.NotFound, ServerResponse<Map<String, Boolean>>(false, "Payment log not found"))
+        }
       }
     }
   }

@@ -5,6 +5,7 @@ import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.greaterEq
 import org.jetbrains.exposed.v1.core.lessEq
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -172,5 +173,79 @@ class SaleRepository {
           (SaleLogsTable.paymentDate lessEq endDate)
       }
       .map { it.toSaleLog() }
+  }
+
+  fun updatePaymentLog(
+    logId: Uuid,
+    companyId: Uuid,
+    amount: Int? = null,
+    currency: String? = null,
+    paymentType: PaymentType? = null,
+    description: String? = null,
+    paymentDate: Instant? = null
+  ): SaleLog? = transaction {
+    val existingLog = SaleLogsTable.selectAll()
+      .where { (SaleLogsTable.id eq logId) and (SaleLogsTable.companyId eq companyId) }
+      .map { it.toSaleLog() }
+      .firstOrNull() ?: return@transaction null
+
+    SaleLogsTable.update({ (SaleLogsTable.id eq logId) and (SaleLogsTable.companyId eq companyId) }) { update ->
+      amount?.let { update[SaleLogsTable.amount] = it }
+      currency?.let { update[SaleLogsTable.currency] = it }
+      paymentType?.let { update[SaleLogsTable.paymentType] = it }
+      description?.let { update[SaleLogsTable.description] = it }
+      paymentDate?.let { update[SaleLogsTable.paymentDate] = it }
+    }
+
+    // Recalculate totalPaidAmount for Sale
+    recalculateSalePaidAmount(existingLog.saleId, companyId)
+
+    SaleLogsTable.selectAll()
+      .where { (SaleLogsTable.id eq logId) and (SaleLogsTable.companyId eq companyId) }
+      .map { it.toSaleLog() }
+      .firstOrNull()
+  }
+
+  fun deletePaymentLog(logId: Uuid, companyId: Uuid): Boolean = transaction {
+    val existingLog = SaleLogsTable.selectAll()
+      .where { (SaleLogsTable.id eq logId) and (SaleLogsTable.companyId eq companyId) }
+      .map { it.toSaleLog() }
+      .firstOrNull() ?: return@transaction false
+
+    val deletedCount = SaleLogsTable.deleteWhere {
+      (SaleLogsTable.id eq logId) and (SaleLogsTable.companyId eq companyId)
+    }
+
+    if (deletedCount > 0) {
+      recalculateSalePaidAmount(existingLog.saleId, companyId)
+      true
+    } else {
+      false
+    }
+  }
+
+  private fun recalculateSalePaidAmount(saleId: Uuid, companyId: Uuid) {
+    val currentSale = SalesTable.selectAll()
+      .where { (SalesTable.id eq saleId) and (SalesTable.companyId eq companyId) }
+      .map { it.toSale() }
+      .firstOrNull() ?: return
+
+    val totalPaid = SaleLogsTable.selectAll()
+      .where { (SaleLogsTable.saleId eq saleId) and (SaleLogsTable.companyId eq companyId) }
+      .sumOf { it[SaleLogsTable.amount] }
+
+    val newStatus = if (totalPaid >= currentSale.totalAmount && currentSale.totalAmount > 0) {
+      SaleStatus.Completed
+    } else if (currentSale.status == SaleStatus.Completed && totalPaid < currentSale.totalAmount) {
+      SaleStatus.Pending
+    } else {
+      currentSale.status
+    }
+
+    SalesTable.update({ (SalesTable.id eq saleId) and (SalesTable.companyId eq companyId) }) { update ->
+      update[SalesTable.totalPaidAmount] = totalPaid
+      update[SalesTable.status] = newStatus
+      update[SalesTable.updatedAt] = Instant.now()
+    }
   }
 }

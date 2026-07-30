@@ -37,8 +37,8 @@ dependencies {
   // Kotlin Serialization
   implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
 
-  // MinIO Client
-  implementation("io.minio:minio:8.5.17")
+  // MinIO Client (Upgraded to 8.6.0)
+  implementation("io.minio:minio:8.6.0")
 
   implementation(libs.exposed.core)
   implementation(libs.exposed.jdbc)
@@ -52,4 +52,11 @@ dependencies {
 
   testImplementation(kotlin("test"))
   testImplementation(ktorLibs.server.testHost)
+}
+
+configurations.all {
+  resolutionStrategy {
+    // Security patch for transitive dependencies
+    force("com.fasterxml.jackson.core:jackson-databind:2.17.2")
+  }
 }

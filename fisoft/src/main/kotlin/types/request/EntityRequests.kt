@@ -30,6 +30,16 @@ data class UpdateCustomerRequest(
   val status: CustomerStatus? = null
 )
 
+@Serializable
+data class CreateCustomerNoteRequest(
+  val note: String
+)
+
+@Serializable
+data class UpdateCustomerNoteRequest(
+  val note: String
+)
+
 // Vendor DTOs
 @Serializable
 data class CreateVendorRequest(
@@ -94,6 +104,15 @@ data class AddPaymentLogRequest(
   val amount: Int, // Kuruş cinsinden Int
   val currency: String = "TRY",
   val paymentType: PaymentType = PaymentType.Cash,
+  val description: String? = null,
+  @Serializable(with = InstantSerializer::class) val paymentDate: Instant? = null
+)
+
+@Serializable
+data class UpdatePaymentLogRequest(
+  val amount: Int? = null,
+  val currency: String? = null,
+  val paymentType: PaymentType? = null,
   val description: String? = null,
   @Serializable(with = InstantSerializer::class) val paymentDate: Instant? = null
 )

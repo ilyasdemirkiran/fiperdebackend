@@ -10,7 +10,7 @@ import kotlin.uuid.Uuid
 
 @Serializable
 enum class InviteStatus {
-  PENDING, ACCEPTED, REJECTED
+  PENDING, ACCEPTED, REJECTED, CANCELLED
 }
 
 object CompanyInvitesTable : UuidTable("company_invites") {

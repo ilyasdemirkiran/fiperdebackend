@@ -4,6 +4,7 @@ import com.ilyasdemirkiran.types.FIUsersTable
 import com.ilyasdemirkiran.types.SessionsTable
 import com.ilyasdemirkiran.types.companies.CompaniesTable
 import com.ilyasdemirkiran.types.companies.CompanyInvitesTable
+import com.ilyasdemirkiran.types.customers.CustomerNotesTable
 import com.ilyasdemirkiran.types.customers.CustomersTable
 import com.ilyasdemirkiran.types.media.ImageTagsTable
 import com.ilyasdemirkiran.types.media.PhotoTagsTable
@@ -41,6 +42,7 @@ object DatabaseConnection {
         SessionsTable,
         CompanyInvitesTable,
         CustomersTable,
+        CustomerNotesTable,
         VendorsTable,
         ProductsTable,
         SalesTable,

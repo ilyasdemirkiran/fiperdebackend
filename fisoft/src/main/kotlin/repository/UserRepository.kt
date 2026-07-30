@@ -2,7 +2,9 @@ package com.ilyasdemirkiran.repository
 
 import com.ilyasdemirkiran.types.*
 import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.neq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
@@ -74,7 +76,8 @@ class UserRepository {
 
   fun getByCompanyId(companyId: Uuid): List<FIUser> {
     return transaction {
-      FIUsersTable.selectAll().where { FIUsersTable.companyId eq companyId }
+      FIUsersTable.selectAll()
+        .where { (FIUsersTable.companyId eq companyId) and (FIUsersTable.role neq UserRole.SUDO) }
         .map { it.toFIUser() }
     }
   }

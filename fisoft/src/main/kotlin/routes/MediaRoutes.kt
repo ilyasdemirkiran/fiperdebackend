@@ -102,10 +102,9 @@ fun Route.mediaRoutes(
         var customerId: Uuid? = null
         val tagIds = mutableListOf<Uuid>()
 
-        var inputStream: InputStream? = null
+        var bytes: ByteArray? = null
         var filename: String? = null
         var contentType: String = "image/jpeg"
-        var size: Long = 0L
 
         multipart.forEachPart { part ->
           when (part) {
@@ -125,26 +124,26 @@ fun Route.mediaRoutes(
             is PartData.FileItem -> {
               filename = part.originalFileName ?: "photo.jpg"
               contentType = part.contentType?.toString() ?: "image/jpeg"
-              inputStream = part.streamProvider()
-              size = part.headers["Content-Length"]?.toLongOrNull() ?: 0L
+              bytes = part.streamProvider().readBytes()
             }
             else -> {}
           }
           part.dispose()
         }
 
-        if (filename.isNullOrEmpty() || inputStream == null) {
+        if (filename.isNullOrEmpty() || bytes == null || bytes!!.isEmpty()) {
           return@authenticate call.respond(HttpStatusCode.BadRequest, ServerResponse<Photo>(false, "Image file is required"))
         }
 
         val photoTitle = title ?: filename ?: "Untitled Photo"
+        val photoBytes = bytes!!
+        val fileSize = photoBytes.size.toLong()
 
         // MinIO Upload
         val (objectName, publicUrl) = storageService.uploadFile(
-          inputStream = inputStream!!,
+          bytes = photoBytes,
           filename = filename!!,
           contentType = contentType,
-          size = size,
           companyId = companyId
         )
 
@@ -166,7 +165,7 @@ fun Route.mediaRoutes(
           customerId = customerId,
           description = description,
           mimeType = contentType,
-          size = size,
+          size = fileSize,
           tagIds = tagIds
         )
 
@@ -195,7 +194,7 @@ fun Route.mediaRoutes(
         val request = call.receive<UpdatePhotoRequest>()
 
         val customerUuid = request.customerId?.let { if (it.isNotBlank()) it.toUuid() else null }
-        val tagUuids = request.tagIds?.map { it.toUuid() }
+        val tagUuids = request.tagIds?.filter { it.isNotBlank() }?.map { it.toUuid() }
 
         val updated = mediaRepository.updatePhoto(
           photoId = photoId,

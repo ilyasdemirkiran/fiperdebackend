@@ -1,5 +1,6 @@
 package com.ilyasdemirkiran.repository
 
+import com.ilyasdemirkiran.types.PhoneNumbers
 import com.ilyasdemirkiran.types.companies.*
 import com.ilyasdemirkiran.utils.toUuid
 import org.jetbrains.exposed.v1.core.and
@@ -121,10 +122,11 @@ class CompanyRepository {
   }
 
   fun findPendingInviteByPhoneAndCompany(phone: String, companyId: Uuid): CompanyInvite? = transaction {
+    val targetDigits = PhoneNumbers.normalizeToDigits(phone)
     CompanyInvitesTable.selectAll()
-      .where { (CompanyInvitesTable.invitedPhoneNumber eq phone) and (CompanyInvitesTable.companyId eq companyId) and (CompanyInvitesTable.status eq InviteStatus.PENDING) }
+      .where { (CompanyInvitesTable.companyId eq companyId) and (CompanyInvitesTable.status eq InviteStatus.PENDING) }
       .map { it.toCompanyInvite() }
-      .firstOrNull()
+      .firstOrNull { PhoneNumbers.normalizeToDigits(it.invitedPhoneNumber) == targetDigits }
   }
 
   fun findInvitesByCompanyId(companyId: Uuid): List<CompanyInvite> = transaction {
@@ -134,9 +136,14 @@ class CompanyRepository {
   }
 
   fun findPendingInvitesByPhone(phone: String): List<CompanyInvite> = transaction {
-    val invites = CompanyInvitesTable.selectAll()
-      .where { (CompanyInvitesTable.invitedPhoneNumber eq phone) and (CompanyInvitesTable.status eq InviteStatus.PENDING) }
+    val targetDigits = PhoneNumbers.normalizeToDigits(phone)
+    val allPendingInvites = CompanyInvitesTable.selectAll()
+      .where { CompanyInvitesTable.status eq InviteStatus.PENDING }
       .map { it.toCompanyInvite() }
+
+    val invites = allPendingInvites.filter { invite ->
+      PhoneNumbers.normalizeToDigits(invite.invitedPhoneNumber) == targetDigits
+    }
 
     if (invites.isEmpty()) return@transaction emptyList()
 
