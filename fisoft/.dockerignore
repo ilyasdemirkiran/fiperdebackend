@@ -1,6 +1,8 @@
 .gradle
 .kotlin
 build
+!build/libs
+!build/libs/*.jar
 .idea
 .git
 .gitignore
