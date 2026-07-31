@@ -4,6 +4,7 @@ import com.ilyasdemirkiran.types.customers.Customer
 import com.ilyasdemirkiran.types.customers.CustomerStatus
 import com.ilyasdemirkiran.types.customers.CustomersTable
 import com.ilyasdemirkiran.types.customers.toCustomer
+import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
@@ -66,6 +67,7 @@ class CustomerRepository {
   fun getByCompanyId(companyId: Uuid): List<Customer> = transaction {
     CustomersTable.selectAll()
       .where { CustomersTable.companyId eq companyId }
+      .orderBy(CustomersTable.createdAt to SortOrder.DESC)
       .map { it.toCustomer() }
   }
 
