@@ -1,6 +1,7 @@
 package com.ilyasdemirkiran.types.sales
 
 import com.ilyasdemirkiran.types.FIUsersTable
+import com.ilyasdemirkiran.types.accounts.AccountsTable
 import com.ilyasdemirkiran.types.companies.CompaniesTable
 import com.ilyasdemirkiran.types.customers.CustomersTable
 import com.ilyasdemirkiran.utils.InstantSerializer
@@ -21,6 +22,7 @@ object SaleLogsTable : UuidTable("sale_logs") {
   val companyId = reference("company_id", CompaniesTable).index()
   val customerId = reference("customer_id", CustomersTable).index()
   val createdByUserId = reference("created_by_user_id", FIUsersTable).index()
+  val accountId = reference("account_id", AccountsTable).nullable().index()
   val createdByUserName = varchar("created_by_user_name", 200).nullable()
   val amount = integer("amount") // Kuruş cinsinden Int (örn: 5000 = 50.00 TL)
   val currency = varchar("currency", 10).default("TRY")
@@ -32,6 +34,7 @@ object SaleLogsTable : UuidTable("sale_logs") {
   init {
     index(isUnique = false, companyId, paymentDate)
     index(isUnique = false, companyId, customerId)
+    index(isUnique = false, companyId, accountId)
   }
 }
 
@@ -42,6 +45,7 @@ data class SaleLog(
   val companyId: Uuid,
   val customerId: Uuid,
   val createdByUserId: Uuid,
+  val accountId: Uuid? = null,
   val createdByUserName: String? = null,
   val amount: Int, // Kuruş cinsinden Int
   val currency: String = "TRY",
@@ -57,6 +61,7 @@ fun ResultRow.toSaleLog() = SaleLog(
   companyId = this[SaleLogsTable.companyId].value,
   customerId = this[SaleLogsTable.customerId].value,
   createdByUserId = this[SaleLogsTable.createdByUserId].value,
+  accountId = this[SaleLogsTable.accountId]?.value,
   createdByUserName = this[SaleLogsTable.createdByUserName],
   amount = this[SaleLogsTable.amount],
   currency = this[SaleLogsTable.currency],

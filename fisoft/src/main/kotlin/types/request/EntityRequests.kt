@@ -98,12 +98,36 @@ data class UpdateSaleRequest(
   val description: String? = null
 )
 
+// Account DTOs
+@Serializable
+data class CreateAccountRequest(
+  val name: String,
+  val accountType: com.ilyasdemirkiran.types.accounts.AccountType = com.ilyasdemirkiran.types.accounts.AccountType.Bank,
+  val accountNumber: String? = null,
+  val bankName: String? = null,
+  val iban: String? = null,
+  val currency: String = "TRY",
+  val description: String? = null
+)
+
+@Serializable
+data class UpdateAccountRequest(
+  val name: String? = null,
+  val accountType: com.ilyasdemirkiran.types.accounts.AccountType? = null,
+  val accountNumber: String? = null,
+  val bankName: String? = null,
+  val iban: String? = null,
+  val currency: String? = null,
+  val description: String? = null
+)
+
 // SaleLog DTOs
 @Serializable
 data class AddPaymentLogRequest(
   val amount: Int, // Kuruş cinsinden Int
   val currency: String = "TRY",
   val paymentType: PaymentType = PaymentType.Cash,
+  val accountId: String? = null,
   val description: String? = null,
   @Serializable(with = InstantSerializer::class) val paymentDate: Instant? = null
 )
@@ -113,6 +137,7 @@ data class UpdatePaymentLogRequest(
   val amount: Int? = null,
   val currency: String? = null,
   val paymentType: PaymentType? = null,
+  val accountId: String? = null,
   val description: String? = null,
   @Serializable(with = InstantSerializer::class) val paymentDate: Instant? = null
 )
@@ -147,4 +172,62 @@ data class UpdatePhotoRequest(
   val description: String? = null,
   val customerId: String? = null,
   val tagIds: List<String>? = null
+)
+
+// Quote DTOs
+@Serializable
+data class CreateQuoteRequest(
+  val title: String? = null,
+  val customerId: String? = null,
+  val currency: String = "TRY", // TRY, USD, EUR
+  val notes: String? = null,
+  @Serializable(with = InstantSerializer::class) val validUntil: Instant? = null
+)
+
+@Serializable
+data class UpdateQuoteRequest(
+  val title: String? = null,
+  val customerId: String? = null,
+  val currency: String? = null,
+  val currencyRate: Double? = null,
+  val status: com.ilyasdemirkiran.types.quotes.QuoteStatus? = null,
+  val notes: String? = null,
+  @Serializable(with = InstantSerializer::class) val validUntil: Instant? = null
+)
+
+@Serializable
+data class ApplyQuoteDiscountRequest(
+  val discountType: com.ilyasdemirkiran.types.quotes.DiscountType, // Percentage veya Amount
+  val value: Double // Percentage ise örn: 10 (%10), Amount ise kuruş cinsinden tutar (örn: 5000 = 50.00 TL)
+)
+
+@Serializable
+data class CreateQuoteListRequest(
+  val title: String,
+  val sortOrder: Int = 0
+)
+
+@Serializable
+data class UpdateQuoteListRequest(
+  val title: String? = null,
+  val sortOrder: Int? = null
+)
+
+@Serializable
+data class AddQuoteItemRequest(
+  val productId: String? = null,
+  val productName: String,
+  val productCode: String? = null,
+  val quantity: Int = 1,
+  val unitPrice: Int? = null, // Opsiyonel. null ise productId verilmişse Product'tan çekilir
+  val discountAmount: Int = 0 // Kuruş cinsinden kaleme özel indirim
+)
+
+@Serializable
+data class UpdateQuoteItemRequest(
+  val productName: String? = null,
+  val productCode: String? = null,
+  val quantity: Int? = null,
+  val unitPrice: Int? = null,
+  val discountAmount: Int? = null
 )

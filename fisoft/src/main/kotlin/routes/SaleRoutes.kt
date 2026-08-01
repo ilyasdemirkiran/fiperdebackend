@@ -155,6 +155,7 @@ fun Route.saleRoutes(saleRepository: SaleRepository, userRepository: UserReposit
           amount = request.amount,
           currency = request.currency,
           paymentType = request.paymentType,
+          accountId = request.accountId?.toUuid(),
           description = request.description,
           paymentDate = request.paymentDate ?: Instant.now()
         )
@@ -188,6 +189,7 @@ fun Route.saleRoutes(saleRepository: SaleRepository, userRepository: UserReposit
           amount = request.amount,
           currency = request.currency,
           paymentType = request.paymentType,
+          accountId = request.accountId?.toUuid(),
           description = request.description,
           paymentDate = request.paymentDate
         )

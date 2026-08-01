@@ -2,6 +2,7 @@ package com.ilyasdemirkiran.db
 
 import com.ilyasdemirkiran.types.FIUsersTable
 import com.ilyasdemirkiran.types.SessionsTable
+import com.ilyasdemirkiran.types.accounts.AccountsTable
 import com.ilyasdemirkiran.types.companies.CompaniesTable
 import com.ilyasdemirkiran.types.companies.CompanyInvitesTable
 import com.ilyasdemirkiran.types.customers.CustomerNotesTable
@@ -10,6 +11,9 @@ import com.ilyasdemirkiran.types.media.ImageTagsTable
 import com.ilyasdemirkiran.types.media.PhotoTagsTable
 import com.ilyasdemirkiran.types.media.PhotosTable
 import com.ilyasdemirkiran.types.products.ProductsTable
+import com.ilyasdemirkiran.types.quotes.QuoteItemsTable
+import com.ilyasdemirkiran.types.quotes.QuoteListsTable
+import com.ilyasdemirkiran.types.quotes.QuotesTable
 import com.ilyasdemirkiran.types.sales.SaleLogsTable
 import com.ilyasdemirkiran.types.sales.SalesTable
 import com.ilyasdemirkiran.types.vendors.VendorsTable
@@ -41,6 +45,7 @@ object DatabaseConnection {
         CompaniesTable,
         SessionsTable,
         CompanyInvitesTable,
+        AccountsTable,
         CustomersTable,
         CustomerNotesTable,
         VendorsTable,
@@ -49,7 +54,17 @@ object DatabaseConnection {
         SaleLogsTable,
         ImageTagsTable,
         PhotosTable,
-        PhotoTagsTable
+        PhotoTagsTable,
+        QuotesTable,
+        QuoteListsTable,
+        QuoteItemsTable
+      )
+      SchemaUtils.createMissingTablesAndColumns(
+        AccountsTable,
+        SaleLogsTable,
+        QuotesTable,
+        QuoteListsTable,
+        QuoteItemsTable
       )
     }
 

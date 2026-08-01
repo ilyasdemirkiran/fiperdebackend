@@ -15,6 +15,9 @@ fun Application.configureRouting() {
     val vendorRepository = VendorRepository()
     val productRepository = ProductRepository()
     val saleRepository = SaleRepository()
+    val accountRepository = AccountRepository()
+    val dashboardRepository = DashboardRepository()
+    val quoteRepository = QuoteRepository()
     val mediaRepository = MediaRepository()
 
     routing {
@@ -25,10 +28,13 @@ fun Application.configureRouting() {
         authRoutes()
         userRoutes(userRepository)
         companyRoutes(companyRepository, userRepository)
+        dashboardRoutes(dashboardRepository, userRepository)
         customerRoutes(customerRepository, userRepository)
         vendorRoutes(vendorRepository, userRepository)
         productRoutes(productRepository, userRepository)
+        accountRoutes(accountRepository, saleRepository, userRepository)
         saleRoutes(saleRepository, userRepository)
+        quoteRoutes(quoteRepository, userRepository)
         mediaRoutes(mediaRepository, userRepository, customerRepository)
 
         // Public Storage Endpoint for serving media/photos directly

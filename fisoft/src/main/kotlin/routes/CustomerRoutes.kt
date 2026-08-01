@@ -24,12 +24,23 @@ fun Route.customerRoutes(
 ) {
   route("/customers") {
 
-    // GET /customers - List all customers for user's company
+    // GET /customers - List customers with search & pagination (default size: 30)
+    // Example: GET /customers
+    // Example: GET /customers?search=ali&page=1&size=30
     get {
-      call.authenticate<List<Customer>>(requireCompany = true, userRepository = userRepository) { auth ->
+      call.authenticate<com.ilyasdemirkiran.types.response.PaginatedResponseData<Customer>>(requireCompany = true, userRepository = userRepository) { auth ->
         val companyId = auth.user.companyId!!
-        val customers = customerRepository.getByCompanyId(companyId)
-        call.respond(HttpStatusCode.OK, ServerResponse(success = true, message = "Customers retrieved successfully", data = customers))
+        val search = call.request.queryParameters["search"]
+        val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
+        val size = call.request.queryParameters["size"]?.toIntOrNull() ?: 30
+
+        val paginatedCustomers = customerRepository.getByCompanyId(
+          companyId = companyId,
+          search = search,
+          page = page,
+          size = size
+        )
+        call.respond(HttpStatusCode.OK, ServerResponse(success = true, message = "Customers retrieved successfully", data = paginatedCustomers))
       }
     }
 

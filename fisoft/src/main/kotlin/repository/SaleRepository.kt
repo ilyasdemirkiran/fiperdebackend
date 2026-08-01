@@ -1,6 +1,7 @@
 package com.ilyasdemirkiran.repository
 
 import com.ilyasdemirkiran.types.sales.*
+import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.greaterEq
@@ -101,10 +102,11 @@ class SaleRepository {
     companyId: Uuid,
     customerId: Uuid,
     createdByUserId: Uuid,
-    createdByUserName: String? = null,
+    createdByUserName: String?,
     amount: Int,
     currency: String = "TRY",
     paymentType: PaymentType = PaymentType.Cash,
+    accountId: Uuid? = null,
     description: String? = null,
     paymentDate: Instant = Instant.now()
   ): SaleLog = transaction {
@@ -121,12 +123,12 @@ class SaleRepository {
       it[SaleLogsTable.amount] = amount
       it[SaleLogsTable.currency] = currency
       it[SaleLogsTable.paymentType] = paymentType
+      it[SaleLogsTable.accountId] = accountId
       it[SaleLogsTable.description] = description
       it[SaleLogsTable.paymentDate] = paymentDate
       it[SaleLogsTable.createdAt] = createdAt
     }
 
-    // Toplam ödenen tutarı güncelle
     val currentSale = SalesTable.selectAll()
       .where { (SalesTable.id eq saleId) and (SalesTable.companyId eq companyId) }
       .map { it.toSale() }
@@ -149,6 +151,7 @@ class SaleRepository {
       companyId = companyId,
       customerId = customerId,
       createdByUserId = createdByUserId,
+      accountId = accountId,
       createdByUserName = createdByUserName,
       amount = amount,
       currency = currency,
@@ -162,6 +165,7 @@ class SaleRepository {
   fun getLogsBySaleId(saleId: Uuid, companyId: Uuid): List<SaleLog> = transaction {
     SaleLogsTable.selectAll()
       .where { (SaleLogsTable.saleId eq saleId) and (SaleLogsTable.companyId eq companyId) }
+      .orderBy(SaleLogsTable.paymentDate to SortOrder.DESC)
       .map { it.toSaleLog() }
   }
 
@@ -172,6 +176,45 @@ class SaleRepository {
           (SaleLogsTable.paymentDate greaterEq startDate) and
           (SaleLogsTable.paymentDate lessEq endDate)
       }
+      .orderBy(SaleLogsTable.paymentDate to SortOrder.DESC)
+      .map { it.toSaleLog() }
+  }
+
+  fun getLogsByAccountId(accountId: Uuid, companyId: Uuid): List<SaleLog> = transaction {
+    SaleLogsTable.selectAll()
+      .where { (SaleLogsTable.accountId eq accountId) and (SaleLogsTable.companyId eq companyId) }
+      .orderBy(SaleLogsTable.paymentDate to SortOrder.DESC)
+      .map { it.toSaleLog() }
+  }
+
+  fun getLogsByAccountIdAndYear(accountId: Uuid, companyId: Uuid, year: Int): List<SaleLog> = transaction {
+    val startOfYear = java.time.Year.of(year).atDay(1).atStartOfDay(java.time.ZoneOffset.UTC).toInstant()
+    val endOfYear = java.time.Year.of(year).atMonth(12).atEndOfMonth().atTime(23, 59, 59, 999_999_999).atZone(java.time.ZoneOffset.UTC).toInstant()
+
+    SaleLogsTable.selectAll()
+      .where {
+        (SaleLogsTable.accountId eq accountId) and
+          (SaleLogsTable.companyId eq companyId) and
+          (SaleLogsTable.paymentDate greaterEq startOfYear) and
+          (SaleLogsTable.paymentDate lessEq endOfYear)
+      }
+      .orderBy(SaleLogsTable.paymentDate to SortOrder.DESC)
+      .map { it.toSaleLog() }
+  }
+
+  fun getLogsByAccountIdAndMonth(accountId: Uuid, companyId: Uuid, year: Int, month: Int): List<SaleLog> = transaction {
+    val yearMonth = java.time.YearMonth.of(year, month)
+    val startOfMonth = yearMonth.atDay(1).atStartOfDay(java.time.ZoneOffset.UTC).toInstant()
+    val endOfMonth = yearMonth.atEndOfMonth().atTime(23, 59, 59, 999_999_999).atZone(java.time.ZoneOffset.UTC).toInstant()
+
+    SaleLogsTable.selectAll()
+      .where {
+        (SaleLogsTable.accountId eq accountId) and
+          (SaleLogsTable.companyId eq companyId) and
+          (SaleLogsTable.paymentDate greaterEq startOfMonth) and
+          (SaleLogsTable.paymentDate lessEq endOfMonth)
+      }
+      .orderBy(SaleLogsTable.paymentDate to SortOrder.DESC)
       .map { it.toSaleLog() }
   }
 
@@ -181,6 +224,7 @@ class SaleRepository {
     amount: Int? = null,
     currency: String? = null,
     paymentType: PaymentType? = null,
+    accountId: Uuid? = null,
     description: String? = null,
     paymentDate: Instant? = null
   ): SaleLog? = transaction {
@@ -193,11 +237,11 @@ class SaleRepository {
       amount?.let { update[SaleLogsTable.amount] = it }
       currency?.let { update[SaleLogsTable.currency] = it }
       paymentType?.let { update[SaleLogsTable.paymentType] = it }
+      accountId?.let { update[SaleLogsTable.accountId] = it }
       description?.let { update[SaleLogsTable.description] = it }
       paymentDate?.let { update[SaleLogsTable.paymentDate] = it }
     }
 
-    // Recalculate totalPaidAmount for Sale
     recalculateSalePaidAmount(existingLog.saleId, companyId)
 
     SaleLogsTable.selectAll()

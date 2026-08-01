@@ -60,6 +60,21 @@
 			"key": "photoId",
 			"value": "",
 			"type": "string"
+		},
+		{
+			"key": "quoteId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "listId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "itemId",
+			"value": "",
+			"type": "string"
 		}
 	],
 	"item": [
@@ -261,6 +276,37 @@
 							"path": ["companies", "name"]
 						}
 					}
+				},
+				{
+					"name": "2.4 Get Dashboard Overview",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/dashboard?year=2026&month=8&limit=5",
+							"host": ["{{baseUrl}}"],
+							"path": ["dashboard"],
+							"query": [
+								{
+									"key": "year",
+									"value": "2026"
+								},
+								{
+									"key": "month",
+									"value": "8"
+								},
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
+						}
+					}
 				}
 			]
 		},
@@ -309,7 +355,7 @@
 					}
 				},
 				{
-					"name": "3.2 List All Customers",
+					"name": "3.2 List Customers (Paginated & Search)",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -319,9 +365,23 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/customers",
+							"raw": "{{baseUrl}}/customers?search=mehmet&page=1&size=30",
 							"host": ["{{baseUrl}}"],
-							"path": ["customers"]
+							"path": ["customers"],
+							"query": [
+								{
+									"key": "search",
+									"value": "mehmet"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "size",
+									"value": "30"
+								}
+							]
 						}
 					}
 				},
@@ -861,7 +921,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"amount\": 10000,\n  \"currency\": \"TRY\",\n  \"paymentType\": \"BankTransfer\",\n  \"description\": \"Havale Kaparo Ödemesi\"\n}"
+							"raw": "{\n  \"amount\": 10000,\n  \"currency\": \"TRY\",\n  \"paymentType\": \"Cash\",\n  \"accountId\": \"{{accountId}}\",\n  \"description\": \"Kaparo ödemesi nakit alındı\"\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/sales/{{saleId}}/logs",
@@ -1411,6 +1471,514 @@
 							"raw": "{{baseUrl}}/companies/{{companyId}}/users",
 							"host": ["{{baseUrl}}"],
 							"path": ["companies", "{{companyId}}", "users"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "9. Accounts & Financial Logs",
+			"item": [
+				{
+					"name": "9.1 Create Account",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var json = pm.response.json();",
+									"    if (json.data && json.data.id) {",
+									"        pm.collectionVariables.set('accountId', json.data.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Garanti Bankası Ana Hesap\",\n  \"accountType\": \"Bank\",\n  \"accountNumber\": \"12345678\",\n  \"bankName\": \"Garanti BBVA\",\n  \"iban\": \"TR123456789012345678901234\",\n  \"currency\": \"TRY\",\n  \"description\": \"Şirket ana banka hesabı\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/accounts",
+							"host": ["{{baseUrl}}"],
+							"path": ["accounts"]
+						}
+					}
+				},
+				{
+					"name": "9.2 List Accounts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/accounts",
+							"host": ["{{baseUrl}}"],
+							"path": ["accounts"]
+						}
+					}
+				},
+				{
+					"name": "9.3 Get Account by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/accounts/{{accountId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["accounts", "{{accountId}}"]
+						}
+					}
+				},
+				{
+					"name": "9.4 Update Account",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Garanti Bankası Güncellenmiş Hesap\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/accounts/{{accountId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["accounts", "{{accountId}}"]
+						}
+					}
+				},
+				{
+					"name": "9.5 Delete Account",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/accounts/{{accountId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["accounts", "{{accountId}}"]
+						}
+					}
+				},
+				{
+					"name": "9.6 Get Account Logs (All)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/accounts/{{accountId}}/logs",
+							"host": ["{{baseUrl}}"],
+							"path": ["accounts", "{{accountId}}", "logs"]
+						}
+					}
+				},
+				{
+					"name": "9.7 Get Account Logs (By Year)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/accounts/{{accountId}}/logs?year=2026",
+							"host": ["{{baseUrl}}"],
+							"path": ["accounts", "{{accountId}}", "logs"],
+							"query": [
+								{
+									"key": "year",
+									"value": "2026"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "9.8 Get Account Logs (By Month & Year)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/accounts/{{accountId}}/logs?year=2026&month=8",
+							"host": ["{{baseUrl}}"],
+							"path": ["accounts", "{{accountId}}", "logs"],
+							"query": [
+								{
+									"key": "year",
+									"value": "2026"
+								},
+								{
+									"key": "month",
+									"value": "8"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "10. Exchange Rates & Quote Management",
+			"item": [
+				{
+					"name": "10.1 Get TCMB Exchange Rates (TRY, USD, EUR)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/exchange-rates/tcmb",
+							"host": ["{{baseUrl}}"],
+							"path": ["exchange-rates", "tcmb"]
+						}
+					}
+				},
+				{
+					"name": "10.2 Create Quote (Auto fetches TCMB Rate)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var json = pm.response.json();",
+									"    if (json.data && json.data.id) {",
+									"        pm.collectionVariables.set('quoteId', json.data.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Salon & Yatak Odası Özel Perde Teklifi\",\n  \"customerId\": \"{{customerId}}\",\n  \"currency\": \"USD\",\n  \"notes\": \"Teklif 15 gün geçerlidir.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/quotes",
+							"host": ["{{baseUrl}}"],
+							"path": ["quotes"]
+						}
+					}
+				},
+				{
+					"name": "10.3 List Quotes (Paginated & Search)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/quotes?search=Salon&page=1&size=30",
+							"host": ["{{baseUrl}}"],
+							"path": ["quotes"],
+							"query": [
+								{
+									"key": "search",
+									"value": "Salon"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "size",
+									"value": "30"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "10.4 Get Quote Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/quotes/{{quoteId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["quotes", "{{quoteId}}"]
+						}
+					}
+				},
+				{
+					"name": "10.5 Add List Group to Quote (e.g. Salon Grubu)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var json = pm.response.json();",
+									"    if (json.data && json.data.id) {",
+									"        pm.collectionVariables.set('listId', json.data.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Salon Perde Grubu\",\n  \"sortOrder\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/quotes/{{quoteId}}/lists",
+							"host": ["{{baseUrl}}"],
+							"path": ["quotes", "{{quoteId}}", "lists"]
+						}
+					}
+				},
+				{
+					"name": "10.6 Add Item / Product to Quote List",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var json = pm.response.json();",
+									"    if (json.data && json.data.id) {",
+									"        pm.collectionVariables.set('itemId', json.data.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"productId\": \"{{productId}}\",\n  \"productName\": \"Keten Tül Perde\",\n  \"productCode\": \"KT-101\",\n  \"quantity\": 3,\n  \"unitPrice\": 45000,\n  \"discountAmount\": 5000\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/quotes/lists/{{listId}}/items",
+							"host": ["{{baseUrl}}"],
+							"path": ["quotes", "lists", "{{listId}}", "items"]
+						}
+					}
+				},
+				{
+					"name": "10.7 Update Item in Quote (Price / Quantity / Discount)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"quantity\": 4,\n  \"unitPrice\": 42000,\n  \"discountAmount\": 10000\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/quotes/items/{{itemId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["quotes", "items", "{{itemId}}"]
+						}
+					}
+				},
+				{
+					"name": "10.8 Apply Overall Discount to Quote (Percentage or Amount)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"discountType\": \"Percentage\",\n  \"value\": 10\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/quotes/{{quoteId}}/discount",
+							"host": ["{{baseUrl}}"],
+							"path": ["quotes", "{{quoteId}}", "discount"]
+						}
+					}
+				},
+				{
+					"name": "10.9 Update Quote (Rate, Currency, Status)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"currencyRate\": 36.50,\n  \"status\": \"Sent\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/quotes/{{quoteId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["quotes", "{{quoteId}}"]
+						}
+					}
+				},
+				{
+					"name": "10.10 Delete Quote Item",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/quotes/items/{{itemId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["quotes", "items", "{{itemId}}"]
+						}
+					}
+				},
+				{
+					"name": "10.11 Delete Quote List",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/quotes/lists/{{listId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["quotes", "lists", "{{listId}}"]
+						}
+					}
+				},
+				{
+					"name": "10.12 Delete Quote",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/quotes/{{quoteId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["quotes", "{{quoteId}}"]
 						}
 					}
 				}
