@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 		"name": "FiPerde Backend - Complete Flow & Endpoints",
-		"description": "Comprehensive Postman collection following an end-to-end user & company business flow:\n1. User Registration & Auth (Login script saves session token)\n2. Company Management (Authenticated via Bearer Token)\n3. Customer Management (CRUD)\n4. Vendor Management (CRUD)\n5. Product Management (CRUD)\n6. Sale & Payment Log Management (Sale CRUD, Payment Logs, Monthly filtering)\n7. Media & Photo Management (Tag CRUD, MinIO Photo Uploads, Customer / Gallery Photos)\n8. Company Member & Invite Management",
+		"description": "Comprehensive Postman collection following an end-to-end user & company business flow:\n1. User Registration & Auth (Login script saves session token, User CRUD)\n2. Company Management (Company setup, name update, leave, delete & Dashboard overview)\n3. Customer Management (Customer CRUD & Note CRUD)\n4. Vendor Management (Vendor CRUD)\n5. Product Management (Product CRUD, linked & independent products)\n6. Sale & Payment Log Management (Sale CRUD, Payment Logs, Monthly filtering)\n7. Media & Photo Management (Tag CRUD, MinIO Photo Uploads, Customer / Gallery Photos)\n8. Company Member & Invite Management (Invites, User promote/demote/remove)\n9. Accounts & Financial Logs (Account CRUD & Account Logs)\n10. Exchange Rates & Quote Management (TCMB Rates, Quote CRUD, List & Item Management, Discount calculation)",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -73,6 +73,11 @@
 		},
 		{
 			"key": "itemId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "targetUserId",
 			"value": "",
 			"type": "string"
 		}
@@ -156,7 +161,83 @@
 					}
 				},
 				{
-					"name": "1.3 Get Me / Validate Session",
+					"name": "1.3 List All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["users"]
+						}
+					}
+				},
+				{
+					"name": "1.4 Get User By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/users/{{adminUserId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "{{adminUserId}}"]
+						}
+					}
+				},
+				{
+					"name": "1.5 Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Ahmet\",\n  \"surname\": \"Yılmaz (Güncellendi)\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users/{{adminUserId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "{{adminUserId}}"]
+						}
+					}
+				},
+				{
+					"name": "1.6 Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/users/{{adminUserId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "{{adminUserId}}"]
+						}
+					}
+				},
+				{
+					"name": "1.7 Get Me / Validate Session",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -173,7 +254,7 @@
 					}
 				},
 				{
-					"name": "1.4 Logout",
+					"name": "1.8 Logout",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -278,7 +359,41 @@
 					}
 				},
 				{
-					"name": "2.4 Get Dashboard Overview",
+					"name": "2.4 Leave Company",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/companies/leave",
+							"host": ["{{baseUrl}}"],
+							"path": ["companies", "leave"]
+						}
+					}
+				},
+				{
+					"name": "2.5 Delete My Company (Owner Only)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/companies/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["companies", "me"]
+						}
+					}
+				},
+				{
+					"name": "2.6 Get Dashboard Overview",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -1471,6 +1586,57 @@
 							"raw": "{{baseUrl}}/companies/{{companyId}}/users",
 							"host": ["{{baseUrl}}"],
 							"path": ["companies", "{{companyId}}", "users"]
+						}
+					}
+				},
+				{
+					"name": "8.8 Promote User to Admin",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/companies/{{companyId}}/users/{{targetUserId}}/promote",
+							"host": ["{{baseUrl}}"],
+							"path": ["companies", "{{companyId}}", "users", "{{targetUserId}}", "promote"]
+						}
+					}
+				},
+				{
+					"name": "8.9 Demote User from Admin",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/companies/{{companyId}}/users/{{targetUserId}}/demote",
+							"host": ["{{baseUrl}}"],
+							"path": ["companies", "{{companyId}}", "users", "{{targetUserId}}", "demote"]
+						}
+					}
+				},
+				{
+					"name": "8.10 Remove User from Company",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/companies/{{companyId}}/users/{{targetUserId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["companies", "{{companyId}}", "users", "{{targetUserId}}"]
 						}
 					}
 				}
