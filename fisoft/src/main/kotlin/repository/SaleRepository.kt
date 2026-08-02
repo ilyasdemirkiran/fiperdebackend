@@ -162,6 +162,13 @@ class SaleRepository {
     )
   }
 
+  fun getLogById(logId: Uuid, companyId: Uuid): SaleLog? = transaction {
+    SaleLogsTable.selectAll()
+      .where { (SaleLogsTable.id eq logId) and (SaleLogsTable.companyId eq companyId) }
+      .map { it.toSaleLog() }
+      .firstOrNull()
+  }
+
   fun getLogsBySaleId(saleId: Uuid, companyId: Uuid): List<SaleLog> = transaction {
     SaleLogsTable.selectAll()
       .where { (SaleLogsTable.saleId eq saleId) and (SaleLogsTable.companyId eq companyId) }

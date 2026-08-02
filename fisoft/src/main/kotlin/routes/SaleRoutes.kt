@@ -1,5 +1,6 @@
 package com.ilyasdemirkiran.routes
 
+import com.ilyasdemirkiran.repository.AccountRepository
 import com.ilyasdemirkiran.repository.SaleRepository
 import com.ilyasdemirkiran.repository.UserRepository
 import com.ilyasdemirkiran.types.request.AddPaymentLogRequest
@@ -41,7 +42,11 @@ private fun parseDateToInstant(dateStr: String?, isEnd: Boolean): Instant {
   }
 }
 
-fun Route.saleRoutes(saleRepository: SaleRepository, userRepository: UserRepository) {
+fun Route.saleRoutes(
+  saleRepository: SaleRepository,
+  userRepository: UserRepository,
+  accountRepository: AccountRepository = AccountRepository()
+) {
   route("/sales") {
 
     // GET /sales - List all sales for company (optional ?customerId=...)
@@ -146,6 +151,27 @@ fun Route.saleRoutes(saleRepository: SaleRepository, userRepository: UserReposit
           ?: return@authenticate call.respond(HttpStatusCode.NotFound, ServerResponse<SaleLog>(false, "Sale not found"))
 
         val request = call.receive<AddPaymentLogRequest>()
+        val accountUuid = request.accountId?.takeIf { it.isNotBlank() }?.toUuid()
+
+        if (accountUuid != null) {
+          val account = accountRepository.getAccountById(accountUuid, companyId)
+            ?: return@authenticate call.respond(
+              HttpStatusCode.NotFound,
+              ServerResponse<SaleLog>(false, "Account not found")
+            )
+
+          if (!account.currency.equals(request.currency, ignoreCase = true)) {
+            return@authenticate call.respond(
+              HttpStatusCode.BadRequest,
+              ServerResponse<SaleLog>(
+                false,
+                "Currency mismatch",
+                error = "Account currency (${account.currency}) does not match payment currency (${request.currency})"
+              )
+            )
+          }
+        }
+
         val log = saleRepository.addPaymentLog(
           saleId = sale.id,
           companyId = companyId,
@@ -155,7 +181,7 @@ fun Route.saleRoutes(saleRepository: SaleRepository, userRepository: UserReposit
           amount = request.amount,
           currency = request.currency,
           paymentType = request.paymentType,
-          accountId = request.accountId?.toUuid(),
+          accountId = accountUuid,
           description = request.description,
           paymentDate = request.paymentDate ?: Instant.now()
         )
@@ -183,13 +209,39 @@ fun Route.saleRoutes(saleRepository: SaleRepository, userRepository: UserReposit
         val logId = (call.parameters["logId"] ?: throw IllegalArgumentException("Log ID is required")).toUuid()
         val request = call.receive<UpdatePaymentLogRequest>()
 
+        val existingLog = saleRepository.getLogById(logId, companyId)
+          ?: return@authenticate call.respond(HttpStatusCode.NotFound, ServerResponse<SaleLog>(false, "Payment log not found"))
+
+        val targetAccountId = request.accountId?.takeIf { it.isNotBlank() }?.toUuid()
+        val finalAccountId = targetAccountId ?: existingLog.accountId
+        val finalCurrency = request.currency ?: existingLog.currency
+
+        if (finalAccountId != null) {
+          val account = accountRepository.getAccountById(finalAccountId, companyId)
+            ?: return@authenticate call.respond(
+              HttpStatusCode.NotFound,
+              ServerResponse<SaleLog>(false, "Account not found")
+            )
+
+          if (!account.currency.equals(finalCurrency, ignoreCase = true)) {
+            return@authenticate call.respond(
+              HttpStatusCode.BadRequest,
+              ServerResponse<SaleLog>(
+                false,
+                "Currency mismatch",
+                error = "Account currency (${account.currency}) does not match payment currency ($finalCurrency)"
+              )
+            )
+          }
+        }
+
         val updatedLog = saleRepository.updatePaymentLog(
           logId = logId,
           companyId = companyId,
           amount = request.amount,
           currency = request.currency,
           paymentType = request.paymentType,
-          accountId = request.accountId?.toUuid(),
+          accountId = targetAccountId,
           description = request.description,
           paymentDate = request.paymentDate
         )
