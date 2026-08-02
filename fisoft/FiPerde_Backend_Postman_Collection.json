@@ -1115,7 +1115,7 @@
 					}
 				},
 				{
-					"name": "6.8 Update Payment Log",
+					"name": "6.8 Update Payment Log (Change Amount / Details)",
 					"request": {
 						"method": "PUT",
 						"header": [
@@ -1140,7 +1140,32 @@
 					}
 				},
 				{
-					"name": "6.9 Delete Payment Log",
+					"name": "6.9 Update Payment Log (Unlink / Clear Account)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"accountId\": \"\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sales/logs/{{logId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["sales", "logs", "{{logId}}"]
+						}
+					}
+				},
+				{
+					"name": "6.10 Delete Payment Log",
 					"request": {
 						"method": "DELETE",
 						"header": [
