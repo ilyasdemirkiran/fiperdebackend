@@ -212,8 +212,11 @@ fun Route.saleRoutes(
         val existingLog = saleRepository.getLogById(logId, companyId)
           ?: return@authenticate call.respond(HttpStatusCode.NotFound, ServerResponse<SaleLog>(false, "Payment log not found"))
 
-        val targetAccountId = request.accountId?.takeIf { it.isNotBlank() }?.toUuid()
-        val finalAccountId = targetAccountId ?: existingLog.accountId
+        val rawAccountId = request.accountId
+        val isExplicitlyClearingAccount = rawAccountId != null && rawAccountId.trim().isEmpty()
+        val targetAccountId = rawAccountId?.takeIf { it.isNotBlank() }?.toUuid()
+
+        val finalAccountId = if (isExplicitlyClearingAccount) null else (targetAccountId ?: existingLog.accountId)
         val finalCurrency = request.currency ?: existingLog.currency
 
         if (finalAccountId != null) {
@@ -242,6 +245,7 @@ fun Route.saleRoutes(
           currency = request.currency,
           paymentType = request.paymentType,
           accountId = targetAccountId,
+          clearAccountId = isExplicitlyClearingAccount,
           description = request.description,
           paymentDate = request.paymentDate
         )

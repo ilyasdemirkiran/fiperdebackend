@@ -232,6 +232,7 @@ class SaleRepository {
     currency: String? = null,
     paymentType: PaymentType? = null,
     accountId: Uuid? = null,
+    clearAccountId: Boolean = false,
     description: String? = null,
     paymentDate: Instant? = null
   ): SaleLog? = transaction {
@@ -244,7 +245,11 @@ class SaleRepository {
       amount?.let { update[SaleLogsTable.amount] = it }
       currency?.let { update[SaleLogsTable.currency] = it }
       paymentType?.let { update[SaleLogsTable.paymentType] = it }
-      accountId?.let { update[SaleLogsTable.accountId] = it }
+      if (clearAccountId) {
+        update[SaleLogsTable.accountId] = null
+      } else if (accountId != null) {
+        update[SaleLogsTable.accountId] = accountId
+      }
       description?.let { update[SaleLogsTable.description] = it }
       paymentDate?.let { update[SaleLogsTable.paymentDate] = it }
     }
