@@ -1,5 +1,9 @@
 FROM eclipse-temurin:21-jre-alpine
+
 WORKDIR /app
-COPY build/libs/*.jar /app/app.jar
+
+COPY build/libs/*.jar app.jar
+
 EXPOSE 8080
-ENTRYPOINT ["java", "-Xms128m", "-Xmx192m", "-Xss256k", "-XX:+UseSerialGC", "-XX:+ExitOnOutOfMemoryError", "-jar", "/app/app.jar"]
+
+ENTRYPOINT ["java","-Xms512m","-Xmx2048m","-XX:+UseG1GC","-XX:+AlwaysActAsServerClassMachine","-XX:+ExitOnOutOfMemoryError","-jar","app.jar"]
