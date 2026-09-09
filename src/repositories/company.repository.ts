@@ -46,6 +46,38 @@ export class CompanyRepository {
     }
   }
 
+  async findDemoCompany(): Promise<Company | null> {
+    try {
+      const doc = await this.getCollection().findOne({ isDemo: true } as any);
+      return doc as Company | null;
+    } catch (error) {
+      logger.error("Failed to find demo company", error);
+      throw error;
+    }
+  }
+
+  async setDemoCompany(companyId: string, isDemo: boolean): Promise<Company | null> {
+    try {
+      // If setting a company as demo, ensure all other companies have isDemo: false (only 1 demo company allowed)
+      if (isDemo) {
+        await this.getCollection().updateMany(
+          { _id: { $ne: new ObjectId(companyId) } } as any,
+          { $set: { isDemo: false } }
+        );
+      }
+
+      const result = await this.getCollection().findOneAndUpdate(
+        { _id: new ObjectId(companyId) } as any,
+        { $set: { isDemo } },
+        { returnDocument: "after" }
+      );
+      return result as Company | null;
+    } catch (error) {
+      logger.error("Failed to set demo company", error);
+      throw error;
+    }
+  }
+
   async addUser(companyId: string, userId: string): Promise<void> {
     try {
       await this.getCollection().updateOne(

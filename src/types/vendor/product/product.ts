@@ -10,11 +10,10 @@ export const productSchema = z.object({
   code: z.string().min(2, "En az 2 karakter gereklidir.").max(100, "Max 100 karakter"),
   price: z.coerce.number<number>("Fiyat girmeniz gerekiyor.").positive({error: "Positive olmak zorunda"}),
   currency: currencySchema,
-  vendorId: z.custom<ObjectId>(),
+  vendorId: z.custom<ObjectId>().optional(),
   vendor: vendorSchema.optional(),
   vendorName: z.string().optional(),
   description: z.string().min(2, "Min 2 karakter").max(1000, "Max 1000 karakter").optional(),
-  imageUrl: z.url().optional(),
   /** Computed response field: price * (1 + rate/100). Not stored in DB. */
   priceWithRate: z.number().optional(),
   createdAt: timestampSchema,

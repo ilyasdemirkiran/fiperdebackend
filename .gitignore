@@ -41,3 +41,10 @@ mongo-keyfile/
 storage/
 storage/versions
 *.zip
+
+# Postman
+*.postman_collection.json
+*.postman_environment.json
+
+# Lockfiles
+yarn.lock

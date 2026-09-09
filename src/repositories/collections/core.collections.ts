@@ -5,7 +5,6 @@ import type {FIUser} from "@/types/user/fi_user";
 import type {Vendor} from "@/types/vendor/vendor";
 import type {Product} from "@/types/vendor/product/product";
 import type {CompanyInvite} from "@/types/company/company_invite";
-import type {PriceListRequest} from "@/types/vendor/price_list_request";
 import type {Subscription} from "@/types/subscription/subscription";
 import type {VendorDocument} from "@/types/vendor/vendor_document";
 import type {VendorPermission} from "@/types/vendor/vendor_permission";
@@ -26,7 +25,6 @@ export const CORE_COLLECTIONS = {
     price_rates: "vendor_price_rates",
   },
   products: "products",
-  priceListRequests: "price_list_requests",
 };
 
 export function getCompaniesCollection(): Collection<Company> {
@@ -49,8 +47,16 @@ export function getVendorsCollection(): Collection<Vendor> {
   return getGlobalVendorDatabase().collection(CORE_COLLECTIONS.vendors.vendors);
 }
 
+export function getCompanyVendorsCollection(companyId: string): Collection<Vendor> {
+  return getDatabaseForCompany(companyId).collection<Vendor>(CORE_COLLECTIONS.vendors.vendors);
+}
+
 export function getVendorDocumentsCollection(): Collection<VendorDocument> {
   return getGlobalVendorDatabase().collection<VendorDocument>(CORE_COLLECTIONS.vendors.documents);
+}
+
+export function getCompanyVendorDocumentsCollection(companyId: string): Collection<VendorDocument> {
+  return getDatabaseForCompany(companyId).collection<VendorDocument>(CORE_COLLECTIONS.vendors.documents);
 }
 
 export function getVendorPermissionCollection(): Collection<VendorPermission> {
@@ -65,8 +71,8 @@ export function getProductsCollection(): Collection<Product> {
   return getGlobalVendorDatabase().collection(CORE_COLLECTIONS.products);
 }
 
-export function getPriceListRequestsCollection(): Collection<PriceListRequest> {
-  return getGlobalVendorDatabase().collection<PriceListRequest>(CORE_COLLECTIONS.priceListRequests);
+export function getCompanyProductsCollection(companyId: string): Collection<Product> {
+  return getDatabaseForCompany(companyId).collection<Product>(CORE_COLLECTIONS.products);
 }
 
 export function getCompanyNotesCollection(): Collection<CompanyNoteDb> {

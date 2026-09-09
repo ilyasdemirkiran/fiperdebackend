@@ -63,6 +63,41 @@ export function getDatabaseForCompany(companyId: string): Db {
 }
 
 /**
+ * Copy all collections and documents from source company DB (e.g. Demo company) to target company DB
+ */
+export async function copyTenantDatabase(sourceCompanyId: string, targetCompanyId: string): Promise<void> {
+  if (!client) {
+    throw new Error("Database not connected");
+  }
+
+  const sourceDb = getDatabaseForCompany(sourceCompanyId);
+  const targetDb = getDatabaseForCompany(targetCompanyId);
+
+  // List all collections in source DB
+  const collections = await sourceDb.listCollections().toArray();
+
+  for (const collInfo of collections) {
+    const collName = collInfo.name;
+
+    // Skip system collections
+    if (collName.startsWith("system.")) {
+      continue;
+    }
+
+    const sourceCollection = sourceDb.collection(collName);
+    const targetCollection = targetDb.collection(collName);
+
+    const docs = await sourceCollection.find({}).toArray();
+    if (docs.length > 0) {
+      await targetCollection.insertMany(docs as any);
+    }
+  }
+
+  // Ensure standard indexes are created for target DB
+  await createIndexesForCompany(targetDb);
+}
+
+/**
  * Drop a company's database completely
  * Used when deleting a company
  */
@@ -197,6 +232,35 @@ async function createIndexesForCompany(database: Db) {
   await salesCollection.createIndex({ customerId: 1 });
   await salesCollection.createIndex({ status: 1 });
   await salesCollection.createIndex({ createdAt: -1 });
+
+  // Vendor indexes (Unique name per company)
+  const vendorsCollection = database.collection("vendors");
+  try {
+    const indexes = await vendorsCollection.indexes();
+    const nameIndex = indexes.find((idx) => idx.name === "name_1" || (idx.key && (idx.key as any).name === 1));
+    if (nameIndex?.name && !nameIndex.unique) {
+      await vendorsCollection.dropIndex(nameIndex.name);
+    }
+  } catch (e) {
+    // collection may be new
+  }
+  await vendorsCollection.createIndex(
+    { name: 1 },
+    { unique: true, collation: { locale: "tr", strength: 2 } }
+  );
+
+  // Product indexes
+  const productsCollection = database.collection("products");
+  await productsCollection.createIndex({ vendorId: 1 });
+  await productsCollection.createIndex({ name: 1 });
+
+  // Vendor document indexes
+  const vendorDocumentsCollection = database.collection("vendor_documents");
+  await vendorDocumentsCollection.createIndex({ vendorId: 1 });
+
+  // Price rate indexes
+  const priceRatesCollection = database.collection("vendor_price_rates");
+  await priceRatesCollection.createIndex({ vendorId: 1 }, { unique: true });
 
   console.log(`✅ Indexes created for ${database.databaseName}`);
 }

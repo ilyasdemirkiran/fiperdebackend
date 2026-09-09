@@ -12,7 +12,6 @@ import { vendorRoutes } from "@/routes/vendor.routes";
 import { productRoutes } from "@/routes/product.routes";
 import { vendorAttachmentRoutes } from "@/routes/vendor-attachment.routes";
 import { managementRoutes } from "@/routes/management.routes";
-import { priceListRequestRoutes } from "@/routes/price-list-request.routes";
 import { errorHandler } from "@/middleware/error-handler";
 import { botGuard, rateLimiter } from "@/middleware/security";
 import { logger, runWithContext } from "@/utils/logger";
@@ -26,7 +25,6 @@ import { payTRPublicRoutes, payTRRoutes } from "@/routes/payTRRoutes";
 import { subscriptionRoutes } from "@/routes/subscription.routes";
 import { updateRoutes } from "@/routes/update.routes";
 import { logger as honoLogger } from "hono/logger";
-import { compress } from "hono/compress";
 
 const app = new Hono();
 
@@ -93,7 +91,6 @@ app.route("/api/public", publicRoutes);
 app.route("/api/auth", authRoutes);
 app.route("/api/companies", companyRoutes);
 app.route("/api/management", managementRoutes);
-app.route("/api/price-list-requests", priceListRequestRoutes);
 app.route("/api/customers", customerImageRoutes);
 app.route("/api/customers", saleRoutes);
 app.route("/api/customers", customerNoteRoutes);

@@ -174,7 +174,10 @@ export class QuoteService {
     const newItems: QuoteItem[] = [];
 
     for (const input of itemsInput) {
-      const product = await this.productRepository.findById(input.productId);
+      let product = await this.productRepository.findById(input.productId, companyId);
+      if (!product) {
+        product = await this.productRepository.findById(input.productId);
+      }
       if (!product) {
         throw new AppError(400, `Product not found: ${input.productId}`, "PRODUCT_NOT_FOUND");
       }

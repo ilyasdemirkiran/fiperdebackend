@@ -1,12 +1,11 @@
-import {VendorDocumentRepository} from "@/repositories/vendor-document.repository";
-import {VendorRepository} from "@/repositories/vendor.repository";
-import {ALLOWED_ATTACHMENT_MIME_TYPE, type VendorAttachment, type VendorAttachmentMetadata,} from "@/types/vendor/vendor_attachment";
-import {type VendorDocument} from "@/types/vendor/vendor_document";
-import {AppError} from "@/middleware/error-handler";
-import {logger} from "@/utils/logger";
-import {Timestamp} from "firebase-admin/firestore";
-import type {UserRole} from "@/types/user/fi_user";
-import {Binary, ObjectId} from "mongodb";
+import { VendorDocumentRepository } from "@/repositories/vendor-document.repository";
+import { VendorRepository } from "@/repositories/vendor.repository";
+import { ALLOWED_DOCUMENT_MIME_TYPES, type VendorAttachment, type VendorAttachmentMetadata } from "@/types/vendor/vendor_attachment";
+import { type VendorDocument } from "@/types/vendor/vendor_document";
+import { AppError } from "@/middleware/error-handler";
+import { logger } from "@/utils/logger";
+import { Timestamp } from "firebase-admin/firestore";
+import { Binary, ObjectId } from "mongodb";
 
 export interface UploadAttachmentInput {
   title: string;
@@ -16,6 +15,19 @@ export interface UploadAttachmentInput {
   size: number;
   data: Buffer;
 }
+
+const ALLOWED_EXTENSIONS = [
+  ".pdf",
+  ".xlsx",
+  ".xls",
+  ".doc",
+  ".docx",
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+  ".webp",
+];
 
 export class VendorAttachmentService {
   private repository: VendorDocumentRepository;
@@ -27,43 +39,36 @@ export class VendorAttachmentService {
   }
 
   /**
-   * Assert that user is sudo
+   * Validate that the file is an allowed type (PDF, Excel, Word, Image)
    */
-  private assertSudo(role: UserRole): void {
-    if (role !== "sudo") {
-      throw new AppError(403, "Only sudo users can manage vendor attachments", "FORBIDDEN");
+  private validateFile(mimeType: string, filename: string): void {
+    const isMimeAllowed = ALLOWED_DOCUMENT_MIME_TYPES.includes(mimeType as any);
+    const lowerFilename = filename.toLowerCase();
+    const hasAllowedExtension = ALLOWED_EXTENSIONS.some((ext) => lowerFilename.endsWith(ext));
+
+    if (!isMimeAllowed && !hasAllowedExtension) {
+      throw new AppError(
+        400,
+        "Only PDF, Excel (.xlsx, .xls), Word (.docx, .doc), and Image (.jpg, .png, .gif, .webp) files are allowed",
+        "INVALID_FILE_TYPE"
+      );
     }
   }
 
   /**
-   * Validate that the file is a PDF
-   */
-  private validatePdf(mimeType: string, filename: string): void {
-    if (mimeType !== ALLOWED_ATTACHMENT_MIME_TYPE) {
-      throw new AppError(400, "Only PDF files are allowed", "INVALID_FILE_TYPE");
-    }
-
-    if (!filename.toLowerCase().endsWith(".pdf")) {
-      throw new AppError(400, "File must have .pdf extension", "INVALID_FILE_EXTENSION");
-    }
-  }
-
-  /**
-   * Upload a new attachment for a vendor (sudo only, PDF only)
-   * Note: Stores in vendor_documents collection
+   * Upload a new attachment for a vendor in company database
    */
   async uploadAttachment(
+    companyId: string,
     vendorId: string,
     uploaderId: string,
     uploaderName: string,
-    role: UserRole,
     input: UploadAttachmentInput
   ): Promise<VendorAttachmentMetadata> {
-    this.assertSudo(role);
-    this.validatePdf(input.mimeType, input.filename);
+    this.validateFile(input.mimeType, input.filename);
 
-    // Check if vendor exists
-    const vendor = await this.vendorRepository.findById(vendorId);
+    // Check if vendor exists in company DB
+    const vendor = await this.vendorRepository.findById(vendorId, companyId);
     if (!vendor) {
       throw new AppError(404, "Vendor not found", "VENDOR_NOT_FOUND");
     }
@@ -76,106 +81,82 @@ export class VendorAttachmentService {
       uploaderId,
       uploaderName,
       filename: input.filename,
-      mimeType: "application/pdf" as any, // Enforced by validatePdf and type
+      mimeType: input.mimeType as any,
       size: input.size,
       data: new Binary(input.data),
     };
 
-    const created = await this.repository.create(document, vendorId);
+    const created = await this.repository.create(document, vendorId, companyId);
 
-    logger.info("Vendor attachment created (as document)", {
+    logger.info("Vendor attachment created", {
       documentId: created._id?.toString(),
       vendorId,
       uploaderId,
       filename: input.filename,
+      companyId,
     });
 
-    // Return metadata without binary data, cast to AttachmentMetadata format
-    const {data, ...metadata} = created;
+    const { data, ...metadata } = created;
     return metadata as unknown as VendorAttachmentMetadata;
   }
 
   /**
-   * Get attachment by ID (returns full attachment with binary data)
+   * Get attachment by ID (with binary data)
    */
-  async getAttachment(attachmentId: string): Promise<VendorAttachment> {
-    const document = await this.repository.findById(attachmentId);
+  async getAttachment(attachmentId: string, companyId?: string): Promise<VendorAttachment> {
+    const document = await this.repository.findById(attachmentId, companyId);
 
     if (!document) {
       throw new AppError(404, `Attachment not found: ${attachmentId}`, "ATTACHMENT_NOT_FOUND");
     }
 
-    // Cast to VendorAttachment - structures are compatible for shared fields
     return document as unknown as VendorAttachment;
   }
 
   /**
-   * Get attachment metadata by ID (without binary data)
+   * Get attachment metadata by ID
    */
-  async getAttachmentMetadata(attachmentId: string): Promise<VendorAttachmentMetadata> {
-    const document = await this.repository.findById(attachmentId);
+  async getAttachmentMetadata(attachmentId: string, companyId?: string): Promise<VendorAttachmentMetadata> {
+    const document = await this.repository.findById(attachmentId, companyId);
 
     if (!document) {
       throw new AppError(404, "Attachment not found", "ATTACHMENT_NOT_FOUND");
     }
 
-    const {data, ...metadata} = document;
+    const { data, ...metadata } = document;
     return metadata as unknown as VendorAttachmentMetadata;
   }
 
   /**
-   * List all attachments for a vendor (metadata only)
+   * List all attachments for a vendor in company database
    */
-  async listAttachmentsByVendor(vendorId: string): Promise<VendorAttachmentMetadata[]> {
-    // Check if vendor exists
-    const vendor = await this.vendorRepository.findById(vendorId);
+  async listAttachmentsByVendor(vendorId: string, companyId?: string): Promise<VendorAttachmentMetadata[]> {
+    const vendor = await this.vendorRepository.findById(vendorId, companyId);
     if (!vendor) {
       throw new AppError(404, "Vendor not found", "VENDOR_NOT_FOUND");
     }
 
-    // Use findAllByVendorId from document repo
-    const documents = await this.repository.findAllByVendorId(vendorId);
-
-    return documents.map(doc => doc as unknown as VendorAttachmentMetadata);
+    const documents = await this.repository.findAllByVendorId(vendorId, companyId);
+    return documents.map((doc) => doc as unknown as VendorAttachmentMetadata);
   }
 
   /**
-   * Update attachment metadata (sudo only)
+   * Delete an attachment
    */
-  async updateAttachment(
-    attachmentId: string,
-    role: UserRole,
-    updates: Partial<Pick<VendorAttachment, "title" | "description">>
-  ): Promise<VendorAttachmentMetadata> {
-    this.assertSudo(role);
-
-    throw new AppError(501, "Update not implemented for documents yet", "NOT_IMPLEMENTED");
-  }
-
-  /**
-   * Delete an attachment (sudo only)
-   */
-  async deleteAttachment(attachmentId: string, role: UserRole): Promise<void> {
-    this.assertSudo(role);
-
-    const deleted = await this.repository.delete(attachmentId);
+  async deleteAttachment(attachmentId: string, companyId?: string): Promise<void> {
+    const deleted = await this.repository.delete(attachmentId, companyId);
 
     if (!deleted) {
       throw new AppError(404, "Attachment/Document not found", "ATTACHMENT_NOT_FOUND");
     }
 
-    logger.info("Vendor attachment/document deleted", {attachmentId});
+    logger.info("Vendor attachment deleted", { attachmentId, companyId });
   }
 
   /**
-   * Delete all attachments for a vendor (sudo only)
-   * Usually called when deleting a vendor
+   * Delete all attachments for a vendor
    */
-  async deleteAllAttachmentsForVendor(vendorId: string, role: UserRole): Promise<number> {
-    this.assertSudo(role);
-    // Be careful! This deletes ALL documents, not just PDFs.
-    // If VendorService also calls this, we might do double delete or it's fine.
-    // If we Unify, VendorService likely calls documentRepository.deleteByVendorId directly.
-    return await this.repository.deleteByVendorId(vendorId);
+  async deleteAllAttachmentsForVendor(vendorId: string, companyId?: string): Promise<number> {
+    return await this.repository.deleteByVendorId(vendorId, companyId);
   }
 }

@@ -1,6 +1,8 @@
 import { CompanyRepository } from "@/repositories/company.repository";
 import { CompanyInviteRepository } from "@/repositories/company-invite.repository";
 import { UserRepository } from "@/repositories/user.repository";
+import { ManagementService } from "@/services/management.service";
+import { VendorRepository } from "@/repositories/vendor.repository";
 import { AppError } from "@/middleware/error-handler";
 import { Timestamp } from "firebase-admin/firestore";
 import type { Company } from "@/types/company/company";
@@ -37,12 +39,30 @@ export class CompanyService {
       userIds: [userId],
       registrationAgreement: true,
       createdAt: Timestamp.now(),
+      isDemo: false,
     };
 
     const insertedCompany = await this.companyRepo.create(company);
-    await this.userRepo.update(userId, { companyId: insertedCompany._id.toHexString(), role: "admin" } as any);
+    const companyIdStr = insertedCompany._id.toHexString();
+    await this.userRepo.update(userId, { companyId: companyIdStr, role: "admin" } as any);
 
-    logger.info("Company created", { companyId: insertedCompany._id.toHexString(), userId });
+    // If a demo company exists, copy its entire tenant database into the new company's database
+    try {
+      const demoCompany = await this.companyRepo.findDemoCompany();
+      if (demoCompany && demoCompany._id) {
+        const demoCompanyIdStr = demoCompany._id.toHexString();
+        const { copyTenantDatabase } = await import("@/config/database");
+        await copyTenantDatabase(demoCompanyIdStr, companyIdStr);
+        logger.info("Demo company database copied to new company", {
+          demoCompanyId: demoCompanyIdStr,
+          targetCompanyId: companyIdStr,
+        });
+      }
+    } catch (err) {
+      logger.error("Failed to copy demo company database during company creation", err, { companyId: companyIdStr });
+    }
+
+    logger.info("Company created", { companyId: companyIdStr, userId });
     return insertedCompany;
   }
 

@@ -1,9 +1,9 @@
 import {z} from 'zod';
 import {timestampSchema} from '@/types/timestamp';
 import {Binary, ObjectId} from 'mongodb';
+import {ALLOWED_DOCUMENT_MIME_TYPES} from '@/types/vendor/vendor_document';
 
-// Only PDF files are allowed
-export const ALLOWED_ATTACHMENT_MIME_TYPE = 'application/pdf';
+export {ALLOWED_DOCUMENT_MIME_TYPES};
 
 export const vendorAttachmentSchema = z.object({
   _id: z.custom<ObjectId>().optional(),
@@ -12,10 +12,11 @@ export const vendorAttachmentSchema = z.object({
   description: z.string().default(""),
   uploadedAt: timestampSchema,
   uploaderId: z.string(),
+  uploaderName: z.string().optional(),
   filename: z.string(),
-  mimeType: z.literal('application/pdf'), // Only PDF allowed
+  mimeType: z.enum(ALLOWED_DOCUMENT_MIME_TYPES),
   size: z.number(), // bytes
-  data: z.custom<Binary>(), // Binary PDF data stored in MongoDB
+  data: z.custom<Binary>(), // Binary data stored in MongoDB
 });
 
 export type VendorAttachment = z.infer<typeof vendorAttachmentSchema>;

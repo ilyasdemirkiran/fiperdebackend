@@ -1,46 +1,68 @@
-import {Collection, ObjectId} from "mongodb";
-import type {VendorDocument, VendorDocumentMetadata} from "@/types/vendor/vendor_document";
-import {logger} from "@/utils/logger";
-import {getVendorDocumentsCollection} from "@/repositories/collections/core.collections";
+import { Collection, ObjectId } from "mongodb";
+import type { VendorDocument, VendorDocumentMetadata } from "@/types/vendor/vendor_document";
+import { logger } from "@/utils/logger";
+import { getCompanyVendorDocumentsCollection, getVendorDocumentsCollection, getCompaniesCollection } from "@/repositories/collections/core.collections";
 
 export class VendorDocumentRepository {
-  private getCollection(): Collection<VendorDocument> {
+  private getCollection(companyId?: string): Collection<VendorDocument> {
+    if (companyId) {
+      return getCompanyVendorDocumentsCollection(companyId);
+    }
     return getVendorDocumentsCollection();
   }
 
-  async create(document: Omit<VendorDocument, "_id">, vendorId: string): Promise<VendorDocument> {
+  async create(document: Omit<VendorDocument, "_id">, vendorId: string, companyId?: string): Promise<VendorDocument> {
     try {
-      const collection = this.getCollection();
+      const collection = this.getCollection(companyId);
       const docToInsert = {
         ...document,
         vendorId: new ObjectId(vendorId),
       };
       const result = await collection.insertOne(docToInsert as any);
-      logger.info("Vendor document created", {documentId: result.insertedId, vendorId});
-      return {...docToInsert, _id: result.insertedId};
+      logger.info("Vendor document created", { documentId: result.insertedId, vendorId, companyId });
+      return { ...docToInsert, _id: result.insertedId };
     } catch (error) {
       logger.error("Failed to create vendor document", error);
       throw error;
     }
   }
 
-  async findById(id: string): Promise<VendorDocument | null> {
+  async findById(id: string, companyId?: string): Promise<VendorDocument | null> {
     try {
-      const collection = this.getCollection();
-      return await collection.findOne({_id: new ObjectId(id)});
+      if (companyId) {
+        return await this.getCollection(companyId).findOne({ _id: new ObjectId(id) });
+      }
+
+      // First check global documents collection
+      const globalDoc = await getVendorDocumentsCollection().findOne({ _id: new ObjectId(id) });
+      if (globalDoc) {
+        return globalDoc;
+      }
+
+      // If not found in global, search across active company databases (for public attachment preview)
+      const companies = await getCompaniesCollection().find({}, { projection: { _id: 1 } }).toArray();
+      for (const comp of companies) {
+        const compId = comp._id.toHexString();
+        const doc = await getCompanyVendorDocumentsCollection(compId).findOne({ _id: new ObjectId(id) });
+        if (doc) {
+          return doc;
+        }
+      }
+
+      return null;
     } catch (error) {
       logger.error("Failed to find vendor document by ID", error);
       throw error;
     }
   }
 
-  async findAllByVendorId(vendorId: string): Promise<VendorDocumentMetadata[]> {
+  async findAllByVendorId(vendorId: string, companyId?: string): Promise<VendorDocumentMetadata[]> {
     try {
-      const collection = this.getCollection();
+      const collection = this.getCollection(companyId);
       return await collection
-        .find({vendorId: new ObjectId(vendorId)})
-        .project<VendorDocumentMetadata>({data: 0})
-        .sort({uploadedAt: -1})
+        .find({ vendorId: new ObjectId(vendorId) })
+        .project<VendorDocumentMetadata>({ data: 0 })
+        .sort({ uploadedAt: -1 })
         .toArray();
     } catch (error) {
       logger.error("Failed to fetch vendor documents", error);
@@ -48,12 +70,12 @@ export class VendorDocumentRepository {
     }
   }
 
-  async findLatestByVendorId(vendorId: string): Promise<VendorDocument | null> {
+  async findLatestByVendorId(vendorId: string, companyId?: string): Promise<VendorDocument | null> {
     try {
-      const collection = this.getCollection();
+      const collection = this.getCollection(companyId);
       return await collection
-        .find({vendorId: new ObjectId(vendorId)})
-        .sort({uploadedAt: -1})
+        .find({ vendorId: new ObjectId(vendorId) })
+        .sort({ uploadedAt: -1 })
         .limit(1)
         .next();
     } catch (error) {
@@ -62,13 +84,13 @@ export class VendorDocumentRepository {
     }
   }
 
-  async findLatestMetadataByVendorId(vendorId: string): Promise<VendorDocumentMetadata | null> {
+  async findLatestMetadataByVendorId(vendorId: string, companyId?: string): Promise<VendorDocumentMetadata | null> {
     try {
-      const collection = this.getCollection();
+      const collection = this.getCollection(companyId);
       return await collection
-        .find({vendorId: new ObjectId(vendorId)})
-        .project<VendorDocumentMetadata>({data: 0})
-        .sort({uploadedAt: -1})
+        .find({ vendorId: new ObjectId(vendorId) })
+        .project<VendorDocumentMetadata>({ data: 0 })
+        .sort({ uploadedAt: -1 })
         .limit(1)
         .next();
     } catch (error) {
@@ -77,10 +99,10 @@ export class VendorDocumentRepository {
     }
   }
 
-  async delete(id: string): Promise<boolean> {
+  async delete(id: string, companyId?: string): Promise<boolean> {
     try {
-      const collection = this.getCollection();
-      const result = await collection.deleteOne({_id: new ObjectId(id)});
+      const collection = this.getCollection(companyId);
+      const result = await collection.deleteOne({ _id: new ObjectId(id) });
       return result.deletedCount > 0;
     } catch (error) {
       logger.error("Failed to delete vendor document", error);
@@ -88,11 +110,11 @@ export class VendorDocumentRepository {
     }
   }
 
-  async deleteByVendorId(vendorId: string): Promise<number> {
+  async deleteByVendorId(vendorId: string, companyId?: string): Promise<number> {
     try {
-      const collection = this.getCollection();
-      const result = await collection.deleteMany({vendorId: new ObjectId(vendorId)});
-      logger.info("Vendor documents deleted", {vendorId, count: result.deletedCount});
+      const collection = this.getCollection(companyId);
+      const result = await collection.deleteMany({ vendorId: new ObjectId(vendorId) });
+      logger.info("Vendor documents deleted", { vendorId, count: result.deletedCount, companyId });
       return result.deletedCount;
     } catch (error) {
       logger.error("Failed to delete vendor documents", error);

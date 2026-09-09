@@ -2,7 +2,6 @@ import {Hono} from "hono";
 import type {Env} from "@/types/hono";
 import {ManagementService} from "@/services/management.service";
 import {VendorService} from "@/services/vendor.service";
-import {PriceListRequestService} from "@/services/price-list-request.service";
 import {successResponse} from "@/utils/response";
 import {toResponse, toResponseArray} from "@/utils/response-transformer";
 import {authMiddleware} from "@/middleware/auth";
@@ -17,7 +16,6 @@ managementRoutes.use("*", managementAuthMiddleware);
 
 let managementService: ManagementService | null = null;
 let vendorService: VendorService | null = null;
-let priceListService: PriceListRequestService | null = null;
 
 function getManagementService(): ManagementService {
   if (!managementService) {
@@ -31,13 +29,6 @@ function getVendorService(): VendorService {
     vendorService = new VendorService();
   }
   return vendorService;
-}
-
-function getPriceListService(): PriceListRequestService {
-  if (!priceListService) {
-    priceListService = new PriceListRequestService();
-  }
-  return priceListService;
 }
 
 // =====================
@@ -82,6 +73,28 @@ managementRoutes.put("/users/:userId/company", async (c) => {
   return c.json(successResponse({message: "User company updated"}));
 });
 
+// DELETE /management/companies/:id - Delete company permanently (sudo only)
+managementRoutes.delete("/companies/:id", async (c) => {
+  const companyId = c.req.param("id");
+
+  await getManagementService().deleteCompanyPermanently(companyId);
+  return c.json(successResponse({message: "Company and all associated data permanently deleted"}));
+});
+
+const setCompanyDemoSchema = z.object({
+  isDemo: z.boolean(),
+});
+
+// PUT /management/companies/:id/demo - Set or toggle company demo status (sudo only, only 1 company can be demo)
+managementRoutes.put("/companies/:id/demo", async (c) => {
+  const companyId = c.req.param("id");
+  const body = await c.req.json();
+  const {isDemo} = setCompanyDemoSchema.parse(body);
+
+  const company = await getManagementService().setCompanyDemoStatus(companyId, isDemo);
+  return c.json(successResponse(toResponse(company)));
+});
+
 // =====================
 // VENDOR ENDPOINTS
 // =====================
@@ -102,10 +115,10 @@ managementRoutes.get("/vendors/:id", async (c) => {
 
 const vendorSchema = z.object({
   name: z.string().min(2),
-  phone: z.string(),
-  city: z.string().optional(),
-  district: z.string().optional(),
-  address: z.string().optional(),
+  phone: z.string().optional().transform((val) => (val && val.trim() !== "" ? val : undefined)),
+  city: z.string().optional().transform((val) => (val && val.trim() !== "" ? val : undefined)),
+  district: z.string().optional().transform((val) => (val && val.trim() !== "" ? val : undefined)),
+  address: z.string().optional().transform((val) => (val && val.trim() !== "" ? val : undefined)),
 });
 
 // POST /management/vendors - Create vendor
@@ -135,6 +148,21 @@ managementRoutes.delete("/vendors/:id", async (c) => {
   return c.json(successResponse({message: "Vendor deleted"}));
 });
 
+// POST /management/vendors/:id/copy-to-company/:companyId - Copy master vendor to company DB (sudo only)
+managementRoutes.post("/vendors/:id/copy-to-company/:companyId", async (c) => {
+  const vendorId = c.req.param("id");
+  const companyId = c.req.param("companyId");
+
+  const result = await getManagementService().copyVendorToCompany(vendorId, companyId);
+  return c.json(
+    successResponse({
+      message: "Vendor, products and documents copied to company successfully",
+      ...result,
+    }),
+    201
+  );
+});
+
 const accessSchema = z.object({
   companyIds: z.array(z.string()),
 });
@@ -153,6 +181,17 @@ managementRoutes.put("/vendors/:id/access", async (c) => {
 managementRoutes.get("/vendor-permissions", async (c) => {
   const permissions = await getManagementService().listAllVendorPermissions();
   return c.json(successResponse(permissions));
+});
+
+// POST /management/vendors/migrate-permitted-to-companies - Migration endpoint to copy all global vendors to permitted companies (sudo only)
+managementRoutes.post("/vendors/migrate-permitted-to-companies", async (c) => {
+  const result = await getManagementService().migratePermittedVendorsToCompanies();
+  return c.json(
+    successResponse({
+      message: "Permitted vendors migration to companies completed",
+      ...result,
+    })
+  );
 });
 
 // =====================
@@ -235,10 +274,9 @@ managementRoutes.delete("/documents/:id", async (c) => {
 const productSchema = z.object({
   name: z.string().min(2),
   code: z.string().min(2),
-  price: z.number().positive(),
+  price: z.coerce.number().positive(),
   currency: z.enum(["TRY", "USD", "EUR"]),
-  description: z.string().optional(),
-  imageUrl: z.string().optional(),
+  description: z.string().optional().transform((val) => (val && val.trim() !== "" ? val : undefined)),
 });
 
 // POST /management/vendors/:vendorId/products - Create product
@@ -316,76 +354,6 @@ managementRoutes.put("/vendors/:vendorId/products/bulk", async (c) => {
 
   const modifiedCount = await getManagementService().bulkUpdateProducts(vendorId, updates);
   return c.json(successResponse({message: `${modifiedCount} ürün güncellendi`, modifiedCount}));
-});
-
-// =====================
-// PRICE LIST REQUEST ENDPOINTS
-// =====================
-
-// GET /management/price-list-requests - List all price list requests
-managementRoutes.get("/price-list-requests", async (c) => {
-  const user = c.get("user");
-
-  const requests = await getPriceListService().listAllRequests(user.role);
-  return c.json(successResponse(requests));
-});
-
-// GET /management/price-list-requests/pending - List pending requests
-managementRoutes.get("/price-list-requests/pending", async (c) => {
-  const user = c.get("user");
-
-  const requests = await getPriceListService().listRequestsByStatus(user.role, "pending");
-  return c.json(successResponse(requests));
-});
-
-// GET /management/price-list-requests/completed - List completed requests
-managementRoutes.get("/price-list-requests/completed", async (c) => {
-  const user = c.get("user");
-
-  const requests = await getPriceListService().listRequestsByStatus(user.role, "completed");
-  return c.json(successResponse(requests));
-});
-
-// GET /management/price-list-requests/:id/download - Download request file
-managementRoutes.get("/price-list-requests/:id/download", async (c) => {
-  const user = c.get("user");
-  const requestId = c.req.param("id");
-
-  const result = await getPriceListService().getRequestFile(user.role, requestId);
-
-  return new Response(result.buffer, {
-    headers: {
-      "Content-Type": result.metadata.mimeType,
-      "Content-Length": result.metadata.size.toString(),
-      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(result.metadata.filename)}`,
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    },
-  });
-});
-
-// PUT /management/price-list-requests/:id/complete - Complete a request
-managementRoutes.put("/price-list-requests/:id/complete", async (c) => {
-  const user = c.get("user");
-  const requestId = c.req.param("id");
-
-  const result = await getPriceListService().completeRequest(
-    user.role,
-    requestId,
-    {userId: user._id || "", name: user.name}
-  );
-
-  return c.json(successResponse(result));
-});
-
-// DELETE /management/price-list-requests/:id - Delete a request
-managementRoutes.delete("/price-list-requests/:id", async (c) => {
-  const user = c.get("user");
-  const requestId = c.req.param("id");
-
-  await getPriceListService().deleteRequest(user.role, requestId);
-  return c.json(successResponse({message: "Request deleted"}));
 });
 
 // =====================

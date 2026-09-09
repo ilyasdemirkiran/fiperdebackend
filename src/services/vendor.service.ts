@@ -1,19 +1,18 @@
-import {VendorRepository} from "@/repositories/vendor.repository";
-import {VendorPermissionRepository} from "@/repositories/vendor-permission.repository";
-import {ProductRepository} from "@/repositories/product.repository";
-import {VendorDocumentRepository} from "@/repositories/vendor-document.repository";
-import {VendorPriceRateRepository} from "@/repositories/vendor-price-rate.repository";
-import type {Vendor} from "@/types/vendor/vendor";
-import type {VendorDocument, VendorDocumentMetadata} from "@/types/vendor/vendor_document";
-import {ALLOWED_DOCUMENT_MIME_TYPES} from "@/types/vendor/vendor_document";
-import type {VendorPriceRate} from "@/types/vendor/vendor_price_rate";
-import {AppError} from "@/middleware/error-handler";
-import {logger} from "@/utils/logger";
-import type {UserRole} from "@/types/user/fi_user";
-import {isAdmin} from "@/types/user/fi_user";
-import {Timestamp} from "firebase-admin/firestore";
-import {Binary, ObjectId} from "mongodb";
-import {isEmpty} from "es-toolkit/compat";
+import { VendorRepository } from "@/repositories/vendor.repository";
+import { VendorPermissionRepository } from "@/repositories/vendor-permission.repository";
+import { ProductRepository } from "@/repositories/product.repository";
+import { VendorDocumentRepository } from "@/repositories/vendor-document.repository";
+import { VendorPriceRateRepository } from "@/repositories/vendor-price-rate.repository";
+import type { Vendor } from "@/types/vendor/vendor";
+import type { VendorDocument, VendorDocumentMetadata } from "@/types/vendor/vendor_document";
+import { ALLOWED_DOCUMENT_MIME_TYPES } from "@/types/vendor/vendor_document";
+import type { VendorPriceRate } from "@/types/vendor/vendor_price_rate";
+import { AppError } from "@/middleware/error-handler";
+import { logger } from "@/utils/logger";
+import type { UserRole } from "@/types/user/fi_user";
+import { isAdmin } from "@/types/user/fi_user";
+import { Timestamp } from "firebase-admin/firestore";
+import { Binary, ObjectId } from "mongodb";
 
 export class VendorService {
   private repository: VendorRepository;
@@ -36,12 +35,15 @@ export class VendorService {
     }
   }
 
+  // ========== COMPANY VENDOR MANAGEMENT ==========
+
+  /**
+   * Create vendor in company's database
+   */
   async createVendor(
-    role: UserRole,
+    companyId: string,
     data: Pick<Vendor, "name" | "phone" | "city" | "district" | "address">
   ): Promise<Vendor> {
-    this.assertSudo(role);
-
     const vendor: Omit<Vendor, "_id"> = {
       name: data.name,
       phone: data.phone,
@@ -51,11 +53,14 @@ export class VendorService {
       createdAt: Timestamp.now(),
     };
 
-    return await this.repository.create(vendor);
+    return await this.repository.create(vendor, companyId);
   }
 
-  async getVendor(id: string): Promise<Vendor> {
-    const vendor = await this.repository.findById(id);
+  /**
+   * Get vendor from company's database
+   */
+  async getVendor(companyId: string, id: string): Promise<Vendor> {
+    const vendor = await this.repository.findById(id, companyId);
 
     if (!vendor) {
       throw new AppError(404, "Vendor not found", "VENDOR_NOT_FOUND");
@@ -65,38 +70,26 @@ export class VendorService {
   }
 
   /**
-   * List all vendors (for management/sudo)
+   * List all vendors in company's database
    */
-  async listAllVendors(): Promise<Vendor[]> {
-    return await this.repository.findAll();
+  async listVendorsForCompany(companyId: string): Promise<Vendor[]> {
+    return await this.repository.findAll(companyId);
   }
 
   /**
-   * List vendors that company has permission to see (for client)
+   * Update vendor in company's database
    */
-  async listVendorsForCompany(companyId: string): Promise<Vendor[]> {
-    const allowedVendorIds = await this.permissionRepository.getVendorIdsForCompany(companyId);
-
-    if (isEmpty(allowedVendorIds)) {
-      return [];
-    }
-
-    return await this.repository.findByIds(allowedVendorIds);
-  }
-
   async updateVendor(
-    role: UserRole,
+    companyId: string,
     id: string,
     updates: Partial<Pick<Vendor, "name" | "phone" | "city" | "district" | "address">>
   ): Promise<Vendor> {
-    this.assertSudo(role);
-
-    const exists = await this.repository.exists(id);
+    const exists = await this.repository.exists(id, companyId);
     if (!exists) {
       throw new AppError(404, "Vendor not found", "VENDOR_NOT_FOUND");
     }
 
-    const updated = await this.repository.update(id, updates);
+    const updated = await this.repository.update(id, updates, companyId);
 
     if (!updated) {
       throw new AppError(500, "Failed to update vendor", "UPDATE_FAILED");
@@ -105,26 +98,32 @@ export class VendorService {
     return updated;
   }
 
-  async deleteVendor(role: UserRole, id: string): Promise<void> {
-    this.assertSudo(role);
-
-    const exists = await this.repository.exists(id);
+  /**
+   * Delete vendor in company's database (cascade deletes products and documents in company DB)
+   */
+  async deleteVendor(companyId: string, id: string): Promise<void> {
+    const exists = await this.repository.exists(id, companyId);
     if (!exists) {
       throw new AppError(404, "Vendor not found", "VENDOR_NOT_FOUND");
     }
 
-    // Delete vendor and cascade delete related data
+    // Delete vendor and cascade delete related data from company database
     await Promise.all([
-      this.repository.delete(id),
-      this.permissionRepository.removeAllPermissionsForVendor(id),
-      this.productRepository.deleteByVendorId(id),
-      this.documentRepository.deleteByVendorId(id),
+      this.repository.delete(id, companyId),
+      this.productRepository.deleteByVendorId(id, companyId),
+      this.documentRepository.deleteByVendorId(id, companyId),
     ]);
 
-    logger.info("Vendor deleted with cascade", {vendorId: id});
+    logger.info("Vendor deleted from company database with cascade", { vendorId: id, companyId });
   }
 
-  // ========== PERMISSION MANAGEMENT ==========
+  // ========== GLOBAL VENDOR OPERATIONS (FOR MANAGEMENT/SUDO) ==========
+
+  async listAllGlobalVendors(): Promise<Vendor[]> {
+    return await this.repository.findAll();
+  }
+
+  // ========== PERMISSION MANAGEMENT (LEGACY / MANAGEMENT COMPAT) ==========
 
   async grantPermission(role: UserRole, vendorId: string, companyId: string): Promise<void> {
     this.assertSudo(role);
@@ -140,7 +139,7 @@ export class VendorService {
     }
 
     await this.permissionRepository.addPermission(vendorId, companyId);
-    logger.info("Vendor permission granted", {vendorId, companyId});
+    logger.info("Vendor permission granted", { vendorId, companyId });
   }
 
   async revokePermission(role: UserRole, vendorId: string, companyId: string): Promise<void> {
@@ -152,7 +151,7 @@ export class VendorService {
       throw new AppError(404, "Permission not found", "PERMISSION_NOT_FOUND");
     }
 
-    logger.info("Vendor permission revoked", {vendorId, companyId});
+    logger.info("Vendor permission revoked", { vendorId, companyId });
   }
 
   async getCompaniesForVendor(vendorId: string): Promise<string[]> {
@@ -167,16 +166,16 @@ export class VendorService {
   // ========== PRICE RATE MANAGEMENT ==========
 
   /**
-   * Get price rates for all vendors that company has permission to see
+   * Get price rates for all vendors in company's database
    */
   async getPriceRatesForCompany(companyId: string): Promise<VendorPriceRate[]> {
-    const vendorIds = await this.permissionRepository.getVendorIdsForCompany(companyId);
+    const vendors = await this.repository.findAll(companyId);
 
-    if (vendorIds.length === 0) {
+    if (vendors.length === 0) {
       return [];
     }
 
-    const objectIds = vendorIds.map((id) => new ObjectId(id));
+    const objectIds = vendors.map((v) => new ObjectId(v._id));
     return await this.priceRateRepository.findByVendorIds(companyId, objectIds);
   }
 
@@ -194,10 +193,10 @@ export class VendorService {
   // ========== DOCUMENT MANAGEMENT ==========
 
   /**
-   * Upload a document for a vendor (sudo only)
+   * Upload a document for a vendor in company database
    */
   async uploadDocument(
-    role: UserRole,
+    companyId: string,
     vendorId: string,
     uploaderId: string,
     uploaderName: string,
@@ -209,9 +208,7 @@ export class VendorService {
       description?: string;
     }
   ): Promise<VendorDocumentMetadata> {
-    this.assertSudo(role);
-
-    const vendorExists = await this.repository.exists(vendorId);
+    const vendorExists = await this.repository.exists(vendorId, companyId);
     if (!vendorExists) {
       throw new AppError(404, "Vendor not found", "VENDOR_NOT_FOUND");
     }
@@ -233,24 +230,24 @@ export class VendorService {
       data: new Binary(file.data),
     };
 
-    const created = await this.documentRepository.create(documentData as any, vendorId);
+    const created = await this.documentRepository.create(documentData as any, vendorId, companyId);
 
     // Return metadata without binary data
-    const {data, ...metadata} = created;
+    const { data, ...metadata } = created;
     return metadata;
   }
 
   /**
-   * Get latest document for a vendor (for client)
+   * Get latest document for a vendor (from company database)
    */
-  async getLatestDocument(vendorId: string): Promise<{ metadata: VendorDocumentMetadata; buffer: Buffer } | null> {
-    const document = await this.documentRepository.findLatestByVendorId(vendorId);
+  async getLatestDocument(companyId: string, vendorId: string): Promise<{ metadata: VendorDocumentMetadata; buffer: Buffer } | null> {
+    const document = await this.documentRepository.findLatestByVendorId(vendorId, companyId);
 
     if (!document) {
       return null;
     }
 
-    const {data, ...metadata} = document;
+    const { data, ...metadata } = document;
     return {
       metadata,
       buffer: Buffer.from(data.buffer),
@@ -258,31 +255,30 @@ export class VendorService {
   }
 
   /**
-   * Get latest document metadata for a vendor (for client)
+   * Get latest document metadata for a vendor (from company database)
    */
-  async getLatestDocumentMetadata(vendorId: string): Promise<VendorDocumentMetadata | null> {
-    return await this.documentRepository.findLatestMetadataByVendorId(vendorId);
+  async getLatestDocumentMetadata(companyId: string, vendorId: string): Promise<VendorDocumentMetadata | null> {
+    return await this.documentRepository.findLatestMetadataByVendorId(vendorId, companyId);
   }
 
   /**
-   * Get all documents for a vendor (for management)
+   * Get all documents for a vendor (for management / global)
    */
-  async getAllDocuments(role: UserRole, vendorId: string): Promise<VendorDocumentMetadata[]> {
-    this.assertSudo(role);
-    return await this.documentRepository.findAllByVendorId(vendorId);
+  async getAllDocuments(role: UserRole, vendorId: string, companyId?: string): Promise<VendorDocumentMetadata[]> {
+    return await this.documentRepository.findAllByVendorId(vendorId, companyId);
   }
 
   /**
    * Get document binary for download
    */
-  async getDocumentData(documentId: string): Promise<{ metadata: VendorDocumentMetadata; buffer: Buffer }> {
-    const document = await this.documentRepository.findById(documentId);
+  async getDocumentData(documentId: string, companyId?: string): Promise<{ metadata: VendorDocumentMetadata; buffer: Buffer }> {
+    const document = await this.documentRepository.findById(documentId, companyId);
 
     if (!document) {
       throw new AppError(404, "Document not found", "DOCUMENT_NOT_FOUND");
     }
 
-    const {data, ...metadata} = document;
+    const { data, ...metadata } = document;
     return {
       metadata,
       buffer: Buffer.from(data.buffer),
@@ -290,16 +286,14 @@ export class VendorService {
   }
 
   /**
-   * Delete a document (sudo only)
+   * Delete a document
    */
-  async deleteDocument(role: UserRole, documentId: string): Promise<void> {
-    this.assertSudo(role);
-
-    const deleted = await this.documentRepository.delete(documentId);
+  async deleteDocument(documentId: string, companyId?: string): Promise<void> {
+    const deleted = await this.documentRepository.delete(documentId, companyId);
     if (!deleted) {
       throw new AppError(404, "Document not found", "DOCUMENT_NOT_FOUND");
     }
 
-    logger.info("Vendor document deleted", {documentId});
+    logger.info("Vendor document deleted", { documentId, companyId });
   }
 }

@@ -9,6 +9,7 @@ export const companySchema = z.object({
   userIds: z.array(z.string()),
   creatorUserId: z.string(),
   createdAt: timestampSchema,
+  isDemo: z.boolean().default(false),
   logoOriginalFileId: z.custom<ObjectId>().nullable().optional(),
   logoMiniFileId: z.custom<ObjectId>().nullable().optional(),
 });

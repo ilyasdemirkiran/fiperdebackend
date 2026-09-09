@@ -1,10 +1,9 @@
-import {Hono} from "hono";
-import type {Env} from "@/types/hono";
-import {type UploadAttachmentInput, VendorAttachmentService} from "@/services/vendor-attachment.service";
-import {successResponse} from "@/utils/response";
-import {authMiddleware} from "@/middleware/auth";
-import {z} from "zod";
-import {Binary} from "mongodb";
+import { Hono } from "hono";
+import type { Env } from "@/types/hono";
+import { type UploadAttachmentInput, VendorAttachmentService } from "@/services/vendor-attachment.service";
+import { successResponse } from "@/utils/response";
+import { authMiddleware } from "@/middleware/auth";
+import { Binary } from "mongodb";
 
 export const vendorAttachmentRoutes = new Hono<Env>();
 
@@ -22,34 +21,35 @@ vendorAttachmentRoutes.use("*", authMiddleware);
 
 // GET /api/vendors/:vendorId/attachments - List attachments for vendor (metadata only)
 vendorAttachmentRoutes.get("/:vendorId/attachments", async (c) => {
+  const user = c.get("user");
   const vendorId = c.req.param("vendorId");
 
-  const attachments = await getService().listAttachmentsByVendor(vendorId);
+  const attachments = await getService().listAttachmentsByVendor(vendorId, user.companyId!);
 
   return c.json(successResponse(attachments));
 });
 
 // GET /api/vendors/:vendorId/attachments/:attachmentId - Get attachment metadata
 vendorAttachmentRoutes.get("/:vendorId/attachments/:attachmentId", async (c) => {
+  const user = c.get("user");
   const attachmentId = c.req.param("attachmentId");
 
-  const attachment = await getService().getAttachmentMetadata(attachmentId);
+  const attachment = await getService().getAttachmentMetadata(attachmentId, user.companyId!);
 
   return c.json(successResponse(attachment));
 });
 
 // GET /api/vendors/:vendorId/attachments/:attachmentId/preview - Preview file (raw)
 vendorAttachmentRoutes.get("/:vendorId/attachments/:attachmentId/preview", async (c) => {
+  const user = c.get("user");
   const attachmentId = c.req.param("attachmentId");
-  console.log(`Preview requested for attachmentId: ${attachmentId}`);
 
-  const attachment = await getService().getAttachment(attachmentId);
+  const attachment = await getService().getAttachment(attachmentId, user.companyId!);
   const binaryData = (attachment.data as Binary).buffer;
   const buffer = Buffer.from(binaryData);
   const mimeType = attachment.mimeType;
   const filename = attachment.filename;
 
-  // Return original file
   return new Response(buffer, {
     headers: {
       "Content-Type": mimeType,
@@ -64,11 +64,11 @@ vendorAttachmentRoutes.get("/:vendorId/attachments/:attachmentId/preview", async
 
 // GET /api/vendors/:vendorId/attachments/:attachmentId/download - Download PDF
 vendorAttachmentRoutes.get("/:vendorId/attachments/:attachmentId/download", async (c) => {
+  const user = c.get("user");
   const attachmentId = c.req.param("attachmentId");
 
-  const attachment = await getService().getAttachment(attachmentId);
+  const attachment = await getService().getAttachment(attachmentId, user.companyId!);
 
-  // Return binary data with correct content type
   const buffer = (attachment.data as Binary).buffer;
   return new Response(buffer, {
     headers: {
@@ -82,7 +82,7 @@ vendorAttachmentRoutes.get("/:vendorId/attachments/:attachmentId/download", asyn
   });
 });
 
-// POST /api/vendors/:vendorId/attachments - Upload PDF (sudo only)
+// POST /api/vendors/:vendorId/attachments - Upload PDF to company DB
 vendorAttachmentRoutes.post("/:vendorId/attachments", async (c) => {
   const user = c.get("user");
   const vendorId = c.req.param("vendorId");
@@ -93,11 +93,11 @@ vendorAttachmentRoutes.post("/:vendorId/attachments", async (c) => {
   const description = formData.get("description") as string || "";
 
   if (!file) {
-    return c.json({success: false, error: {message: "No file provided"}}, 400);
+    return c.json({ success: false, error: { message: "No file provided" } }, 400);
   }
 
   if (!title) {
-    return c.json({success: false, error: {message: "Title is required"}}, 400);
+    return c.json({ success: false, error: { message: "Title is required" } }, 400);
   }
 
   const input: UploadAttachmentInput = {
@@ -110,39 +110,22 @@ vendorAttachmentRoutes.post("/:vendorId/attachments", async (c) => {
   };
 
   const attachment = await getService().uploadAttachment(
+    user.companyId!,
     vendorId,
     user._id!.toString(),
     user.name,
-    user.role,
     input
   );
 
   return c.json(successResponse(attachment), 201);
 });
 
-// PUT /api/vendors/:vendorId/attachments/:attachmentId - Update attachment metadata (sudo only)
-vendorAttachmentRoutes.put("/:vendorId/attachments/:attachmentId", async (c) => {
-  const user = c.get("user");
-  const attachmentId = c.req.param("attachmentId");
-  const body = await c.req.json();
-
-  const updateSchema = z.object({
-    title: z.string().optional(),
-    description: z.string().optional(),
-  });
-
-  const input = updateSchema.parse(body);
-  const attachment = await getService().updateAttachment(attachmentId, user.role, input);
-
-  return c.json(successResponse(attachment));
-});
-
-// DELETE /api/vendors/:vendorId/attachments/:attachmentId - Delete attachment (sudo only)
+// DELETE /api/vendors/:vendorId/attachments/:attachmentId - Delete attachment
 vendorAttachmentRoutes.delete("/:vendorId/attachments/:attachmentId", async (c) => {
   const user = c.get("user");
   const attachmentId = c.req.param("attachmentId");
 
-  await getService().deleteAttachment(attachmentId, user.role);
+  await getService().deleteAttachment(attachmentId, user.companyId!);
 
-  return c.json(successResponse({message: "Attachment deleted successfully"}));
+  return c.json(successResponse({ message: "Attachment deleted successfully" }));
 });

@@ -1,20 +1,22 @@
-import {Collection, ObjectId} from "mongodb";
-import {getGlobalVendorDatabase} from "@/config/database";
-import type {Vendor} from "@/types/vendor/vendor";
-import {logger} from "@/utils/logger";
-import {getVendorsCollection} from "@/repositories/collections/core.collections";
+import { Collection, ObjectId } from "mongodb";
+import type { Vendor } from "@/types/vendor/vendor";
+import { logger } from "@/utils/logger";
+import { getCompanyVendorsCollection, getVendorsCollection } from "@/repositories/collections/core.collections";
 
 export class VendorRepository {
-  private getCollection(): Collection<Vendor> {
+  private getCollection(companyId?: string): Collection<Vendor> {
+    if (companyId) {
+      return getCompanyVendorsCollection(companyId);
+    }
     return getVendorsCollection();
   }
 
-  async create(vendor: Omit<Vendor, "_id">): Promise<Vendor> {
+  async create(vendor: Omit<Vendor, "_id">, companyId?: string): Promise<Vendor> {
     try {
-      const collection = this.getCollection();
+      const collection = this.getCollection(companyId);
       const result = await collection.insertOne(vendor as any);
-      const created = {...vendor, _id: result.insertedId} as Vendor;
-      logger.info("Vendor created", {vendorId: result.insertedId});
+      const created = { ...vendor, _id: result.insertedId } as Vendor;
+      logger.info("Vendor created", { vendorId: result.insertedId, companyId });
       return created;
     } catch (error) {
       logger.error("Failed to create vendor", error);
@@ -22,22 +24,21 @@ export class VendorRepository {
     }
   }
 
-  async findById(id: string): Promise<Vendor | null> {
+  async findById(id: string, companyId?: string): Promise<Vendor | null> {
     try {
-      const collection = this.getCollection();
-      return await collection.findOne({_id: new ObjectId(id)});
+      const collection = this.getCollection(companyId);
+      return await collection.findOne({ _id: new ObjectId(id) });
     } catch (error) {
       logger.error("Failed to find vendor by ID", error);
       throw error;
     }
   }
 
-  async findAll(): Promise<Vendor[]> {
+  async findAll(companyId?: string): Promise<Vendor[]> {
     try {
-      const collection = this.getCollection();
-      return await collection
+      return await this.getCollection(companyId)
         .find({})
-        .sort({name: 1})
+        .sort({ name: 1 })
         .toArray();
     } catch (error) {
       logger.error("Failed to fetch all vendors", error);
@@ -45,13 +46,13 @@ export class VendorRepository {
     }
   }
 
-  async findByIds(ids: string[]): Promise<Vendor[]> {
+  async findByIds(ids: string[], companyId?: string): Promise<Vendor[]> {
     try {
-      const collection = this.getCollection();
+      const collection = this.getCollection(companyId);
       const objectIds = ids.map(id => new ObjectId(id));
       return await collection
-        .find({_id: {$in: objectIds}})
-        .sort({name: 1})
+        .find({ _id: { $in: objectIds } })
+        .sort({ name: 1 })
         .toArray();
     } catch (error) {
       logger.error("Failed to fetch vendors by IDs", error);
@@ -59,13 +60,13 @@ export class VendorRepository {
     }
   }
 
-  async update(id: string, updates: Partial<Vendor>): Promise<Vendor | null> {
+  async update(id: string, updates: Partial<Vendor>, companyId?: string): Promise<Vendor | null> {
     try {
-      const collection = this.getCollection();
+      const collection = this.getCollection(companyId);
       return await collection.findOneAndUpdate(
-        {_id: new ObjectId(id)},
-        {$set: updates},
-        {returnDocument: "after"}
+        { _id: new ObjectId(id) },
+        { $set: updates },
+        { returnDocument: "after" }
       );
     } catch (error) {
       logger.error("Failed to update vendor", error);
@@ -73,14 +74,14 @@ export class VendorRepository {
     }
   }
 
-  async delete(id: string): Promise<boolean> {
+  async delete(id: string, companyId?: string): Promise<boolean> {
     try {
-      const collection = this.getCollection();
-      const result = await collection.deleteOne({_id: new ObjectId(id)});
+      const collection = this.getCollection(companyId);
+      const result = await collection.deleteOne({ _id: new ObjectId(id) });
       const deleted = result.deletedCount > 0;
 
       if (deleted) {
-        logger.info("Vendor deleted", {vendorId: id});
+        logger.info("Vendor deleted", { vendorId: id, companyId });
       }
 
       return deleted;
@@ -90,10 +91,10 @@ export class VendorRepository {
     }
   }
 
-  async exists(id: string): Promise<boolean> {
+  async exists(id: string, companyId?: string): Promise<boolean> {
     try {
-      const collection = this.getCollection();
-      const count = await collection.countDocuments({_id: new ObjectId(id)});
+      const collection = this.getCollection(companyId);
+      const count = await collection.countDocuments({ _id: new ObjectId(id) });
       return count > 0;
     } catch (error) {
       logger.error("Failed to check vendor existence", error);
