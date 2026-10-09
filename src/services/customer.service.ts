@@ -9,11 +9,15 @@ import {logger} from "@/utils/logger";
 import type {UserRole} from "@/types/user/fi_user";
 import {Timestamp} from "firebase-admin/firestore";
 
+import {DayScheduleRepository, type CustomerTaskItem} from "@/repositories/day-schedule.repository";
+
 export class CustomerService {
   private repository: CustomerRepository;
+  private scheduleRepository: DayScheduleRepository;
 
   constructor() {
     this.repository = new CustomerRepository();
+    this.scheduleRepository = new DayScheduleRepository();
   }
 
   async createCustomer(
@@ -26,8 +30,11 @@ export class CustomerService {
     const customer: Omit<CustomerDb, "_id"> = {
       name: validatedInput.name,
       surname: validatedInput.surname,
-      status: "active",
-      address: "",
+      status: validatedInput.status ?? "active",
+      phone: validatedInput.phone ?? "",
+      city: validatedInput.city ?? "",
+      district: validatedInput.district ?? "",
+      address: validatedInput.address ?? "",
       imageCount: 0,
       createdAt: Timestamp.now(),
     };
@@ -148,4 +155,14 @@ export class CustomerService {
       }
     }
   }
+
+  async getCustomerTasks(companyId: string, customerId: string): Promise<CustomerTaskItem[]> {
+    const exists = await this.repository.exists(companyId, customerId);
+    if (!exists) {
+      throw new AppError(404, "Customer not found", "CUSTOMER_NOT_FOUND");
+    }
+
+    return await this.scheduleRepository.getTasksByCustomerId(companyId, customerId);
+  }
 }
+

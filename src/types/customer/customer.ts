@@ -63,10 +63,29 @@ export type CustomerStatus = z.infer<typeof customerStatusSchema>;
 export type CustomerDb = Customer;
 
 // Input schemas for creating and updating customers (use base schema without refinements)
-export const createCustomerSchema = customerBaseSchema.pick({
-  name: true,
-  surname: true,
-});
+export const createCustomerSchema = customerBaseSchema
+  .pick({
+    name: true,
+    surname: true,
+    phone: true,
+    city: true,
+    district: true,
+    address: true,
+    status: true,
+  })
+  .partial({
+    phone: true,
+    city: true,
+    district: true,
+    address: true,
+    status: true,
+  })
+  .transform((data) => ({
+    ...data,
+    status: data.status ?? "active",
+  }));
+
+
 
 export const updateCustomerSchema = customerBaseSchema
   .omit({

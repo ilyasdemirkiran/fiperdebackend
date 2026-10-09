@@ -95,3 +95,14 @@ customerRoutes.delete("/:id", async (c) => {
 
   return c.json(successResponse({message: "Customer deleted successfully"}));
 });
+
+// GET /api/customers/:id/tasks - Get all tasks associated with this customer
+customerRoutes.get("/:id/tasks", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+
+  const tasks = await getCustomerService().getCustomerTasks(user.companyId!, id);
+
+  return c.json(successResponse(toResponseArray(tasks)));
+});
+

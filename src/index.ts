@@ -24,6 +24,7 @@ import { quoteRoutes } from "@/routes/quote.routes";
 import { payTRPublicRoutes, payTRRoutes } from "@/routes/payTRRoutes";
 import { subscriptionRoutes } from "@/routes/subscription.routes";
 import { updateRoutes } from "@/routes/update.routes";
+import { scheduleRoutes } from "@/routes/schedule.routes";
 import { logger as honoLogger } from "hono/logger";
 
 const app = new Hono();
@@ -112,6 +113,7 @@ app.route("/api/payTR", payTRRoutes);
 app.route("/api/payTRPublic", payTRPublicRoutes);
 
 app.route("/api/subscription", subscriptionRoutes);
+app.route("/api/schedules", scheduleRoutes);
 
 // Initialize services
 async function initialize() {
