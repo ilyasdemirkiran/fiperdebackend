@@ -7,6 +7,9 @@ import { Timestamp } from "firebase-admin/firestore";
 export const quoteStatusSchema = z.enum(["draft", "sent_for_approval", "approved", "denied"]);
 export type QuoteStatus = z.infer<typeof quoteStatusSchema>;
 
+export const quoteItemDiscountTypeSchema = z.enum(["percentage", "amount"]);
+export type QuoteItemDiscountType = z.infer<typeof quoteItemDiscountTypeSchema>;
+
 export const quoteItemSchema = z.object({
   id: z.string(), // Local ID within the quote/room
   productId: z.custom<ObjectId>().optional(),
@@ -16,7 +19,10 @@ export const quoteItemSchema = z.object({
   unitPrice: z.number(), // Original price in originalCurrency
   originalCurrency: currencySchema,
   convertedUnitPrice: z.number(), // Price in quote base currency (using conversion rate)
-  totalPrice: z.number(), // quantity * convertedUnitPrice
+  discountType: quoteItemDiscountTypeSchema.optional(), // "percentage" or "amount" (amount is in originalCurrency)
+  discountValue: z.number().min(0).optional(), // discount rate (e.g. 10 for 10%) or discount amount per unit in originalCurrency
+  discountAmount: z.number().default(0), // Total discount for this item line in quote base currency
+  totalPrice: z.number(), // quantity * convertedUnitPrice - discountAmount (in quote base currency)
 });
 export type QuoteItem = z.infer<typeof quoteItemSchema>;
 
@@ -92,12 +98,16 @@ export const addItemsToRoomSchema = z.object({
     productId: z.string(),
     quantity: z.number().min(0).default(0),
     customPrice: z.number().optional(), // If provided, overrides catalog price
+    discountType: quoteItemDiscountTypeSchema.optional(),
+    discountValue: z.number().min(0).optional(),
   })),
 });
 
 export const updateQuoteItemSchema = z.object({
   quantity: z.number().positive().optional(),
   customPrice: z.number().optional(),
+  discountType: quoteItemDiscountTypeSchema.nullable().optional(),
+  discountValue: z.number().min(0).nullable().optional(),
 });
 
 export const updateRoomNameSchema = z.object({
@@ -109,6 +119,8 @@ export const addCustomItemSchema = z.object({
   quantity: z.number().min(0).default(0),
   unitPrice: z.number(),
   currency: currencySchema,
+  discountType: quoteItemDiscountTypeSchema.optional(),
+  discountValue: z.number().min(0).optional(),
 });
 
 export const updateItemPublicNameSchema = z.object({

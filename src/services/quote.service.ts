@@ -1,7 +1,17 @@
 import { QuoteRepository } from "@/repositories/quote.repository";
 import { ProductRepository } from "@/repositories/product.repository";
 import { CustomerService } from "@/services/customer.service";
-import { type Quote, type QuoteConversion, type QuoteItem, type QuoteRoom, quoteSchema, type AddCustomItemInput, type QuoteItemLabel } from "@/types/quotes/quote";
+import {
+  type Quote,
+  type QuoteConversion,
+  type QuoteItem,
+  type QuoteRoom,
+  quoteSchema,
+  type AddItemsToRoomInput,
+  type AddCustomItemInput,
+  type UpdateQuoteItemInput,
+  type QuoteItemLabel
+} from "@/types/quotes/quote";
 import { AppError } from "@/middleware/error-handler";
 import { ObjectId } from "mongodb";
 import type { Currency } from "@/types/currency";
@@ -161,7 +171,7 @@ export class QuoteService {
     companyId: string,
     id: string,
     roomId: string,
-    itemsInput: { productId: string; quantity: number; customPrice?: number }[]
+    itemsInput: AddItemsToRoomInput["items"]
   ): Promise<Quote> {
     const quote = await this.getQuote(companyId, id);
     this.ensureEditable(quote);
@@ -189,7 +199,13 @@ export class QuoteService {
 
       const unitPrice = input.customPrice ?? product.price;
       const convertedUnitPrice = unitPrice * conversionRate;
-      const totalPrice = input.quantity * convertedUnitPrice;
+      const { discountAmount, totalPrice } = this.calculateItemTotals(
+        input.quantity,
+        convertedUnitPrice,
+        input.discountType,
+        input.discountValue,
+        conversionRate
+      );
 
       newItems.push({
         id: new ObjectId().toHexString(),
@@ -200,6 +216,9 @@ export class QuoteService {
         unitPrice,
         originalCurrency: product.currency,
         convertedUnitPrice,
+        discountType: input.discountType,
+        discountValue: input.discountValue,
+        discountAmount,
         totalPrice,
       });
     }
@@ -230,7 +249,13 @@ export class QuoteService {
     }
 
     const convertedUnitPrice = input.unitPrice * conversionRate;
-    const totalPrice = input.quantity * convertedUnitPrice;
+    const { discountAmount, totalPrice } = this.calculateItemTotals(
+      input.quantity,
+      convertedUnitPrice,
+      input.discountType,
+      input.discountValue,
+      conversionRate
+    );
 
     const newItem: QuoteItem = {
       id: new ObjectId().toHexString(),
@@ -240,6 +265,9 @@ export class QuoteService {
       unitPrice: input.unitPrice,
       originalCurrency: input.currency,
       convertedUnitPrice,
+      discountType: input.discountType,
+      discountValue: input.discountValue,
+      discountAmount,
       totalPrice,
     };
 
@@ -275,12 +303,47 @@ export class QuoteService {
     return updated!;
   }
 
+  private calculateItemTotals(
+    quantity: number,
+    convertedUnitPrice: number,
+    discountType?: "percentage" | "amount" | null,
+    discountValue?: number | null,
+    conversionRate: number = 1
+  ): { discountAmount: number; totalPrice: number } {
+    const rawTotal = quantity * convertedUnitPrice;
+    let discountAmount = 0;
+
+    if (discountType && discountValue !== undefined && discountValue !== null && discountValue > 0) {
+      if (discountType === "percentage") {
+        // discountValue is percentage (e.g. 15 for 15%)
+        discountAmount = (rawTotal * Math.min(discountValue, 100)) / 100;
+      } else if (discountType === "amount") {
+        // discountValue is per-unit discount in originalCurrency, or total discount?
+        // Let's standardise: discountValue in originalCurrency per unit
+        // convertedDiscountPerUnit = discountValue * conversionRate
+        const convertedDiscountPerUnit = discountValue * conversionRate;
+        discountAmount = Math.min(rawTotal, quantity * convertedDiscountPerUnit);
+      }
+    }
+
+    const totalPrice = Math.max(0, rawTotal - discountAmount);
+    return {
+      discountAmount,
+      totalPrice,
+    };
+  }
+
   async updateItem(
     companyId: string,
     id: string,
     roomId: string,
     itemId: string,
-    updates: { quantity?: number; customPrice?: number }
+    updates: {
+      quantity?: number;
+      customPrice?: number;
+      discountType?: "percentage" | "amount" | null;
+      discountValue?: number | null;
+    }
   ): Promise<Quote> {
     const quote = await this.getQuote(companyId, id);
     this.ensureEditable(quote);
@@ -301,11 +364,32 @@ export class QuoteService {
     if (updates.customPrice !== undefined) {
       item.unitPrice = updates.customPrice;
     }
+    if (updates.discountType !== undefined) {
+      item.discountType = updates.discountType ?? undefined;
+    }
+    if (updates.discountValue !== undefined) {
+      item.discountValue = updates.discountValue ?? undefined;
+    }
+
+    // If discountType is cleared or discountValue is cleared/0, reset them
+    if (!item.discountType || !item.discountValue || item.discountValue <= 0) {
+      item.discountType = undefined;
+      item.discountValue = undefined;
+      item.discountAmount = 0;
+    }
 
     // Recalculate item prices
-    const conversionRate = quote.conversions[item.originalCurrency];
+    const conversionRate = quote.conversions[item.originalCurrency] || 1;
     item.convertedUnitPrice = item.unitPrice * conversionRate;
-    item.totalPrice = item.quantity * item.convertedUnitPrice;
+    const { discountAmount, totalPrice } = this.calculateItemTotals(
+      item.quantity,
+      item.convertedUnitPrice,
+      item.discountType,
+      item.discountValue,
+      conversionRate
+    );
+    item.discountAmount = discountAmount;
+    item.totalPrice = totalPrice;
 
     await this.repository.update(companyId, id, { rooms: quote.rooms });
     return await this.recalculateQuoteTotal(companyId, id);
@@ -386,7 +470,15 @@ export class QuoteService {
         // Re-apply conversion in case rates changed
         const rate = quote.conversions[item.originalCurrency] || 1;
         item.convertedUnitPrice = item.unitPrice * rate;
-        item.totalPrice = item.quantity * item.convertedUnitPrice;
+        const { discountAmount, totalPrice } = this.calculateItemTotals(
+          item.quantity,
+          item.convertedUnitPrice,
+          item.discountType,
+          item.discountValue,
+          rate
+        );
+        item.discountAmount = discountAmount;
+        item.totalPrice = totalPrice;
         roomTotal += item.totalPrice;
       }
       room.total = roomTotal;
