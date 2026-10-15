@@ -33,9 +33,9 @@ export class VendorAttachmentService {
   private repository: VendorDocumentRepository;
   private vendorRepository: VendorRepository;
 
-  constructor() {
-    this.repository = new VendorDocumentRepository();
-    this.vendorRepository = new VendorRepository();
+  constructor(repository?: VendorDocumentRepository, vendorRepository?: VendorRepository) {
+    this.repository = repository ?? new VendorDocumentRepository();
+    this.vendorRepository = vendorRepository ?? new VendorRepository();
   }
 
   /**

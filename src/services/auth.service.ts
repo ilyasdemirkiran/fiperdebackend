@@ -8,8 +8,8 @@ import {logger} from "@/utils/logger";
 export class AuthService {
   private userRepo: UserRepository;
 
-  constructor() {
-    this.userRepo = new UserRepository();
+  constructor(userRepo?: UserRepository) {
+    this.userRepo = userRepo ?? new UserRepository();
   }
 
   async registerUser(token: string, data: { name: string; surname: string }): Promise<FIUser> {

@@ -24,11 +24,16 @@ export class QuoteService {
   private customerService: CustomerService;
   private quoteItemLabelRepository: QuoteItemLabelRepository;
 
-  constructor() {
-    this.repository = new QuoteRepository();
-    this.productRepository = new ProductRepository();
-    this.customerService = new CustomerService();
-    this.quoteItemLabelRepository = new QuoteItemLabelRepository();
+  constructor(
+    repository?: QuoteRepository,
+    productRepository?: ProductRepository,
+    customerService?: CustomerService,
+    quoteItemLabelRepository?: QuoteItemLabelRepository
+  ) {
+    this.repository = repository ?? new QuoteRepository();
+    this.productRepository = productRepository ?? new ProductRepository();
+    this.customerService = customerService ?? new CustomerService();
+    this.quoteItemLabelRepository = quoteItemLabelRepository ?? new QuoteItemLabelRepository();
   }
 
   async createQuote(companyId: string, creatorId: string, creatorName: string, currency: Currency, conversions: QuoteConversion): Promise<Quote> {

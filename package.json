@@ -13,7 +13,8 @@
     "build": "bun build src/index.ts --outdir ./dist --target bun",
     "typecheck": "bun tsc --noEmit",
     "lint": "bunx eslint src/",
-    "test": "bun test"
+    "test": "bun test",
+    "check": "./scripts/pre-push.sh"
   },
   "peerDependencies": {
     "typescript": "^5.9.3"

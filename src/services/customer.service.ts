@@ -15,9 +15,12 @@ export class CustomerService {
   private repository: CustomerRepository;
   private scheduleRepository: DayScheduleRepository;
 
-  constructor() {
-    this.repository = new CustomerRepository();
-    this.scheduleRepository = new DayScheduleRepository();
+  constructor(
+    repository?: CustomerRepository,
+    scheduleRepository?: DayScheduleRepository
+  ) {
+    this.repository = repository ?? new CustomerRepository();
+    this.scheduleRepository = scheduleRepository ?? new DayScheduleRepository();
   }
 
   async createCustomer(

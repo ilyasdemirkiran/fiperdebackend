@@ -13,8 +13,8 @@ import {Timestamp} from "firebase-admin/firestore";
 export class TaskMetaService {
   private repository: TaskMetaRepository;
 
-  constructor() {
-    this.repository = new TaskMetaRepository();
+  constructor(repository?: TaskMetaRepository) {
+    this.repository = repository ?? new TaskMetaRepository();
   }
 
   async createTaskMeta(companyId: string, input: CreateTaskMetaInput): Promise<TaskMetaDb> {

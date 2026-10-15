@@ -13,10 +13,14 @@ export class ProductService {
   private vendorRepository: VendorRepository;
   private priceRateRepository: VendorPriceRateRepository;
 
-  constructor() {
-    this.repository = new ProductRepository();
-    this.vendorRepository = new VendorRepository();
-    this.priceRateRepository = new VendorPriceRateRepository();
+  constructor(
+    repository?: ProductRepository,
+    vendorRepository?: VendorRepository,
+    priceRateRepository?: VendorPriceRateRepository
+  ) {
+    this.repository = repository ?? new ProductRepository();
+    this.vendorRepository = vendorRepository ?? new VendorRepository();
+    this.priceRateRepository = priceRateRepository ?? new VendorPriceRateRepository();
   }
 
   /**

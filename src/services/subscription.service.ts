@@ -8,8 +8,8 @@ export class SubscriptionService {
 
   private subscriptionRepo: SubscriptionRepository;
 
-  constructor() {
-    this.subscriptionRepo = new SubscriptionRepository();
+  constructor(subscriptionRepo?: SubscriptionRepository) {
+    this.subscriptionRepo = subscriptionRepo ?? new SubscriptionRepository();
   }
 
   async getSubscription(companyId: string): Promise<Subscription | null> {

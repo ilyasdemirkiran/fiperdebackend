@@ -6,8 +6,8 @@ import {logger} from "@/utils/logger";
 export class CustomerImageLabelService {
   private repository: CustomerImageLabelRepository;
 
-  constructor() {
-    this.repository = new CustomerImageLabelRepository();
+  constructor(repository?: CustomerImageLabelRepository) {
+    this.repository = repository ?? new CustomerImageLabelRepository();
   }
 
   async createLabel(companyId: string, name: string): Promise<CustomerImageLabel> {

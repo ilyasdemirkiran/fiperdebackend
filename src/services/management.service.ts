@@ -30,15 +30,24 @@ export class ManagementService {
   private companyNoteRepo: CompanyNoteRepository;
   private subscriptionRepo: SubscriptionRepository;
 
-  constructor() {
-    this.repository = new ManagementRepository();
-    this.companyRepo = new CompanyRepository();
-    this.vendorRepo = new VendorRepository();
-    this.productRepo = new ProductRepository();
-    this.permissionRepo = new VendorPermissionRepository();
-    this.documentRepo = new VendorDocumentRepository();
-    this.companyNoteRepo = new CompanyNoteRepository();
-    this.subscriptionRepo = new SubscriptionRepository();
+  constructor(
+    repository?: ManagementRepository,
+    companyRepo?: CompanyRepository,
+    vendorRepo?: VendorRepository,
+    productRepo?: ProductRepository,
+    permissionRepo?: VendorPermissionRepository,
+    documentRepo?: VendorDocumentRepository,
+    companyNoteRepo?: CompanyNoteRepository,
+    subscriptionRepo?: SubscriptionRepository
+  ) {
+    this.repository = repository ?? new ManagementRepository();
+    this.companyRepo = companyRepo ?? new CompanyRepository();
+    this.vendorRepo = vendorRepo ?? new VendorRepository();
+    this.productRepo = productRepo ?? new ProductRepository();
+    this.permissionRepo = permissionRepo ?? new VendorPermissionRepository();
+    this.documentRepo = documentRepo ?? new VendorDocumentRepository();
+    this.companyNoteRepo = companyNoteRepo ?? new CompanyNoteRepository();
+    this.subscriptionRepo = subscriptionRepo ?? new SubscriptionRepository();
   }
 
   // =====================

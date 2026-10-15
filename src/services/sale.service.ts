@@ -11,8 +11,8 @@ import {ObjectId} from "mongodb";
 export class SaleService {
   private repository: SaleRepository;
 
-  constructor() {
-    this.repository = new SaleRepository();
+  constructor(repository?: SaleRepository) {
+    this.repository = repository ?? new SaleRepository();
   }
 
   private assertAdmin(role: UserRole): void {

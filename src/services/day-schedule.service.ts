@@ -25,10 +25,14 @@ export class DayScheduleService {
   private customerRepository: CustomerRepository;
   private taskMetaRepository: TaskMetaRepository;
 
-  constructor() {
-    this.repository = new DayScheduleRepository();
-    this.customerRepository = new CustomerRepository();
-    this.taskMetaRepository = new TaskMetaRepository();
+  constructor(
+    repository?: DayScheduleRepository,
+    customerRepository?: CustomerRepository,
+    taskMetaRepository?: TaskMetaRepository
+  ) {
+    this.repository = repository ?? new DayScheduleRepository();
+    this.customerRepository = customerRepository ?? new CustomerRepository();
+    this.taskMetaRepository = taskMetaRepository ?? new TaskMetaRepository();
   }
 
   async getDaySchedule(companyId: string, date: string): Promise<DayScheduleDb> {

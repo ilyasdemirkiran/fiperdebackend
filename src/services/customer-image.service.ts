@@ -21,9 +21,12 @@ export class CustomerImageService {
   private repository: CustomerImageRepository;
   private uploadRepository: UploadSessionRepository;
 
-  constructor() {
-    this.repository = new CustomerImageRepository();
-    this.uploadRepository = new UploadSessionRepository();
+  constructor(
+    repository?: CustomerImageRepository,
+    uploadRepository?: UploadSessionRepository
+  ) {
+    this.repository = repository ?? new CustomerImageRepository();
+    this.uploadRepository = uploadRepository ?? new UploadSessionRepository();
   }
 
   async uploadImage(

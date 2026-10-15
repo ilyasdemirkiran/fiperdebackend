@@ -21,12 +21,18 @@ export class VendorService {
   private documentRepository: VendorDocumentRepository;
   private priceRateRepository: VendorPriceRateRepository;
 
-  constructor() {
-    this.repository = new VendorRepository();
-    this.permissionRepository = new VendorPermissionRepository();
-    this.productRepository = new ProductRepository();
-    this.documentRepository = new VendorDocumentRepository();
-    this.priceRateRepository = new VendorPriceRateRepository();
+  constructor(
+    repository?: VendorRepository,
+    permissionRepository?: VendorPermissionRepository,
+    productRepository?: ProductRepository,
+    documentRepository?: VendorDocumentRepository,
+    priceRateRepository?: VendorPriceRateRepository
+  ) {
+    this.repository = repository ?? new VendorRepository();
+    this.permissionRepository = permissionRepository ?? new VendorPermissionRepository();
+    this.productRepository = productRepository ?? new ProductRepository();
+    this.documentRepository = documentRepository ?? new VendorDocumentRepository();
+    this.priceRateRepository = priceRateRepository ?? new VendorPriceRateRepository();
   }
 
   private assertSudo(role: UserRole): void {

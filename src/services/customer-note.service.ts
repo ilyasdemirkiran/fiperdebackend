@@ -9,9 +9,12 @@ export class CustomerNoteService {
   private repository: CustomerNoteRepository;
   private customerRepository: CustomerRepository;
 
-  constructor() {
-    this.repository = new CustomerNoteRepository();
-    this.customerRepository = new CustomerRepository();
+  constructor(
+    repository?: CustomerNoteRepository,
+    customerRepository?: CustomerRepository
+  ) {
+    this.repository = repository ?? new CustomerNoteRepository();
+    this.customerRepository = customerRepository ?? new CustomerRepository();
   }
 
   async createNote(

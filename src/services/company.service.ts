@@ -17,10 +17,14 @@ export class CompanyService {
   private inviteRepo: CompanyInviteRepository;
   private userRepo: UserRepository;
 
-  constructor() {
-    this.companyRepo = new CompanyRepository();
-    this.inviteRepo = new CompanyInviteRepository();
-    this.userRepo = new UserRepository();
+  constructor(
+    companyRepo?: CompanyRepository,
+    inviteRepo?: CompanyInviteRepository,
+    userRepo?: UserRepository
+  ) {
+    this.companyRepo = companyRepo ?? new CompanyRepository();
+    this.inviteRepo = inviteRepo ?? new CompanyInviteRepository();
+    this.userRepo = userRepo ?? new UserRepository();
   }
 
   async createCompany(userId: string, name: string): Promise<Company> {
