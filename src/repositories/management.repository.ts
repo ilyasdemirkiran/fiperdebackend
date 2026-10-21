@@ -6,6 +6,10 @@ import type {Product} from "@/types/vendor/product/product";
 import {logger} from "@/utils/logger";
 import {AppError} from "@/middleware/error-handler";
 import {getCompaniesCollection, getProductsCollection, getUsersCollection, getVendorsCollection} from "@/repositories/collections/core.collections";
+import {getCustomersCollection, getCustomerImagesCollection, getSalesCollection, getCustomerNotesCollection} from "@/repositories/collections/customer.collections";
+import {getQuotesCollection} from "@/repositories/collections/quote.collections";
+import {getDaySchedulesCollection} from "@/repositories/collections/schedule.collections";
+import type {CompanyDailyActivity} from "@/types/management/management";
 
 export class ManagementRepository {
   private getCompaniesCollection(): Collection<Company> {
@@ -144,6 +148,71 @@ export class ManagementRepository {
       return await this.getCompaniesCollection().findOne({_id: new ObjectId(id)});
     } catch (error) {
       logger.error("Failed to find company by ID", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Find all records created on a given date across all tenant collections for a company.
+   * createdAt is stored as Firebase Timestamp (with _seconds field).
+   */
+  async findDailyActivity(companyId: string, date: string): Promise<CompanyDailyActivity> {
+    try {
+      // Parse the date string (YYYY-MM-DD) to get start/end of day in UTC+3 (Turkey)
+      const dayStart = new Date(`${date}T00:00:00+03:00`);
+      const dayEnd = new Date(`${date}T23:59:59.999+03:00`);
+
+      const startSeconds = Math.floor(dayStart.getTime() / 1000);
+      const endSeconds = Math.floor(dayEnd.getTime() / 1000);
+
+      // Firebase Timestamp is stored as { _seconds, _nanoseconds } in MongoDB
+      const timestampFilter = {
+        "createdAt._seconds": {$gte: startSeconds, $lte: endSeconds},
+      };
+
+      const [customers, customerImages, sales, customerNotes, quotes, daySchedules] = await Promise.all([
+        getCustomersCollection(companyId)
+          .find(timestampFilter)
+          .sort({"createdAt._seconds": -1})
+          .toArray(),
+
+        getCustomerImagesCollection(companyId)
+          .find({"uploadedAt._seconds": {$gte: startSeconds, $lte: endSeconds}})
+          .project({fileId: 0}) // Exclude GridFS binary reference for performance
+          .sort({"uploadedAt._seconds": -1})
+          .toArray() as any,
+
+        getSalesCollection(companyId)
+          .find(timestampFilter)
+          .sort({"createdAt._seconds": -1})
+          .toArray(),
+
+        getCustomerNotesCollection(companyId)
+          .find(timestampFilter)
+          .sort({"createdAt._seconds": -1})
+          .toArray(),
+
+        getQuotesCollection(companyId)
+          .find(timestampFilter)
+          .sort({"createdAt._seconds": -1})
+          .toArray(),
+
+        getDaySchedulesCollection(companyId)
+          .find({date})
+          .toArray(),
+      ]);
+
+      return {
+        date,
+        customers,
+        customerImages,
+        sales,
+        customerNotes,
+        quotes,
+        daySchedules,
+      };
+    } catch (error) {
+      logger.error("Failed to fetch daily activity for company", error, {companyId, date});
       throw error;
     }
   }

@@ -11,7 +11,7 @@ import {
   updateCompanyNoteSchema,
   type CompanyNoteDb,
 } from "@/types/company/company_note";
-import type { CompanyWithUsers, VendorWithProducts } from "@/types/management/management";
+import type { CompanyWithUsers, VendorWithProducts, CompanyDetail } from "@/types/management/management";
 import type { Company } from "@/types/company/company";
 import type { Vendor } from "@/types/vendor/vendor";
 import type { Product } from "@/types/vendor/product/product";
@@ -19,6 +19,7 @@ import { AppError } from "@/middleware/error-handler";
 import { logger } from "@/utils/logger";
 import { Timestamp } from "firebase-admin/firestore";
 import { ObjectId } from "mongodb";
+import { format } from "date-fns";
 
 export class ManagementService {
   private repository: ManagementRepository;
@@ -554,6 +555,39 @@ export class ManagementService {
     const modifiedCount = await this.productRepo.bulkUpdate(updates, vendorId);
     logger.info("Products bulk updated", { vendorId, requestedCount: updates.length, modifiedCount });
     return modifiedCount;
+  }
+
+  // =====================
+  // COMPANY DETAIL (FOR MANAGEMENT PANEL)
+  // =====================
+
+  /**
+   * Get full company detail with users, subscription, notes, and daily activity.
+   * @param companyId - The company ID
+   * @param date - Optional date in YYYY-MM-DD format, defaults to today (Turkey timezone)
+   */
+  async getCompanyDetail(companyId: string, date?: string): Promise<CompanyDetail> {
+    const targetDate = date || format(new Date(), "yyyy-MM-dd");
+
+    const company = await this.repository.findCompanyById(companyId);
+    if (!company) {
+      throw new AppError(404, "Company not found", "COMPANY_NOT_FOUND");
+    }
+
+    const [users, subscription, companyNotes, dailyActivity] = await Promise.all([
+      this.repository.findUsersByIds(company.userIds),
+      this.subscriptionRepo.findByCompanyId(companyId),
+      this.companyNoteRepo.findByCompanyId(companyId),
+      this.repository.findDailyActivity(companyId, targetDate),
+    ]);
+
+    return {
+      ...company,
+      users,
+      subscription,
+      companyNotes,
+      dailyActivity,
+    };
   }
 
   // =====================

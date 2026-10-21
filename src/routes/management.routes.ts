@@ -7,6 +7,7 @@ import {toResponse, toResponseArray} from "@/utils/response-transformer";
 import {authMiddleware} from "@/middleware/auth";
 import {z} from "zod";
 import {managementAuthMiddleware} from "@/middleware/management-auth";
+import {localDateRegex} from "@/types/schedule/schedule";
 
 export const managementRoutes = new Hono<Env>();
 
@@ -39,6 +40,23 @@ function getVendorService(): VendorService {
 managementRoutes.get("/companies", async (c) => {
   const companies = await getManagementService().listCompaniesWithUsers();
   return c.json(successResponse(toResponseArray(companies)));
+});
+
+// GET /management/companies/:id/detail - Get company detail with daily activity
+managementRoutes.get("/companies/:id/detail", async (c) => {
+  const companyId = c.req.param("id");
+  const dateParam = c.req.query("date");
+
+  // Validate date format if provided
+  if (dateParam && !localDateRegex.test(dateParam)) {
+    return c.json(
+      {success: false, error: {message: "Geçersiz tarih formatı. YYYY-MM-DD formatında olmalıdır (örn: 2026-01-15)"}},
+      400
+    );
+  }
+
+  const detail = await getManagementService().getCompanyDetail(companyId, dateParam);
+  return c.json(successResponse(toResponse(detail)));
 });
 
 // POST /management/companies/:id/promote/:userId - Promote user to admin
