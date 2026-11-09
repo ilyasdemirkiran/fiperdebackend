@@ -8,6 +8,7 @@ import {authMiddleware} from "@/middleware/auth";
 import {z} from "zod";
 import {managementAuthMiddleware} from "@/middleware/management-auth";
 import {localDateRegex} from "@/types/schedule/schedule";
+import {presenceService} from "@/services/presence.service";
 
 export const managementRoutes = new Hono<Env>();
 
@@ -31,6 +32,12 @@ function getVendorService(): VendorService {
   }
   return vendorService;
 }
+
+// GET /management/presence - List active online users
+managementRoutes.get("/presence", async (c) => {
+  const activeUsers = presenceService.getActivePresences();
+  return c.json(successResponse(activeUsers));
+});
 
 // =====================
 // COMPANY ENDPOINTS
