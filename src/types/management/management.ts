@@ -11,6 +11,7 @@ import type {CustomerNoteDb} from "@/types/customer/customer_notes/customer_note
 import type {Quote} from "@/types/quotes/quote";
 import type {DayScheduleDb} from "@/types/schedule/schedule";
 import type {CompanyNoteDb} from "@/types/company/company_note";
+import type {PageVisitDb} from "@/types/management/page_visit";
 
 // Company with populated users
 export type CompanyWithUsers = Company & {
@@ -27,6 +28,7 @@ export interface CompanyDailyActivity {
   customerNotes: CustomerNoteDb[];
   quotes: Quote[];
   daySchedules: DayScheduleDb[];
+  pageVisits?: PageVisitDb[];
 }
 
 // Full company detail for management panel

@@ -5,6 +5,7 @@ import type { Sale } from "@/types/customer/sale/sale";
 import type { CustomerNoteDb } from "@/types/customer/customer_notes/customer_note";
 import type { Collection } from "mongodb";
 import type {CustomerImageLabel} from "@/types/customer/image/customer_image_label";
+import type {PageVisitDb} from "@/types/management/page_visit";
 
 export const CUSTOMER_COLLECTIONS = {
   customers: "customers",
@@ -12,6 +13,7 @@ export const CUSTOMER_COLLECTIONS = {
   customerImageLabels: "labels",
   sales: "sales",
   customerNotes: "customer_notes",
+  pageVisits: "page_visits",
 }
 
 export function getCustomersCollection(companyId: string): Collection<CustomerDb> {
@@ -37,5 +39,10 @@ export function getSalesCollection(companyId: string): Collection<Sale> {
 export function getCustomerNotesCollection(companyId: string): Collection<CustomerNoteDb> {
   return getDatabaseForCompany(companyId)
     .collection<CustomerNoteDb>(CUSTOMER_COLLECTIONS.customerNotes);
+}
+
+export function getPageVisitsCollection(companyId: string): Collection<PageVisitDb> {
+  return getDatabaseForCompany(companyId)
+    .collection<PageVisitDb>(CUSTOMER_COLLECTIONS.pageVisits);
 }
 

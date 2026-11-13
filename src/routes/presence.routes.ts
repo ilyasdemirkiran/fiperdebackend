@@ -14,6 +14,11 @@ const heartbeatSchema = z.object({
   platform: z.string().default("web"),
 });
 
+const pageVisitSchema = z.object({
+  path: z.string(),
+  platform: z.string().default("web"),
+});
+
 // POST /api/presence/heartbeat
 presenceRoutes.post("/heartbeat", async (c) => {
   const user = c.get("user");
@@ -27,11 +32,47 @@ presenceRoutes.post("/heartbeat", async (c) => {
   await presenceService.recordHeartbeat({
     userId: user._id,
     userName: `${user.name} ${user.surname}`.trim(),
-    phoneNumber: user.phoneNumber?.nationalNumber || user.phoneNumber?.number,
+    phoneNumber:
+      typeof user.phoneNumber === "string"
+        ? user.phoneNumber
+        : (user.phoneNumber as any)?.nationalNumber ||
+          (user.phoneNumber as any)?.number,
     companyId: user.companyId,
     currentPath,
     platform,
     role: user.role,
+  });
+
+  return c.json(
+    successResponse({
+      recorded: true,
+      timestamp: Date.now(),
+    })
+  );
+});
+
+// POST /api/presence/page-visit
+presenceRoutes.post("/page-visit", async (c) => {
+  const user = c.get("user");
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = pageVisitSchema.safeParse(body);
+
+  if (!parsed.success || !user.companyId) {
+    return c.json(successResponse({ recorded: false }));
+  }
+
+  await presenceService.recordPageVisit({
+    userId: user._id,
+    userName: `${user.name} ${user.surname}`.trim(),
+    userRole: user.role,
+    phoneNumber:
+      typeof user.phoneNumber === "string"
+        ? user.phoneNumber
+        : (user.phoneNumber as any)?.nationalNumber ||
+          (user.phoneNumber as any)?.number,
+    companyId: user.companyId,
+    path: parsed.data.path,
+    platform: parsed.data.platform,
   });
 
   return c.json(
@@ -48,4 +89,3 @@ presenceRoutes.post("/offline", async (c) => {
   presenceService.setUserOffline(user._id);
   return c.json(successResponse({ offline: true }));
 });
-

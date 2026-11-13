@@ -6,7 +6,7 @@ import type {Product} from "@/types/vendor/product/product";
 import {logger} from "@/utils/logger";
 import {AppError} from "@/middleware/error-handler";
 import {getCompaniesCollection, getProductsCollection, getUsersCollection, getVendorsCollection} from "@/repositories/collections/core.collections";
-import {getCustomersCollection, getCustomerImagesCollection, getSalesCollection, getCustomerNotesCollection} from "@/repositories/collections/customer.collections";
+import {getCustomersCollection, getCustomerImagesCollection, getSalesCollection, getCustomerNotesCollection, getPageVisitsCollection} from "@/repositories/collections/customer.collections";
 import {getQuotesCollection} from "@/repositories/collections/quote.collections";
 import {getDaySchedulesCollection} from "@/repositories/collections/schedule.collections";
 import type {CompanyDailyActivity} from "@/types/management/management";
@@ -170,7 +170,7 @@ export class ManagementRepository {
         "createdAt._seconds": {$gte: startSeconds, $lte: endSeconds},
       };
 
-      const [customers, customerImages, sales, customerNotes, quotes, daySchedules] = await Promise.all([
+      const [customers, customerImages, sales, customerNotes, quotes, daySchedules, pageVisits] = await Promise.all([
         getCustomersCollection(companyId)
           .find(timestampFilter)
           .sort({"createdAt._seconds": -1})
@@ -200,6 +200,16 @@ export class ManagementRepository {
         getDaySchedulesCollection(companyId)
           .find({date})
           .toArray(),
+
+        getPageVisitsCollection(companyId)
+          .find({
+            $or: [
+              {date},
+              {"createdAt._seconds": {$gte: startSeconds, $lte: endSeconds}},
+            ],
+          })
+          .sort({"createdAt._seconds": -1})
+          .toArray(),
       ]);
 
       return {
@@ -210,6 +220,7 @@ export class ManagementRepository {
         customerNotes,
         quotes,
         daySchedules,
+        pageVisits,
       };
     } catch (error) {
       logger.error("Failed to fetch daily activity for company", error, {companyId, date});
