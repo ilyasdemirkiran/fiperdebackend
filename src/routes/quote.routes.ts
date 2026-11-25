@@ -12,7 +12,9 @@ import {
   type QuoteItemLabel,
   type TCMBXmlResponse,
   updateDiscountPercentSchema,
+  updateItemDescriptionSchema,
   updateItemPublicNameSchema,
+  updateItemVatSchema,
   updateQuoteConversionsSchema,
   updateQuoteCustomerSchema,
   updateQuoteItemSchema,
@@ -256,6 +258,77 @@ quoteRoutes.patch("/:id/rooms/:roomId/items/:itemId/public-name", async (c) => {
   const { publicName } = updateItemPublicNameSchema.parse(body);
 
   const quote = await getService().updateItemPublicName(user.companyId!, id, roomId, itemId, publicName);
+  return c.json(successResponse<Quote>(quote));
+});
+
+// GET /api/quotes/:id/rooms/:roomId/items/:itemId/description - Get item description
+quoteRoutes.get("/:id/rooms/:roomId/items/:itemId/description", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+  const roomId = c.req.param("roomId");
+  const itemId = c.req.param("itemId");
+
+  const result = await getService().getItemDescription(user.companyId!, id, roomId, itemId);
+  return c.json(successResponse<{ description?: string }>(result));
+});
+
+// PATCH /api/quotes/:id/rooms/:roomId/items/:itemId/description - Update item description (CRUD)
+quoteRoutes.patch("/:id/rooms/:roomId/items/:itemId/description", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+  const roomId = c.req.param("roomId");
+  const itemId = c.req.param("itemId");
+  const body = await c.req.json();
+  const { description } = updateItemDescriptionSchema.parse(body);
+
+  const quote = await getService().updateItemDescription(user.companyId!, id, roomId, itemId, description);
+  return c.json(successResponse<Quote>(quote));
+});
+
+// DELETE /api/quotes/:id/rooms/:roomId/items/:itemId/description - Delete item description (CRUD)
+quoteRoutes.delete("/:id/rooms/:roomId/items/:itemId/description", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+  const roomId = c.req.param("roomId");
+  const itemId = c.req.param("itemId");
+
+  const quote = await getService().deleteItemDescription(user.companyId!, id, roomId, itemId);
+  return c.json(successResponse<Quote>(quote));
+});
+
+// GET /api/quotes/:id/rooms/:roomId/items/:itemId/vat - Get item VAT (CRUD)
+quoteRoutes.get("/:id/rooms/:roomId/items/:itemId/vat", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+  const roomId = c.req.param("roomId");
+  const itemId = c.req.param("itemId");
+
+  const result = await getService().getItemVat(user.companyId!, id, roomId, itemId);
+  return c.json(successResponse<{ vatRate?: number; vatAmount: number; totalPriceWithVat?: number }>(result));
+});
+
+// PATCH /api/quotes/:id/rooms/:roomId/items/:itemId/vat - Update item VAT (CRUD, supports vatRate = 0)
+quoteRoutes.patch("/:id/rooms/:roomId/items/:itemId/vat", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+  const roomId = c.req.param("roomId");
+  const itemId = c.req.param("itemId");
+  const body = await c.req.json();
+  const parsed = updateItemVatSchema.parse(body);
+  const vatRate = parsed.vatRate !== undefined ? parsed.vatRate : parsed.kdvRate;
+
+  const quote = await getService().updateItemVat(user.companyId!, id, roomId, itemId, vatRate);
+  return c.json(successResponse<Quote>(quote));
+});
+
+// DELETE /api/quotes/:id/rooms/:roomId/items/:itemId/vat - Delete item VAT (CRUD)
+quoteRoutes.delete("/:id/rooms/:roomId/items/:itemId/vat", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+  const roomId = c.req.param("roomId");
+  const itemId = c.req.param("itemId");
+
+  const quote = await getService().deleteItemVat(user.companyId!, id, roomId, itemId);
   return c.json(successResponse<Quote>(quote));
 });
 

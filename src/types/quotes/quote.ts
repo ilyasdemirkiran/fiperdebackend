@@ -15,6 +15,7 @@ export const quoteItemSchema = z.object({
   productId: z.custom<ObjectId>().optional(),
   name: z.string(),
   publicName: z.string().default(""),
+  description: z.string().max(300, "Açıklama en fazla 300 karakter olabilir").optional(),
   quantity: z.number().min(0).default(0),
   unitPrice: z.number(), // Original price in originalCurrency
   originalCurrency: currencySchema,
@@ -22,6 +23,9 @@ export const quoteItemSchema = z.object({
   discountType: quoteItemDiscountTypeSchema.optional(), // "percentage" or "amount" (amount is in originalCurrency)
   discountValue: z.number().min(0).optional(), // discount rate (e.g. 10 for 10%) or discount amount per unit in originalCurrency
   discountAmount: z.number().default(0), // Total discount for this item line in quote base currency
+  vatRate: z.number().min(0, "KDV oranı 0 veya daha büyük olmalıdır").max(100, "KDV oranı en fazla 100 olabilir").optional(), // KDV oranı (%0, %1, %10, %20 vb.)
+  vatAmount: z.number().default(0).optional(), // KDV tutarı (quote baz para biriminde)
+  totalPriceWithVat: z.number().optional(), // KDV dahil toplam tutar
   totalPrice: z.number(), // quantity * convertedUnitPrice - discountAmount (in quote base currency)
 });
 export type QuoteItem = z.infer<typeof quoteItemSchema>;
@@ -37,6 +41,8 @@ export const quoteRoomSchema = z.object({
   name: z.string(),
   items: z.array(quoteItemSchema).default([]),
   total: z.number().default(0),
+  totalVat: z.number().default(0).optional(),
+  totalWithVat: z.number().default(0).optional(),
 });
 export type QuoteRoom = z.infer<typeof quoteRoomSchema>;
 
@@ -60,6 +66,8 @@ export const quoteSchema = z.object({
   rooms: z.array(quoteRoomSchema).default([]),
   status: quoteStatusSchema.default("draft"),
   total: z.number().default(0),
+  totalVat: z.number().default(0).optional(),
+  totalWithVat: z.number().default(0).optional(),
   discountPercent: z.number().min(0).max(100).default(0),
   totalAfterDiscount: z.number().default(0),
   createdAt: timestampSchema.default(Timestamp.now()),
@@ -100,6 +108,8 @@ export const addItemsToRoomSchema = z.object({
     customPrice: z.number().optional(), // If provided, overrides catalog price
     discountType: quoteItemDiscountTypeSchema.optional(),
     discountValue: z.number().min(0).optional(),
+    description: z.string().max(300, "Açıklama en fazla 300 karakter olabilir").optional(),
+    vatRate: z.number().min(0, "KDV oranı 0 veya daha büyük olmalıdır").max(100, "KDV oranı en fazla 100 olabilir").optional(),
   })),
 });
 
@@ -108,6 +118,8 @@ export const updateQuoteItemSchema = z.object({
   customPrice: z.number().optional(),
   discountType: quoteItemDiscountTypeSchema.nullable().optional(),
   discountValue: z.number().min(0).nullable().optional(),
+  description: z.string().max(300, "Açıklama en fazla 300 karakter olabilir").nullable().optional(),
+  vatRate: z.number().min(0, "KDV oranı 0 veya daha büyük olmalıdır").max(100, "KDV oranı en fazla 100 olabilir").nullable().optional(),
 });
 
 export const updateRoomNameSchema = z.object({
@@ -121,10 +133,23 @@ export const addCustomItemSchema = z.object({
   currency: currencySchema,
   discountType: quoteItemDiscountTypeSchema.optional(),
   discountValue: z.number().min(0).optional(),
+  description: z.string().max(300, "Açıklama en fazla 300 karakter olabilir").optional(),
+  vatRate: z.number().min(0, "KDV oranı 0 veya daha büyük olmalıdır").max(100, "KDV oranı en fazla 100 olabilir").optional(),
 });
 
 export const updateItemPublicNameSchema = z.object({
   publicName: z.string(),
+});
+
+export const updateItemDescriptionSchema = z.object({
+  description: z.string().max(300, "Açıklama en fazla 300 karakter olabilir").nullable().optional(),
+});
+
+export const updateItemVatSchema = z.object({
+  vatRate: z.number().min(0, "KDV oranı 0 veya daha büyük olmalıdır").max(100, "KDV oranı en fazla 100 olabilir").nullable().optional(),
+  kdvRate: z.number().min(0, "KDV oranı 0 veya daha büyük olmalıdır").max(100, "KDV oranı en fazla 100 olabilir").nullable().optional(),
+}).refine(data => data.vatRate !== undefined || data.kdvRate !== undefined, {
+  message: "vatRate veya kdvRate belirtilmelidir",
 });
 
 export const updateDiscountPercentSchema = z.object({
@@ -140,6 +165,8 @@ export type UpdateQuoteItemInput = z.infer<typeof updateQuoteItemSchema>;
 export type UpdateRoomNameInput = z.infer<typeof updateRoomNameSchema>;
 export type AddCustomItemInput = z.infer<typeof addCustomItemSchema>;
 export type UpdateItemPublicNameInput = z.infer<typeof updateItemPublicNameSchema>;
+export type UpdateItemDescriptionInput = z.infer<typeof updateItemDescriptionSchema>;
+export type UpdateItemVatInput = z.infer<typeof updateItemVatSchema>;
 export type UpdateDiscountPercentInput = z.infer<typeof updateDiscountPercentSchema>;
 
 export interface TCMBCurrency {

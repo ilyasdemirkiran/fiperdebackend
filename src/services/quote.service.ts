@@ -133,6 +133,8 @@ export class QuoteService {
       name,
       items: [],
       total: 0,
+      totalVat: 0,
+      totalWithVat: 0,
     };
 
     const updated = await this.repository.update(companyId, id, {
@@ -204,12 +206,13 @@ export class QuoteService {
 
       const unitPrice = input.customPrice ?? product.price;
       const convertedUnitPrice = unitPrice * conversionRate;
-      const { discountAmount, totalPrice } = this.calculateItemTotals(
+      const { discountAmount, totalPrice, vatAmount, totalPriceWithVat } = this.calculateItemTotals(
         input.quantity,
         convertedUnitPrice,
         input.discountType,
         input.discountValue,
-        conversionRate
+        conversionRate,
+        input.vatRate
       );
 
       newItems.push({
@@ -217,6 +220,7 @@ export class QuoteService {
         productId: product._id!,
         name: product.name,
         publicName: "",
+        description: input.description,
         quantity: input.quantity,
         unitPrice,
         originalCurrency: product.currency,
@@ -224,6 +228,9 @@ export class QuoteService {
         discountType: input.discountType,
         discountValue: input.discountValue,
         discountAmount,
+        vatRate: input.vatRate,
+        vatAmount,
+        totalPriceWithVat,
         totalPrice,
       });
     }
@@ -254,18 +261,20 @@ export class QuoteService {
     }
 
     const convertedUnitPrice = input.unitPrice * conversionRate;
-    const { discountAmount, totalPrice } = this.calculateItemTotals(
+    const { discountAmount, totalPrice, vatAmount, totalPriceWithVat } = this.calculateItemTotals(
       input.quantity,
       convertedUnitPrice,
       input.discountType,
       input.discountValue,
-      conversionRate
+      conversionRate,
+      input.vatRate
     );
 
     const newItem: QuoteItem = {
       id: new ObjectId().toHexString(),
       name: input.name,
       publicName: "",
+      description: input.description,
       quantity: input.quantity,
       unitPrice: input.unitPrice,
       originalCurrency: input.currency,
@@ -273,6 +282,9 @@ export class QuoteService {
       discountType: input.discountType,
       discountValue: input.discountValue,
       discountAmount,
+      vatRate: input.vatRate,
+      vatAmount,
+      totalPriceWithVat,
       totalPrice,
     };
 
@@ -313,8 +325,9 @@ export class QuoteService {
     convertedUnitPrice: number,
     discountType?: "percentage" | "amount" | null,
     discountValue?: number | null,
-    conversionRate: number = 1
-  ): { discountAmount: number; totalPrice: number } {
+    conversionRate: number = 1,
+    vatRate?: number | null
+  ): { discountAmount: number; totalPrice: number; vatAmount: number; totalPriceWithVat: number } {
     const rawTotal = quantity * convertedUnitPrice;
     let discountAmount = 0;
 
@@ -332,9 +345,17 @@ export class QuoteService {
     }
 
     const totalPrice = Math.max(0, rawTotal - discountAmount);
+    const effectiveVatRate = vatRate !== undefined && vatRate !== null && vatRate >= 0 ? vatRate : undefined;
+    const vatAmount = effectiveVatRate !== undefined
+      ? Math.round((totalPrice * (effectiveVatRate / 100)) * 100) / 100
+      : 0;
+    const totalPriceWithVat = Math.round((totalPrice + vatAmount) * 100) / 100;
+
     return {
       discountAmount,
       totalPrice,
+      vatAmount,
+      totalPriceWithVat,
     };
   }
 
@@ -348,6 +369,8 @@ export class QuoteService {
       customPrice?: number;
       discountType?: "percentage" | "amount" | null;
       discountValue?: number | null;
+      description?: string | null;
+      vatRate?: number | null;
     }
   ): Promise<Quote> {
     const quote = await this.getQuote(companyId, id);
@@ -375,6 +398,12 @@ export class QuoteService {
     if (updates.discountValue !== undefined) {
       item.discountValue = updates.discountValue ?? undefined;
     }
+    if (updates.description !== undefined) {
+      item.description = updates.description && updates.description.trim() !== "" ? updates.description.trim() : undefined;
+    }
+    if (updates.vatRate !== undefined) {
+      item.vatRate = updates.vatRate === null ? undefined : updates.vatRate;
+    }
 
     // If discountType is cleared or discountValue is cleared/0, reset them
     if (!item.discountType || !item.discountValue || item.discountValue <= 0) {
@@ -386,18 +415,149 @@ export class QuoteService {
     // Recalculate item prices
     const conversionRate = quote.conversions[item.originalCurrency] || 1;
     item.convertedUnitPrice = item.unitPrice * conversionRate;
-    const { discountAmount, totalPrice } = this.calculateItemTotals(
+    const { discountAmount, totalPrice, vatAmount, totalPriceWithVat } = this.calculateItemTotals(
       item.quantity,
       item.convertedUnitPrice,
       item.discountType,
       item.discountValue,
-      conversionRate
+      conversionRate,
+      item.vatRate
     );
     item.discountAmount = discountAmount;
     item.totalPrice = totalPrice;
+    item.vatAmount = vatAmount;
+    item.totalPriceWithVat = totalPriceWithVat;
 
     await this.repository.update(companyId, id, { rooms: quote.rooms });
     return await this.recalculateQuoteTotal(companyId, id);
+  }
+
+  async getItemDescription(
+    companyId: string,
+    id: string,
+    roomId: string,
+    itemId: string
+  ): Promise<{ description?: string }> {
+    const quote = await this.getQuote(companyId, id);
+    const room = quote.rooms.find(r => r.id === roomId);
+    if (!room) {
+      throw new AppError(404, "Room not found", "ROOM_NOT_FOUND");
+    }
+    const item = room.items.find(i => i.id === itemId);
+    if (!item) {
+      throw new AppError(404, "Item not found", "ITEM_NOT_FOUND");
+    }
+    return { description: item.description };
+  }
+
+  async updateItemDescription(
+    companyId: string,
+    id: string,
+    roomId: string,
+    itemId: string,
+    description?: string | null
+  ): Promise<Quote> {
+    const quote = await this.getQuote(companyId, id);
+    this.ensureEditable(quote);
+
+    const room = quote.rooms.find(r => r.id === roomId);
+    if (!room) {
+      throw new AppError(404, "Room not found", "ROOM_NOT_FOUND");
+    }
+
+    const item = room.items.find(i => i.id === itemId);
+    if (!item) {
+      throw new AppError(404, "Item not found", "ITEM_NOT_FOUND");
+    }
+
+    item.description = description && description.trim() !== "" ? description.trim() : undefined;
+
+    const updated = await this.repository.update(companyId, id, { rooms: quote.rooms });
+    return updated!;
+  }
+
+  async deleteItemDescription(
+    companyId: string,
+    id: string,
+    roomId: string,
+    itemId: string
+  ): Promise<Quote> {
+    return await this.updateItemDescription(companyId, id, roomId, itemId, undefined);
+  }
+
+  async getItemVat(
+    companyId: string,
+    id: string,
+    roomId: string,
+    itemId: string
+  ): Promise<{ vatRate?: number; vatAmount: number; totalPriceWithVat?: number }> {
+    const quote = await this.getQuote(companyId, id);
+    const room = quote.rooms.find(r => r.id === roomId);
+    if (!room) {
+      throw new AppError(404, "Room not found", "ROOM_NOT_FOUND");
+    }
+    const item = room.items.find(i => i.id === itemId);
+    if (!item) {
+      throw new AppError(404, "Item not found", "ITEM_NOT_FOUND");
+    }
+    return {
+      vatRate: item.vatRate,
+      vatAmount: item.vatAmount || 0,
+      totalPriceWithVat: item.totalPriceWithVat,
+    };
+  }
+
+  async updateItemVat(
+    companyId: string,
+    id: string,
+    roomId: string,
+    itemId: string,
+    vatRate?: number | null
+  ): Promise<Quote> {
+    const quote = await this.getQuote(companyId, id);
+    this.ensureEditable(quote);
+
+    const room = quote.rooms.find(r => r.id === roomId);
+    if (!room) {
+      throw new AppError(404, "Room not found", "ROOM_NOT_FOUND");
+    }
+
+    const item = room.items.find(i => i.id === itemId);
+    if (!item) {
+      throw new AppError(404, "Item not found", "ITEM_NOT_FOUND");
+    }
+
+    if (vatRate === null || vatRate === undefined) {
+      item.vatRate = undefined;
+    } else {
+      item.vatRate = vatRate;
+    }
+
+    const conversionRate = quote.conversions[item.originalCurrency] || 1;
+    const { discountAmount, totalPrice, vatAmount, totalPriceWithVat } = this.calculateItemTotals(
+      item.quantity,
+      item.convertedUnitPrice,
+      item.discountType,
+      item.discountValue,
+      conversionRate,
+      item.vatRate
+    );
+    item.discountAmount = discountAmount;
+    item.totalPrice = totalPrice;
+    item.vatAmount = vatAmount;
+    item.totalPriceWithVat = totalPriceWithVat;
+
+    await this.repository.update(companyId, id, { rooms: quote.rooms });
+    return await this.recalculateQuoteTotal(companyId, id);
+  }
+
+  async deleteItemVat(
+    companyId: string,
+    id: string,
+    roomId: string,
+    itemId: string
+  ): Promise<Quote> {
+    return await this.updateItemVat(companyId, id, roomId, itemId, null);
   }
 
   async removeItem(companyId: string, id: string, roomId: string, itemId: string): Promise<Quote> {
@@ -468,34 +628,45 @@ export class QuoteService {
     }
 
     let grandTotal = 0;
+    let grandTotalVat = 0;
 
     for (const room of quote.rooms) {
       let roomTotal = 0;
+      let roomVat = 0;
       for (const item of room.items) {
         // Re-apply conversion in case rates changed
         const rate = quote.conversions[item.originalCurrency] || 1;
         item.convertedUnitPrice = item.unitPrice * rate;
-        const { discountAmount, totalPrice } = this.calculateItemTotals(
+        const { discountAmount, totalPrice, vatAmount, totalPriceWithVat } = this.calculateItemTotals(
           item.quantity,
           item.convertedUnitPrice,
           item.discountType,
           item.discountValue,
-          rate
+          rate,
+          item.vatRate
         );
         item.discountAmount = discountAmount;
         item.totalPrice = totalPrice;
+        item.vatAmount = vatAmount;
+        item.totalPriceWithVat = totalPriceWithVat;
         roomTotal += item.totalPrice;
+        roomVat += item.vatAmount;
       }
-      room.total = roomTotal;
+      room.total = Math.round(roomTotal * 100) / 100;
+      room.totalVat = Math.round(roomVat * 100) / 100;
+      room.totalWithVat = Math.round((roomTotal + roomVat) * 100) / 100;
       grandTotal += roomTotal;
+      grandTotalVat += roomVat;
     }
 
     const discountPercent = quote.discountPercent || 0;
-    const totalAfterDiscount = grandTotal * (1 - discountPercent / 100);
+    const totalAfterDiscount = Math.round((grandTotal * (1 - discountPercent / 100)) * 100) / 100;
 
     const updated = await this.repository.update(companyId, id, {
       rooms: quote.rooms,
-      total: grandTotal,
+      total: Math.round(grandTotal * 100) / 100,
+      totalVat: Math.round(grandTotalVat * 100) / 100,
+      totalWithVat: Math.round((grandTotal + grandTotalVat) * 100) / 100,
       totalAfterDiscount,
     });
 

@@ -466,4 +466,237 @@ describe("QuoteService Unit Tests", () => {
       await expect(quoteService.deleteQuoteItemLabel(companyId, "label-1")).resolves.toBeUndefined();
     });
   });
+
+  describe("Quote Item Description CRUD", () => {
+    const baseQuoteWithItem = (desc?: string): Quote => ({
+      _id: new ObjectId(),
+      companyId,
+      quoteNumber: "QT-2026-0001",
+      creatorId: "user-1",
+      currency: "TRY",
+      conversions: { TRY: 1, USD: 1, EUR: 1 },
+      status: "draft",
+      total: 100,
+      discountPercent: 0,
+      totalAfterDiscount: 100,
+      createdAt: Timestamp.now(),
+      rooms: [
+        {
+          id: "room-1",
+          name: "Salon",
+          total: 100,
+          items: [
+            {
+              id: "item-1",
+              name: "Perde",
+              publicName: "",
+              description: desc,
+              quantity: 1,
+              unitPrice: 100,
+              originalCurrency: "TRY",
+              convertedUnitPrice: 100,
+              discountAmount: 0,
+              totalPrice: 100,
+            },
+          ],
+        },
+      ],
+    });
+
+    it("should update item description and return updated quote to client", async () => {
+      const quote = baseQuoteWithItem();
+      (mockQuoteRepo.findById as any).mockResolvedValue(quote);
+      (mockQuoteRepo.update as any).mockImplementation((_cid: string, _id: string, updates: any) =>
+        Promise.resolve({ ...quote, ...updates })
+      );
+
+      const result = await quoteService.updateItemDescription(
+        companyId,
+        quoteId,
+        "room-1",
+        "item-1",
+        "Özel pile dikim yapılacak, ekstra kumaş eklendi."
+      );
+
+      expect(mockQuoteRepo.update).toHaveBeenCalled();
+      const updatedItem = result.rooms[0]!.items[0]!;
+      expect(updatedItem.description).toBe("Özel pile dikim yapılacak, ekstra kumaş eklendi.");
+    });
+
+    it("should get item description", async () => {
+      const quote = baseQuoteWithItem("Mevcut açıklama metni");
+      (mockQuoteRepo.findById as any).mockResolvedValue(quote);
+
+      const result = await quoteService.getItemDescription(companyId, quoteId, "room-1", "item-1");
+      expect(result.description).toBe("Mevcut açıklama metni");
+    });
+
+    it("should delete item description", async () => {
+      const quote = baseQuoteWithItem("Silinecek açıklama");
+      (mockQuoteRepo.findById as any).mockResolvedValue(quote);
+      (mockQuoteRepo.update as any).mockImplementation((_cid: string, _id: string, updates: any) =>
+        Promise.resolve({ ...quote, ...updates })
+      );
+
+      const result = await quoteService.deleteItemDescription(companyId, quoteId, "room-1", "item-1");
+      const updatedItem = result.rooms[0]!.items[0]!;
+      expect(updatedItem.description).toBeUndefined();
+    });
+
+    it("should throw 404 if item not found when updating description", async () => {
+      const quote = baseQuoteWithItem();
+      (mockQuoteRepo.findById as any).mockResolvedValue(quote);
+
+      expect(
+        quoteService.updateItemDescription(companyId, quoteId, "room-1", "non-existent-item", "Test")
+      ).rejects.toThrow(new AppError(404, "Item not found", "ITEM_NOT_FOUND"));
+    });
+  });
+
+  describe("Quote Item VAT / KDV CRUD & Calculations", () => {
+    const baseQuoteForVat = (vatRate?: number): Quote => ({
+      _id: new ObjectId(),
+      companyId,
+      quoteNumber: "QT-2026-0001",
+      creatorId: "user-1",
+      currency: "TRY",
+      conversions: { TRY: 1, USD: 1, EUR: 1 },
+      status: "draft",
+      total: 1000,
+      discountPercent: 0,
+      totalAfterDiscount: 1000,
+      createdAt: Timestamp.now(),
+      rooms: [
+        {
+          id: "room-1",
+          name: "Salon",
+          total: 1000,
+          items: [
+            {
+              id: "item-1",
+              name: "Motorlu Rustik",
+              publicName: "",
+              quantity: 2,
+              unitPrice: 500,
+              originalCurrency: "TRY",
+              convertedUnitPrice: 500,
+              discountAmount: 0,
+              totalPrice: 1000,
+              vatRate,
+            },
+          ],
+        },
+      ],
+    });
+
+    it("should update item VAT (20%) and calculate vatAmount and totalPriceWithVat", async () => {
+      const quote = baseQuoteForVat();
+      (mockQuoteRepo.findById as any).mockResolvedValue(quote);
+      (mockQuoteRepo.update as any).mockImplementation((_cid: string, _id: string, updates: any) =>
+        Promise.resolve({ ...quote, ...updates })
+      );
+
+      const result = await quoteService.updateItemVat(companyId, quoteId, "room-1", "item-1", 20);
+
+      const updatedItem = result.rooms[0]!.items[0]!;
+      expect(updatedItem.vatRate).toBe(20);
+      expect(updatedItem.vatAmount).toBe(200); // 1000 * 20% = 200
+      expect(updatedItem.totalPriceWithVat).toBe(1200); // 1000 + 200 = 1200
+      expect(result.totalVat).toBe(200);
+      expect(result.totalWithVat).toBe(1200);
+    });
+
+    it("should allow vatRate = 0 (KDV 0 seçilebilir)", async () => {
+      const quote = baseQuoteForVat(20);
+      (mockQuoteRepo.findById as any).mockResolvedValue(quote);
+      (mockQuoteRepo.update as any).mockImplementation((_cid: string, _id: string, updates: any) =>
+        Promise.resolve({ ...quote, ...updates })
+      );
+
+      const result = await quoteService.updateItemVat(companyId, quoteId, "room-1", "item-1", 0);
+
+      const updatedItem = result.rooms[0]!.items[0]!;
+      expect(updatedItem.vatRate).toBe(0);
+      expect(updatedItem.vatAmount).toBe(0);
+      expect(updatedItem.totalPriceWithVat).toBe(1000);
+      expect(result.totalVat).toBe(0);
+      expect(result.totalWithVat).toBe(1000);
+    });
+
+    it("should delete item VAT and reset to undefined/0", async () => {
+      const quote = baseQuoteForVat(20);
+      (mockQuoteRepo.findById as any).mockResolvedValue(quote);
+      (mockQuoteRepo.update as any).mockImplementation((_cid: string, _id: string, updates: any) =>
+        Promise.resolve({ ...quote, ...updates })
+      );
+
+      const result = await quoteService.deleteItemVat(companyId, quoteId, "room-1", "item-1");
+
+      const updatedItem = result.rooms[0]!.items[0]!;
+      expect(updatedItem.vatRate).toBeUndefined();
+      expect(updatedItem.vatAmount).toBe(0);
+      expect(result.totalVat).toBe(0);
+    });
+
+    it("should get item VAT info", async () => {
+      const quote = baseQuoteForVat(10);
+      quote.rooms[0]!.items[0]!.vatAmount = 100;
+      quote.rooms[0]!.items[0]!.totalPriceWithVat = 1100;
+      (mockQuoteRepo.findById as any).mockResolvedValue(quote);
+
+      const result = await quoteService.getItemVat(companyId, quoteId, "room-1", "item-1");
+      expect(result.vatRate).toBe(10);
+      expect(result.vatAmount).toBe(100);
+      expect(result.totalPriceWithVat).toBe(1100);
+    });
+  });
+
+  describe("addCustomItemToRoom with description & VAT", () => {
+    it("should save description and vatRate when adding custom item", async () => {
+      const quote: Quote = {
+        _id: new ObjectId(),
+        companyId,
+        quoteNumber: "QT-2026-0001",
+        creatorId: "user-1",
+        currency: "TRY",
+        conversions: { TRY: 1, USD: 1, EUR: 1 },
+        status: "draft",
+        total: 0,
+        discountPercent: 0,
+        totalAfterDiscount: 0,
+        createdAt: Timestamp.now(),
+        rooms: [
+          {
+            id: "room-1",
+            name: "Yatak Odası",
+            total: 0,
+            items: [],
+          },
+        ],
+      };
+
+      (mockQuoteRepo.findById as any).mockResolvedValue(quote);
+      (mockQuoteRepo.update as any).mockImplementation((_cid: string, _id: string, updates: any) =>
+        Promise.resolve({ ...quote, ...updates })
+      );
+
+      const result = await quoteService.addCustomItemToRoom(companyId, quoteId, "room-1", {
+        name: "Özel Kumaş",
+        quantity: 3,
+        unitPrice: 200,
+        currency: "TRY",
+        description: "İthal kadife kumaş",
+        vatRate: 20,
+      });
+
+      const item = result.rooms[0]!.items[0]!;
+      expect(item.description).toBe("İthal kadife kumaş");
+      expect(item.vatRate).toBe(20);
+      expect(item.vatAmount).toBe(120); // 600 * 20% = 120
+      expect(item.totalPrice).toBe(600);
+      expect(item.totalPriceWithVat).toBe(720);
+      expect(result.totalVat).toBe(120);
+      expect(result.totalWithVat).toBe(720);
+    });
+  });
 });

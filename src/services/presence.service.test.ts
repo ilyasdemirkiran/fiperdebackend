@@ -38,7 +38,7 @@ describe("PresenceService Unit Tests", () => {
       });
 
       expect(mockInsertOne).toHaveBeenCalledTimes(1);
-      const insertedDoc = mockInsertOne.mock.calls[0][0];
+      const insertedDoc = mockInsertOne.mock.calls[0]![0];
       expect(insertedDoc.userId).toBe("user-1");
       expect(insertedDoc.userName).toBe("Ahmet Yılmaz");
       expect(insertedDoc.userRole).toBe("admin");
@@ -75,7 +75,7 @@ describe("PresenceService Unit Tests", () => {
       });
 
       expect(mockInsertOne).toHaveBeenCalledTimes(1);
-      expect(mockInsertOne.mock.calls[0][0].path).toBe("/dashboard");
+      expect(mockInsertOne.mock.calls[0]![0].path).toBe("/dashboard");
 
       // Second heartbeat on same path - should NOT call recordPageVisit again
       await presenceService.recordHeartbeat({
@@ -100,7 +100,7 @@ describe("PresenceService Unit Tests", () => {
       });
 
       expect(mockInsertOne).toHaveBeenCalledTimes(2);
-      expect(mockInsertOne.mock.calls[1][0].path).toBe("/sales");
+      expect(mockInsertOne.mock.calls[1]![0].path).toBe("/sales");
     });
   });
 
@@ -117,7 +117,7 @@ describe("PresenceService Unit Tests", () => {
 
       const active = presenceService.getActivePresences();
       expect(active.length).toBe(1);
-      expect(active[0].userId).toBe("user-1");
+      expect(active[0]!.userId).toBe("user-1");
 
       presenceService.setUserOffline("user-1");
       expect(presenceService.getActivePresences().length).toBe(0);

@@ -54,3 +54,100 @@ describe("Quote Item Discount Schema Tests", () => {
     expect(clearDiscount.discountValue).toBeNull();
   });
 });
+
+describe("Quote Item Description Schema Tests", () => {
+  test("quoteItemSchema should accept description up to 300 chars", () => {
+    const validDesc = "A".repeat(300);
+    const item = quoteItemSchema.parse({
+      id: "item1",
+      name: "Tül Perde",
+      quantity: 1,
+      unitPrice: 100,
+      originalCurrency: "TRY",
+      convertedUnitPrice: 100,
+      totalPrice: 100,
+      description: validDesc,
+    });
+    expect(item.description).toBe(validDesc);
+  });
+
+  test("quoteItemSchema should reject description over 300 chars", () => {
+    const invalidDesc = "A".repeat(301);
+    expect(() =>
+      quoteItemSchema.parse({
+        id: "item1",
+        name: "Tül Perde",
+        quantity: 1,
+        unitPrice: 100,
+        originalCurrency: "TRY",
+        convertedUnitPrice: 100,
+        totalPrice: 100,
+        description: invalidDesc,
+      })
+    ).toThrow();
+  });
+});
+
+describe("Quote Item VAT / KDV Schema Tests", () => {
+  test("quoteItemSchema should accept vatRate = 0 (KDV 0 seçilebilir)", () => {
+    const item = quoteItemSchema.parse({
+      id: "item1",
+      name: "Tül Perde",
+      quantity: 1,
+      unitPrice: 100,
+      originalCurrency: "TRY",
+      convertedUnitPrice: 100,
+      totalPrice: 100,
+      vatRate: 0,
+      vatAmount: 0,
+    });
+    expect(item.vatRate).toBe(0);
+    expect(item.vatAmount).toBe(0);
+  });
+
+  test("quoteItemSchema should accept positive vatRate (e.g. 20%)", () => {
+    const item = quoteItemSchema.parse({
+      id: "item1",
+      name: "Tül Perde",
+      quantity: 1,
+      unitPrice: 100,
+      originalCurrency: "TRY",
+      convertedUnitPrice: 100,
+      totalPrice: 100,
+      vatRate: 20,
+      vatAmount: 20,
+      totalPriceWithVat: 120,
+    });
+    expect(item.vatRate).toBe(20);
+    expect(item.vatAmount).toBe(20);
+    expect(item.totalPriceWithVat).toBe(120);
+  });
+
+  test("quoteItemSchema should reject negative vatRate or vatRate > 100", () => {
+    expect(() =>
+      quoteItemSchema.parse({
+        id: "item1",
+        name: "Tül Perde",
+        quantity: 1,
+        unitPrice: 100,
+        originalCurrency: "TRY",
+        convertedUnitPrice: 100,
+        totalPrice: 100,
+        vatRate: -1,
+      })
+    ).toThrow();
+
+    expect(() =>
+      quoteItemSchema.parse({
+        id: "item1",
+        name: "Tül Perde",
+        quantity: 1,
+        unitPrice: 100,
+        originalCurrency: "TRY",
+        convertedUnitPrice: 100,
+        totalPrice: 100,
+        vatRate: 101,
+      })
+    ).toThrow();
+  });
+});
